@@ -29,6 +29,13 @@ Orijinale göre yapılan değişiklikler (Apache-2.0 madde 4(b) gereği belirtil
     yol açıyordu. Artık pinned noktalar `_integrate()`'te tamamen muaf
     tutuluyor; konumları yalnızca `pin()` / `set_pinned_position()` ile
     belirleniyor.
+  - `wind` / `wind_scale` eklendi (orijinalde yok) -- kuyruk/pelerin gibi
+    hiçbir hedefe bağlanmayan ("ikincil fizik") serbest verlet zincirlerini
+    rüzgar/hava direnciyle hareket ettirebilmek için: `wind`, `gravity`
+    gibi her karede eklenen genel bir ivme vektörüdür; `wind_scale` ise
+    her noktanın bu rüzgara ne kadar tepki vereceğini ayarlayan nokta
+    başına bir çarpandır (ör. bir kuyruğun ucu köküne göre daha fazla
+    savrulsun diye) -- bkz. `add_point(..., wind_scale=...)`.
 
 Algoritma (Störmer-Verlet integration + distance-constraint relaxation)
 kavramsal olarak Thomas Jakobsen'in "Advanced Character Physics" makalesine
@@ -112,16 +119,19 @@ class VerletSystem:
     pinned: set[int] = field(default_factory=set)
     gravity: np.ndarray = field(default_factory=lambda: GRAVITY.copy())
     friction: float = FRICTION
+    wind: np.ndarray = field(default_factory=lambda: np.zeros(2))
+    wind_scale: np.ndarray = field(default_factory=lambda: np.zeros(0))  # (N,) nokta başına rüzgar çarpanı
 
     @classmethod
     def empty(cls) -> "VerletSystem":
         return cls(points=np.zeros((0, 2)), prev_points=np.zeros((0, 2)))
 
-    def add_point(self, pos: Sequence[float], pinned: bool = False) -> int:
+    def add_point(self, pos: Sequence[float], pinned: bool = False, wind_scale: float = 1.0) -> int:
         idx = len(self.points)
         pos = np.asarray(pos, dtype=float).reshape(1, 2)
         self.points = np.vstack([self.points, pos]) if self.points.size else pos.copy()
         self.prev_points = np.vstack([self.prev_points, pos]) if self.prev_points.size else pos.copy()
+        self.wind_scale = np.append(self.wind_scale, float(wind_scale))
         if pinned:
             self.pinned.add(idx)
         return idx
@@ -159,7 +169,16 @@ class VerletSystem:
     # -- iç adımlar -----------------------------------------------------
     def _integrate(self, dt: float) -> None:
         velocity = (self.points - self.prev_points) * max(1.0 - self.friction, 0.0)
-        candidate = self.points + velocity + self.gravity * (dt * dt)
+        # Rüzgar da yerçekimi gibi bir ivme olarak eklenir, ama nokta başına
+        # `wind_scale` ile ölçeklenir -- ör. bir kuyruk zincirinin ucu
+        # (wind_scale büyük) kökünden (wind_scale küçük/0) çok daha fazla
+        # savrulsun diye. `wind_scale` boşsa (ör. add_point hiç çağrılmadan
+        # doğrudan nokta atanmışsa) rüzgar etkisi sıfır kabul edilir.
+        if self.wind_scale.shape[0] == len(self.points) and np.any(self.wind):
+            wind_accel = self.wind[None, :] * self.wind_scale[:, None]
+        else:
+            wind_accel = 0.0
+        candidate = self.points + velocity + (self.gravity + wind_accel) * (dt * dt)
         self.prev_points = self.points.copy()
         if self.pinned:
             # Pinned noktalar fizikten TAMAMEN muaf: konumları yalnızca

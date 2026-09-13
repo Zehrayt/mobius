@@ -7,9 +7,6 @@ Kinematics) ile prosedürel olarak hareket ettirip, sahneyi kare kare
 çizilmez / keyframe kullanılmaz — hareket tamamen fizik ve hedef-tabanlı
 matematikten doğar.
 
-Bu proje şu an **sadece video/render modunu** hedefliyor (oyun/gerçek-zamanlı
-entegrasyon tarafı bilinçli olarak ertelendi).
-
 ## Kurulum
 
 ```bash
@@ -27,6 +24,7 @@ python3 demo/step2_leg_reach.py      # -> outputs/step2_leg_reach.mp4
 python3 demo/step3_full_skeleton.py  # -> outputs/step3_full_skeleton.mp4
 python3 demo/step4_gait_tuning.py    # -> outputs/step4_gait_tuning.mp4
 python3 demo/step5_parallax.py        # -> outputs/step5_parallax.mp4
+python3 demo/step10_secondary_wind.py # -> outputs/step10_secondary_wind.mp4
 ```
 
 ## İçerik
@@ -68,6 +66,15 @@ python3 demo/step5_parallax.py        # -> outputs/step5_parallax.mp4
   Şekiller gerçek sprite yerine basit geometrik ilkellerle (üçgen/daire)
   prosedürel üretilip sonsuza tekrarlanıyor — mimari aynı kalmak kaydıyla
   bunların yerine sanat ekibinin .png'leri konabilir.
+- `demo/step10_secondary_wind.py` — **Adım 10 (ön çalışma)**: İkincil fizik
+  nesneleri. Omuzdan sarkan bir pelerin (8 segmentlik saf verlet zinciri,
+  **hiçbir hedefe bağlı değil, hiçbir açı kısıtlaması yok** — kollar/
+  bacaklardan temel farkı bu) artık `physics/verlet.py`'ye eklenen `wind`/
+  `wind_scale` ile hem karakterin kendi hareketinden (kaldıraç/ivme yoluyla)
+  hem de düzensiz bir rüzgar/gust fonksiyonundan etkileniyor. İlk 3 saniye
+  rüzgar kapalı (pelerin sadece kendi ağırlığı + karakterin yürüyüşüyle
+  sallanıyor), sonra 1.5 saniyede rüzgar açılıp pelerin arkaya doğru
+  bir bayrak gibi düzleşiyor — bkz. aşağıdaki "ikincil fizik" notu.
 
 ### Önemli bir tasarım notu: "double pendulum" tuzağı
 
@@ -84,6 +91,60 @@ bırakıyor. **Referans olarak çok kısa bir segmentin (ör. driver→hip,
 3px) yönünü kullanmayın** — sayısal olarak gürültülü olur ve açı
 hesaplaması kararsızlaşır; sabit bir global yön veya zaten stabilize
 edilmiş bir segmentin yönü kullanılmalı.
+
+### Gelecek yön: "organik kütle" fiziği (Rain World'den ilham)
+
+Temel yürüyüş (IK + Verlet) çözüldükten sonra, karakteri sadece eklemli bir
+iskelet değil, esneyebilen/sıkışabilen ve momentumu hisseden organik bir
+"kütle" gibi hissettirmek için hedeflenen ek mekanikler:
+
+- **Momentum ve esneme (squash & stretch):** Karakter hızlanınca ya da
+  yüksekten düşünce iskelet sabit kalmaz; gövdeyi oluşturan verlet
+  zincirleri kinetik enerjiye tepki verip uzar (esner), yere çarpınca
+  büzüşür — klasik animasyon ilkesi tamamen fizik/kod üzerinden.
+- **Çoklu nokta çarpışması (multi-node collision & raycasting):** Karakter
+  tek bir kaba kutu (hitbox) yerine baş/omuz/kalça/ayak gibi birden fazla
+  noktadan zemin ve engellere ışın (raycast) yollayarak sahneyle etkileşir
+  — dar bir geçitten geçerken vücut o geometriye göre sıkışıp adapte olur.
+- **Aktif/pasif ragdoll harmanı:** Karakter koşarken/hedefe uzanırken kas
+  gücü uygulayan "aktif" (IK güdümlü) durumda; sert bir çarpmada, denge
+  kaybında ya da hasarda IK anlık olarak devre dışı kalıp karakter tamamen
+  yerçekimine teslim "pasif ragdoll" durumuna geçiyor. Organik his, bu
+  ikisi arasındaki pürüzsüz geçişten geliyor.
+- **İkincil fizik nesneleri (secondary animation):** Kuyruk/kulak/anten/
+  pelerin gibi parçalar hiçbir zaman bir hedefe ulaşmaya çalışmaz (IK
+  kullanmazlar) — sadece ana gövdenin hareketinden, yerçekiminden ve hava
+  sürtünmesinden (drag) etkilenen saf verlet zincirleridir. Ana karakter
+  durduktan sonra bile kuyruğun bir süre daha salınmaya devam etmesi
+  canlılık hissi veriyor.
+- **Dinamik sürtünme/tutunma:** Eklemlerdeki sürtünme katsayısı zemin
+  materyaline ve eyleme göre değişir — buzda ayak ucu sürtünmesi sıfıra
+  yaklaşır, bir kenara/direğe tutunurken el sürtünmesi maksimuma çıkıp
+  vücudu havada kilitler.
+- **Kütle merkezi (center of mass) dengesi:** Kütle merkezi bir boşluğa
+  (ör. uçurum kenarı) kayarsa sistem bunu algılayıp kolları ters yöne
+  savurarak (counter-balance) dengeyi düzeltmeye çalışır.
+
+Bu mekanikler tek seferde değil, modüler olarak eklenecek — örn. önce
+`physics/verlet.py`'ye hava direnci (drag) eklenip rüzgarda salınan bir
+kuyruk/kumaş simülasyonu ile başlanıp, ardından çarpışma/sürtünme
+katsayılarına geçilmesi planlanıyor. Aşağıdaki yol haritasında 7-12
+numaralı adımlar bunlara karşılık geliyor.
+
+**İlk somut adım (Adım 10'un başlangıcı) atıldı** — bkz.
+`demo/step10_secondary_wind.py` ve `physics/verlet.py`'deki yeni `wind`/
+`wind_scale` alanları. Tasarım/ayar notu: ilk denemede rüzgar kuvveti
+yerçekiminden (0.065) çok daha büyüktü (taban 0.55) ve pelerin gerçekte
+"savrulmuyor", sadece anında dümdüz gerilip öyle kalıyordu (rüzgar tüm iç
+fiziği/gust dalgalanmasını bastırıyordu). Sayısal olarak doğrulanan
+düzeltme: rüzgar büyüklüğü yerçekimiyle aynı mertebeye indirildi (taban
+0.12 + ~0.16 gust) ve pelerin 5'ten 8 segmente çıkarılıp daha fazla
+"sarkma payı" verildi -- bu ikisi birlikte pelerinin hem rüzgarsızken
+yürüyüş ritmine bağlı organik bir sallanma (uç noktanın göreli x'i:
+ort. -81px, std 30) hem de rüzgar açıldığında arkaya doğru düzleşip bir
+bayrak gibi gerilme (ort. -118px, std 2.5 -- yani neredeyse tam gerili
+ve stabil) göstermesini sağladı. Görsel doğrulama: ffmpeg ile çıkarılan
+karelerde geçiş (rüzgar 0 -> tam güç) pürüzsüz, ani bir "sıçrama" yok.
 
 ## Yol haritası
 
@@ -133,6 +194,22 @@ edilmiş bir segmentin yönü kullanılmalı.
        çözmüyordu.
 6. Sahne kayıt/render pipeline'ının (bu depo zaten `cv2.VideoWriter`
    kullanıyor) senaryo/diyalog sistemiyle genişletilmesi
+7. Momentum ve esneme (squash & stretch) — verlet zincirlerinin hıza/düşmeye
+   tepki olarak uzayıp büzüşmesi
+8. Çoklu nokta çarpışması (multi-node collision & raycasting) — baş/omuz/
+   kalça/ayaktan zemine ve engellere ışın taraması
+9. Aktif/pasif ragdoll harmanı — IK güdümlü "aktif" durum ile tamamen
+   yerçekimine teslim "pasif ragdoll" durumu arasında pürüzsüz geçiş
+10. 🔶 İkincil fizik nesneleri (secondary animation) — kuyruk/kulak/pelerin
+    gibi hedefsiz, saf verlet + hava direnci (drag) ile sarkan parçalar.
+    **Başlandı:** bkz. `demo/step10_secondary_wind.py` (tek pelerin +
+    rüzgar). Sonraki olası genişletmeler: kuyruk/kulak gibi başka örnekler,
+    karakter durunca "bir süre daha salınmaya devam etme" davranışının
+    ayrıca doğrulanması.
+11. Dinamik sürtünme/tutunma — zemine/eyleme göre değişen eklem sürtünmesi
+    (buzda kayma, bir kenara tutunma)
+12. Kütle merkezi (center of mass) dengesi — denge kaybında kollarla
+    counter-balance
 
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
