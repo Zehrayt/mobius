@@ -21,6 +21,14 @@ Orijinale göre yapılan değişiklikler (Apache-2.0 madde 4(b) gereği belirtil
     girip takla atabilir; bu fonksiyon bir segmentin yönünü sabit bir
     referans vektöre göre sınırlayarak gövde/boyun gibi yarı-rijit
     parçaları kararlı tutar.
+  - `_integrate()` düzeltildi: orijinal `move_dynamic_points`/kısıtlama
+    mantığı pinned (statics) noktaları da entegre edip sadece çıkan hatayı
+    `prev_points` üzerinden "gizliyordu" -- her karede pinned bir noktanın
+    hedefi değiştiğinde (ör. bir omuz tutamağının karşı-bacak itkisiyle
+    ileri-geri hareket etmesi) bu, gözle görülür bir titremeye (jitter)
+    yol açıyordu. Artık pinned noktalar `_integrate()`'te tamamen muaf
+    tutuluyor; konumları yalnızca `pin()` / `set_pinned_position()` ile
+    belirleniyor.
 
 Algoritma (Störmer-Verlet integration + distance-constraint relaxation)
 kavramsal olarak Thomas Jakobsen'in "Advanced Character Physics" makalesine
@@ -132,8 +140,15 @@ class VerletSystem:
 
     def set_pinned_position(self, idx: int, pos: Sequence[float]) -> None:
         """Pinlenmiş bir noktayı her karede dışarıdan (ör. bir anchor script'i)
-        güncellemek için kullanılır."""
+        güncellemek için kullanılır. `prev_points` de aynı konuma eşitlenir --
+        aksi halde bir sonraki `_integrate()` çağrısı bu noktanın "hızını"
+        (points - prev_points farkını) sıfır olmayan bir değer sanıp üstüne
+        ekstra bir sahte hız + yerçekimi payı bindirir. Hedef konum karesel
+        (ör. bir "itki" profiliyle ileri-geri) değiştiğinde bu sahte hız
+        işareti sürekli yön değiştirir ve gözle görülür bir titremeye
+        dönüşür -- bkz. `_integrate()`'teki pinned nokta muafiyeti."""
         self.points[idx] = pos
+        self.prev_points[idx] = pos
 
     def step(self, dt: float = 1.0) -> None:
         self._integrate(dt)
@@ -144,9 +159,23 @@ class VerletSystem:
     # -- iç adımlar -----------------------------------------------------
     def _integrate(self, dt: float) -> None:
         velocity = (self.points - self.prev_points) * max(1.0 - self.friction, 0.0)
-        new_points = self.points + velocity + self.gravity * (dt * dt)
+        candidate = self.points + velocity + self.gravity * (dt * dt)
         self.prev_points = self.points.copy()
-        self.points = new_points
+        if self.pinned:
+            # Pinned noktalar fizikten TAMAMEN muaf: konumları yalnızca
+            # `pin()` / `set_pinned_position()` ile dışarıdan belirlenir.
+            # Önceki implementasyon bu noktaları da entegre edip
+            # (hız + yerçekimi ekleyip) sadece `_reapply_pins()` ile
+            # `prev_points`'i senkronluyordu -- ama `points`'teki kaymayı
+            # asla geri almıyordu. Sonuç: her karede küçük bir konum hatası
+            # birikiyor, bu da omuz/kol gibi hızlı yön değiştiren pinned
+            # noktalarda gözle görülür titremeye (jitter) yol açıyordu.
+            mask = np.ones(len(self.points), dtype=bool)
+            for idx in self.pinned:
+                mask[idx] = False
+            self.points = np.where(mask[:, None], candidate, self.points)
+        else:
+            self.points = candidate
         self._reapply_pins()
 
     def _reapply_pins(self) -> None:

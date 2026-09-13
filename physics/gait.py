@@ -21,6 +21,16 @@ import numpy as np
 from physics.fabrik import FabrikChain2D
 
 
+def _smoothstep(t: float) -> float:
+    """Swing fazının x ilerlemesi için ease-in/ease-out eğrisi (3t^2 - 2t^3).
+    Ayak kalkarken sıfırdan, inerken sıfıra yumuşak hızlanıp yavaşlar --
+    sabit hızlı (lineer) bir süpürme yerine gerçek bir bacağın atalet/kas
+    ivmesine daha yakın bir his verir. Bu da saat/zaman tabanlı bir eğri
+    DEĞİL: girdi olarak yine bacağın kendi swing_t ilerlemesini alıyor,
+    sadece o ilerlemeyi lineer yerine ease-in/out olarak yeniden eşliyor."""
+    return t * t * (3.0 - 2.0 * t)
+
+
 class FootPlantingLeg:
     def __init__(
         self,
@@ -62,7 +72,8 @@ class FootPlantingLeg:
         else:
             self.swing_t += 1.0 / self.swing_duration_frames
             t = min(self.swing_t, 1.0)
-            x = self.swing_start[0] + (self.swing_target[0] - self.swing_start[0]) * t
+            x_t = _smoothstep(t)
+            x = self.swing_start[0] + (self.swing_target[0] - self.swing_start[0]) * x_t
             lift = np.sin(np.pi * t) * self.lift_height
             foot = np.array([x, self.ground_y - lift])
             if self.swing_t >= 1.0:

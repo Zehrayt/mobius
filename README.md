@@ -26,6 +26,7 @@ python3 demo/step1_verlet_chain.py   # -> outputs/step1_verlet_vs_robotic.mp4
 python3 demo/step2_leg_reach.py      # -> outputs/step2_leg_reach.mp4
 python3 demo/step3_full_skeleton.py  # -> outputs/step3_full_skeleton.mp4
 python3 demo/step4_gait_tuning.py    # -> outputs/step4_gait_tuning.mp4
+python3 demo/step5_parallax.py        # -> outputs/step5_parallax.mp4
 ```
 
 ## İçerik
@@ -60,6 +61,13 @@ python3 demo/step4_gait_tuning.py    # -> outputs/step4_gait_tuning.mp4
   basit bir yaklaşıklaması. Ayrıca `VerletSystem.gravity` / `.friction`
   bu karakter için görsel olarak kalibre edildi (bkz. dosyanın başındaki
   yorum).
+- `demo/step5_parallax.py` — **Adım 5**: Parallax arka plan katmanları.
+  Her katmanın bir `depth` (derinlik) çarpanı var: `screen_x = world_x *
+  depth + (W/2 - hip_x * depth)`. depth<1 uzak katmanlar (dağlar, oba)
+  karakterden yavaş, depth>1 ön katman (çalılar) karakterden hızlı kayar.
+  Şekiller gerçek sprite yerine basit geometrik ilkellerle (üçgen/daire)
+  prosedürel üretilip sonsuza tekrarlanıyor — mimari aynı kalmak kaydıyla
+  bunların yerine sanat ekibinin .png'leri konabilir.
 
 ### Önemli bir tasarım notu: "double pendulum" tuzağı
 
@@ -84,7 +92,45 @@ edilmiş bir segmentin yönü kullanılmalı.
 3. ~~Gövde + 2 kol + 2 bacaktan oluşan tam iskelet, eklem açı sınırları~~ ✅
 4. ~~Yürüyüş döngüsü ince ayarı: karşı-bacak kol sallanması, gravity/friction
    kalibrasyonu~~ ✅
-5. Parallax arka plan katmanları (Z-index'e göre farklı kayma hızı)
+   - **Ek düzeltme:** Pinned noktalar (`driver`, `l_anchor`, `r_anchor`)
+     `_integrate()` içinde yanlışlıkla hâlâ hız/yerçekimiyle "entegre"
+     ediliyordu; bu, hedefi karesel değişen (ör. itki profili ters
+     yönlü) pinned noktalarda gözle görülür bir titremeye (jitter) yol
+     açıyordu — omuz/kol titremesi buradan geliyordu. `_integrate()`
+     artık pinned noktaları tamamen muaf tutuyor. Sayısal doğrulama: el
+     noktasının kare-başı yer değiştirmesi ort. 6.5px/max 46px (34 yön
+     değişimi) → düzeltme sonrası ort. 2.2px/max 8px (9 yön değişimi,
+     doğal adım döngüsüyle uyumlu).
+5. ~~Parallax arka plan katmanları (Z-index'e göre farklı kayma hızı)~~ ✅
+   - **Ek düzeltme: "robotik" bacak yürüyüşü.** Kullanıcı geri bildirimi:
+     dirsekler doğal ama bacaklar robot gibi hareket ediyordu. Kök neden
+     sayısal olarak doğrulandı: `LEG_SEGMENT_LEN=75` ile bacağın toplam
+     erişimi (`arm_length = 2*75 = 150px`) kalça-zemin dikey mesafesinden
+     (`GROUND_Y - HIP_Y = 160px`) **azdı** -- yani stance fazının neredeyse
+     tamamında ayak hedefi geometrik olarak erişilemezdi
+     (`FabrikChain2D.is_reachable()` → `False`), bu da `solve()`'u sürekli
+     "erişilemez hedefe doğru dümdüz ger" fallback'ine düşürüp dizin hemen
+     hiç bükülmeden kalmasına (rijit "sopa bacak" görünümü) yol açıyordu.
+     İki parça halinde düzeltildi:
+     - `LEG_SEGMENT_LEN` 75 → 92 (`arm_length` 150 → 184, 160'ı rahatça
+       aşıyor). Sayısal doğrulama (8 saniyelik tam yürüyüş simülasyonu,
+       diz açısı = kalça→diz ve diz→ayak segmentleri arası sapma):
+       düzeltme öncesi ort. 17.5°/maks 49° (std 15.2) → düzeltme sonrası
+       ort. 37.8°/maks 84° (std 30.5), yani diz artık gerçek bir yürüyüşteki
+       gibi belirgin şekilde bükülüyor.
+     - `physics/gait.py`'de `FootPlantingLeg.update()`'in swing fazındaki
+       x enterpolasyonu lineer yerine ease-in/ease-out (`smoothstep`,
+       `3t²-2t³`) eğrisine çevrildi -- ayak kalkışta/inişte yumuşak
+       hızlanıp yavaşlıyor, sabit hızlı bir "süpürme" yerine gerçek bir
+       uzvun ataletine daha yakın. Bu değişiklik `step2`-`step5` arası
+       `FootPlantingLeg` kullanan tüm demoları etkiler (paylaşılan modül).
+     - Bu bug `step3`/`step4`'te de aynı sabitlerle mevcuttu (step2'de
+       yoktu, çünkü o adımın `HIP_Y`/`GROUND_Y`/`LEG_SEGMENT_LEN` oranı
+       zaten erişilebilirdi) -- üçü de aynı düzeltmeyle güncellendi.
+     - Diz açısının asla tamamen 0'a kilitlenmemesi zaten `KNEE_LIMITS`
+       (min 8°) ile garanti altındaydı; bu, düzeltmeden önce de "tam düz"
+       görünmeyi hafifçe yumuşatıyordu ama erişilemezlik sorununun kendisini
+       çözmüyordu.
 6. Sahne kayıt/render pipeline'ının (bu depo zaten `cv2.VideoWriter`
    kullanıyor) senaryo/diyalog sistemiyle genişletilmesi
 
