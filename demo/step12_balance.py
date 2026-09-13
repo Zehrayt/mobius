@@ -48,6 +48,7 @@ import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
 from physics.gait import FootPlantingLeg
+from physics.balance import upper_body_com_x, support_x, counter_balance_offset
 
 W, H = 640, 400
 FPS = 30
@@ -140,16 +141,13 @@ def leg_swing_push(leg: FootPlantingLeg) -> float:
     return float(np.sin(np.pi * min(leg.swing_t, 1.0)))
 
 
-def support_x(left_leg: FootPlantingLeg, right_leg: FootPlantingLeg) -> float:
-    """Destek tabaninin yatay konumu: o an ZEMINDE DURAN (stance) ayagin/
-    ayaklarin ortalama x'i. Ikisi de swing'teyse (nadir bir gecis karesi)
-    hedef basis noktalarinin ortalamasina duser -- gercekte hicbir zaman
-    ayni anda swing olmuyorlar (foot-planting state machine'i bunu
-    engelliyor), bu sadece guvenli bir fallback."""
+def leg_support_x(left_leg: FootPlantingLeg, right_leg: FootPlantingLeg) -> float:
+    """Bu sahnenin iki bacağından `physics/balance.support_x()`'in
+    beklediği `stance_x`/`fallback_x` listelerini üretip çağıran ince bir
+    sarmalayıcı (wrapper)."""
     stance = [leg.planted[0] for leg in (left_leg, right_leg) if leg.state == "stance"]
-    if stance:
-        return float(np.mean(stance))
-    return float(np.mean([leg.swing_target[0] for leg in (left_leg, right_leg)]))
+    fallback = [leg.swing_target[0] for leg in (left_leg, right_leg)]
+    return support_x(stance, fallback)
 
 
 def draw_frame(body: VerletSystem, idx: dict, legs: list[FootPlantingLeg],
@@ -185,7 +183,7 @@ def draw_frame(body: VerletSystem, idx: dict, legs: list[FootPlantingLeg],
             cv2.circle(frame, to_screen(p), 5, (255, 255, 255), -1, cv2.LINE_AA)
 
     # CoM (beyaz X) ve destek tabani (sari cizgi) gorsellestirmesi.
-    com_x = float(np.mean([body.points[idx["hip"]][0], body.points[idx["shoulder"]][0], body.points[idx["head"]][0]]))
+    com_x = upper_body_com_x(body.points, [idx["hip"], idx["shoulder"], idx["head"]])
     com_screen = to_screen([com_x, HIP_Y - TORSO_LEN - 45])
     cv2.drawMarker(frame, com_screen, (255, 255, 255), cv2.MARKER_CROSS, 10, 2)
     base_screen_x = int(com_x - error + camera_offset)
@@ -233,14 +231,12 @@ def main() -> None:
             kicked = True
         body.set_pinned_position(idx["driver"], [driver_x, HIP_Y])
 
-        com_x = float(np.mean([body.points[idx["hip"]][0], body.points[idx["shoulder"]][0], body.points[idx["head"]][0]]))
-        base_x = support_x(left_leg, right_leg)
+        com_x = upper_body_com_x(body.points, [idx["hip"], idx["shoulder"], idx["head"]])
+        base_x = leg_support_x(left_leg, right_leg)
         error = com_x - base_x
         err_log.append(error)
 
-        clipped_err = float(np.clip(error, -BAL_MAX_ERR, BAL_MAX_ERR))
-        bal_x = -clipped_err * BAL_GAIN_X
-        bal_y = -min(abs(error), BAL_MAX_ERR) * BAL_GAIN_Y
+        bal_x, bal_y = counter_balance_offset(error, BAL_GAIN_X, BAL_GAIN_Y, BAL_MAX_ERR)
         offset_log.append(bal_x)
 
         shoulder_pos = body.points[idx["shoulder"]]

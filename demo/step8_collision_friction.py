@@ -58,6 +58,8 @@ import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
 from physics.gait import FootPlantingLeg
+from physics.collision import collide_ground
+from physics.environment import Terrain
 
 W, H = 640, 400
 FPS = 30
@@ -143,14 +145,12 @@ PUCK_NORMAL_X0 = 60.0         # normal zeminde -- hızla durması beklenir
 PUCK_ICE_X0 = 150.0           # buzlu şeritte -- çok daha uzağa kaymalı
 
 
-def floor_fn(x: float) -> float:
-    return GROUND_Y  # düz zemin -- bu demoda yükseklik değil, SÜRTÜNME değişiyor
-
-
-def friction_fn(x: float) -> float:
-    if ICE_X0 <= x <= ICE_X1:
-        return ICE_CONTACT_FRICTION
-    return NORMAL_CONTACT_FRICTION
+# düz zemin -- bu demoda yükseklik değil, SÜRTÜNME bölgesel olarak değişiyor
+TERRAIN = Terrain(
+    ground_y=GROUND_Y,
+    default_friction=NORMAL_CONTACT_FRICTION,
+    zones=[(ICE_X0, ICE_X1, ICE_CONTACT_FRICTION)],
+)
 
 
 def build_body() -> tuple[VerletSystem, dict[str, int]]:
@@ -353,9 +353,9 @@ def main() -> None:
         torso_dir = body.points[idx["shoulder"]] - body.points[idx["hip"]]
         clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, NECK_MAX_TILT_DEG)
 
-        # YENİ: pelerin zeminle çarpışıyor + bölgeye göre farklı temas
-        # sürtünmesi yaşıyor. clamp_direction gibi step()'ten SONRA çağrılır.
-        body.collide_ground(floor_fn, friction_fn)
+        # Pelerin zeminle çarpışıyor + bölgeye göre farklı temas sürtünmesi
+        # yaşıyor. clamp_direction gibi step()'ten SONRA çağrılır.
+        collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
 
         hip_pos = body.points[idx["hip"]]
         left_leg.update(hip_pos)

@@ -65,6 +65,15 @@ import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
 from physics.gait import FootPlantingLeg
+from physics.collision import collide_ground
+from physics.environment import Terrain
+from physics.ragdoll import (
+    blend_point,
+    blend_prev_points,
+    blended_max_angle,
+    blended_friction,
+    driver_follow_target,
+)
 
 W, H = 640, 400
 FPS = 30
@@ -167,12 +176,7 @@ def leg_swing_push(leg: FootPlantingLeg) -> float:
     return float(np.sin(np.pi * min(leg.swing_t, 1.0)))
 
 
-def floor_fn(x: float) -> float:
-    return GROUND_Y
-
-
-def friction_fn(x: float) -> float:
-    return 0.3
+TERRAIN = Terrain(ground_y=GROUND_Y, default_friction=0.3)
 
 
 def blend_at(t: float) -> float:
@@ -257,9 +261,9 @@ def main() -> None:
 
         walk_driver_pos = np.array([driver_x, HIP_Y])
         hip_last_pos = body.points[idx["hip"]].copy()
-        driver_target = hip_last_pos * (1 - blend) + walk_driver_pos * blend
+        driver_target = driver_follow_target(hip_last_pos, walk_driver_pos, blend)
         body.set_pinned_position(idx["driver"], driver_target)
-        body.friction = blend * ACTIVE_FRICTION + (1 - blend) * RAGDOLL_FRICTION
+        body.friction = blended_friction(blend, ACTIVE_FRICTION, RAGDOLL_FRICTION)
 
         shoulder_pos = body.points[idx["shoulder"]]
         left_push = leg_swing_push(right_leg) * ARM_COUNTER_SWING_PX * blend
@@ -271,13 +275,13 @@ def main() -> None:
 
         # Govde/boyun stabilizasyonu da blend ile "gevsetiliyor" -- aktifte
         # dar (12/18 derece), pasifte pratik olarak sinirsiz (180 derece).
-        max_lean = 180.0 - blend * (180.0 - TORSO_MAX_LEAN_DEG)
-        max_neck = 180.0 - blend * (180.0 - NECK_MAX_TILT_DEG)
+        max_lean = blended_max_angle(blend, TORSO_MAX_LEAN_DEG)
+        max_neck = blended_max_angle(blend, NECK_MAX_TILT_DEG)
         clamp_direction(body.points, body.prev_points, idx["hip"], idx["shoulder"], UP, max_lean)
         torso_dir = body.points[idx["shoulder"]] - body.points[idx["hip"]]
         clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, max_neck)
 
-        body.collide_ground(floor_fn, friction_fn)
+        collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
 
         hip_pos = body.points[idx["hip"]]
         # "Pasif" (fizigin kendi basina urettigi) diz/ayak konumlarini,
@@ -297,14 +301,10 @@ def main() -> None:
             for key, active_pt in ((f"{side}_knee", active_knee), (f"{side}_foot", active_foot)):
                 pidx = idx[key]
                 pas = passive[key]
-                blended = pas * (1 - blend) + active_pt * blend
+                blended = blend_point(pas, active_pt, blend)
                 err_accum += float(np.linalg.norm(pas - active_pt))
                 body.points[pidx] = blended
-                # blend=1 -> prev_points de tam senkron (IK'nin sahte hiz
-                # yaratmamasi icin, `set_pinned_position` ile ayni mantik);
-                # blend=0 -> prev_points'e hic dokunulmuyor (fizik kendi
-                # momentumuyla devam ediyor).
-                body.prev_points[pidx] = body.prev_points[pidx] * (1 - blend) + blended * blend
+                body.prev_points[pidx] = blend_prev_points(body.prev_points[pidx], blended, blend)
 
         control_err_log.append(err_accum / 4.0)
         vec = body.points[idx["shoulder"]] - body.points[idx["hip"]]

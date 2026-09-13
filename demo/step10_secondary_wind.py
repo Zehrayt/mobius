@@ -53,6 +53,7 @@ import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
 from physics.gait import FootPlantingLeg
+from physics.environment import GustWind
 
 W, H = 640, 400
 FPS = 30
@@ -99,33 +100,28 @@ CAPE_WIND_SCALES = [0.4, 0.6, 0.85, 1.1, 1.4, 1.7, 2.05, 2.4]
 WIND_START_T = 3.0     # bu saniyeye kadar rüzgar kapalı
 WIND_RAMP_T = 1.5      # bu kadar sürede 0 -> tam güce çıkar
 
+# Refactor notu: bu, daha önce burada hardcode bir `wind_x(t)` fonksiyonuydu
+# -- artık `physics/environment.py`'deki genel `GustWind` yardımcısı
+# kullanılıyor (aynı formül, birebir aynı sayısal davranış, bkz. o modülün
+# dokstring'i). Tek periyodik sin(t) değil -- birbirine asal olmayan üç
+# frekansın toplamı, düzensiz "gust" (esinti) hissi versin diye. Karakter
+# +x yönünde yürüdüğü için negatif (ters yönden esen) rüzgar, pelerinin
+# karakterin ARKASINA doğru savrulmasını sağlıyor. Büyüklük
+# `VerletSystem.gravity` (~0.065) ile aynı mertebede tutuldu (~0.12 taban +
+# ~0.16 gust) -- ilk denemede taban çok daha büyüktü (0.55) ve pelerin
+# gerçekte savrulmuyor, sadece dümdüz gerilip kalıyordu (rüzgar tüm iç
+# fiziği bastırıyordu); bu değer gerçek bir "flutter" hissi için sayısal
+# olarak doğrulandı.
+WIND = GustWind(
+    base=-0.12,
+    components=[(0.085, 0.18, 0.7), (0.045, 0.47, 2.1), (0.025, 0.83, 0.0)],
+    start_t=WIND_START_T,
+    ramp_t=WIND_RAMP_T,
+)
+
 
 def wind_x(t: float) -> float:
-    """Tek periyodik sin(t) değil -- birbirine asal olmayan üç frekansın
-    toplamı, düzensiz "gust" (esinti) hissi versin diye. Karakter +x
-    yönünde yürüdüğü için negatif (ters yönden esen) rüzgar, pelerinin
-    karakterin ARKASINA doğru savrulmasını sağlıyor -- görsel olarak
-    "koşarken rüzgara karşı" hissi.
-
-    Büyüklük `VerletSystem.gravity` (~0.065) ile aynı mertebede tutuldu
-    (~0.12 taban + ~0.16 gust) -- ilk denemede taban çok daha büyüktü
-    (0.55) ve pelerin gerçekte savrulmuyor, sadece dümdüz gerilip kalıyordu
-    (rüzgar tüm iç fiziği bastırıyordu); bu değer gerçek bir "flutter"
-    (dalgalanma) hissi için sayısal olarak doğrulandı (bkz. diagnostic notu
-    altta -- post-wind tip pozisyonu artık dar bir bantta sabitlenmek
-    yerine gust'larla birlikte gerçekten dalgalanıyor)."""
-    base = -0.12
-    gust = (
-        0.085 * np.sin(2 * np.pi * 0.18 * t + 0.7)
-        + 0.045 * np.sin(2 * np.pi * 0.47 * t + 2.1)
-        + 0.025 * np.sin(2 * np.pi * 0.83 * t)
-    )
-    raw = base + gust
-
-    if t < WIND_START_T:
-        return 0.0
-    ramp = min((t - WIND_START_T) / WIND_RAMP_T, 1.0)
-    return raw * ramp
+    return WIND.value(t)
 
 
 def build_body() -> tuple[VerletSystem, dict[str, int]]:

@@ -47,6 +47,8 @@ import numpy as np
 import cv2
 
 from physics.verlet import VerletSystem
+from physics.collision import collide_ground
+from physics.environment import Terrain
 
 W, H = 640, 400
 FPS = 30
@@ -87,12 +89,7 @@ def build_ball() -> tuple[VerletSystem, list[int]]:
     return sys_, idx
 
 
-def floor_fn(x: float) -> float:
-    return GROUND_Y
-
-
-def friction_fn(x: float) -> float:
-    return GROUND_CONTACT_FRICTION
+TERRAIN = Terrain(ground_y=GROUND_Y, default_friction=GROUND_CONTACT_FRICTION)
 
 
 def bbox(points: np.ndarray) -> tuple[float, float, float, float]:
@@ -135,7 +132,7 @@ def main() -> None:
     ratios = []
     for f in range(N_FRAMES):
         body.step(dt=1.0)
-        body.collide_ground(floor_fn, friction_fn)
+        collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
 
         x0, x1, y0, y1 = bbox(body.points)
         w = x1 - x0

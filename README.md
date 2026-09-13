@@ -7,6 +7,9 @@ Kinematics) ile prosedürel olarak hareket ettirip, sahneyi kare kare
 çizilmez / keyframe kullanılmaz — hareket tamamen fizik ve hedef-tabanlı
 matematikten doğar.
 
+**Yol haritası maddesi ↔ dosya eşlemesi netleşmemişse (ör. neden
+`step6`/`step11` diye bir dosya yok) önce [`INDEX.md`](INDEX.md)'e bakın.**
+
 ## Kurulum
 
 ```bash
@@ -29,21 +32,47 @@ python3 demo/step8_collision_friction.py # -> outputs/step8_collision_friction.m
 python3 demo/step7_squash_stretch.py  # -> outputs/step7_squash_stretch.mp4
 python3 demo/step9_ragdoll_blend.py   # -> outputs/step9_ragdoll_blend.mp4
 python3 demo/step12_balance.py        # -> outputs/step12_balance.mp4
+python3 demo/step13_full_integration_test.py # -> outputs/step13_full_integration_test.mp4
 ```
 
-## İçerik
+## Mimari: çekirdek (`physics/`) vs. sahne (`demo/`)
+
+`physics/` altı **jenerik, sahneden bağımsız** mekanizmalardan oluşur —
+hiçbiri belirli bir karakter/sahne bilmez. `demo/` altındaki her `stepN_*.py`
+ise bunları belirli sabitlerle (kalça yüksekliği, rüzgar gücü, buz bölgesi
+x aralığı, ...) somut bir SAHNEYE bağlayan, kendi kendine çalışan bir
+script'tir. Bu ayrım kullanıcı geri bildirimi üzerine eklendi — daha önce
+çarpışma/ragdoll/denge mantığının bir kısmı `demo/` dosyalarında hardcode
+idi (bkz. `INDEX.md`'deki refactor notu).
 
 - `physics/verlet.py` — genel amaçlı nokta/çubuk Verlet integration sistemi
   (`VerletSystem`) + `clamp_direction()` yardımcı fonksiyonu (bir segmentin
   yönünü sabit bir referansa göre sınırlar — bkz. aşağıdaki "double
-  pendulum" notu). Zincir, ağaç ya da kapalı iskelet (torso + kollar +
-  bacaklar) gibi keyfi graf yapılarını destekler.
+  pendulum" notu) + `add_stick(..., compliance=...)` (esnek çubuklar,
+  squash & stretch). Zincir, ağaç ya da kapalı iskelet (torso + kollar +
+  bacaklar) gibi keyfi graf yapılarını destekler. **Zemin/çarpışma
+  kavramından tamamen habersizdir** — bkz. `physics/collision.py`.
 - `physics/fabrik.py` — 2D FABRIK IK çözücü (`FabrikChain2D`) +
   `clamp_joint_angles()` (bir eklemin büküm açısını ve yönünü sınırlar —
   ör. dizin tersine bükülmemesi). Bir zincirin (ör. kalça→diz→ayak bileği)
   ucunu bir hedef noktaya ulaştırır.
 - `physics/gait.py` — `FootPlantingLeg`: FABRIK + "ayak basma" (foot-
   planting) state machine'i. Bu projede sıfırdan yazılmıştır.
+- `physics/collision.py` — `collide_ground(body, floor_fn, friction_fn)`:
+  `VerletSystem`'den bağımsız bir zemin çarpışma fonksiyonu (önceden
+  `VerletSystem.collide_ground()` metoduydu, sorumlulukların ayrılması
+  için buraya taşındı — davranış birebir aynı, bkz. `INDEX.md`).
+- `physics/environment.py` — sahneye özgü ama karakterden bağımsız iki
+  yardımcı: `Terrain` (zemin yüksekliği + x aralığına göre bölgesel
+  sürtünme — buz/normal zemin gibi) ve `GustWind` (birkaç uyumsuz sinüs
+  frekansının toplamı + ramp ile düzensiz "gust" rüzgarı — tek bir
+  `sin(t)` DEĞİL).
+- `physics/ragdoll.py` — aktif (IK) / pasif (ragdoll) fizik harmanı için
+  paylaşılan yardımcılar (`blend_point`, `blended_max_angle`,
+  `blended_friction`, `driver_follow_target`) — bkz. Adım 9.
+- `physics/balance.py` — kütle merkezi (basitleştirilmiş üst-gövde vekili)
+  ile destek tabanı farkına orantılı kol tepkisi yardımcıları
+  (`upper_body_com_x`, `support_x`, `counter_balance_offset`) — bkz. Adım 12.
 - `demo/step1_verlet_chain.py` — **Adım 1**: Tek bir verlet zincirinin
   (kuyruk/kol) sabit bir anchor'dan sarkışını, aynı anchor hareketiyle
   sürülen saf `sin()` tabanlı "robotik" bir zincirle yan yana karşılaştırır.
@@ -116,6 +145,26 @@ python3 demo/step12_balance.py        # -> outputs/step12_balance.mp4
   ofseti (geriye/yukarı) uygulanıyor. t=3s'te bir tokezleme itkisi bu
   farkı aniden büyütüp kolların tepkisini net şekilde gösteriyor — bkz.
   aşağıdaki yol haritası maddesi 12.
+- `demo/step13_full_integration_test.py` — **Master entegrasyon/stres
+  testi** (yol haritasında numaralı bir madde değil — bkz. `INDEX.md`).
+  Adım 7 (bağımsız sekiçen yumuşak top), 8+11 (buz/normal zemin
+  çarpışması+sürtünmesi), 9 (aktif/pasif ragdoll geçişi), 10 (rüzgarlı
+  pelerin) ve 12 (kütle merkezi dengesi) AYNI sahnede, AYNI karakterde,
+  aynı anda çalışıyor. Potansiyel çakışmalar bilinçli olarak ele alındı:
+  denge (12) kol ofseti ragdoll `blend`'i ile sıfıra çekiliyor (pasifte
+  "denge" kavramının anlamı yok), pelerin ve gövde/bacaklar aynı
+  `collide_ground()` çağrısını paylaşıyor, bağımsız top tamamen ayrı bir
+  `VerletSystem`+`Terrain` ile aynı döngüde çalışıyor. Ayrıca AYNI sahne
+  24/30/60 FPS'te (headless, sadece sayısal) koşturulup patlama (NaN)
+  olup olmadığı kontrol edildi. **Dürüst bulgu:** hiçbir FPS'te
+  patlama/NaN yok (sayısal olarak stabil), AMA `VerletSystem.step()` her
+  zaman `dt=1.0` ile çağrıldığı için (gerçek `dt=1/FPS` sadece tetikleyici
+  zamanlamasında kullanılıyor) fizik KARE SAYISINA bağlı, GERÇEK SANİYEYE
+  değil — aynı 12 saniyelik sahnede FPS=24/30/60 için son kalça x'i
+  sırasıyla 327.7/375.1/239.4 çıktı, yani şu an FPS'ten BAĞIMSIZ değil.
+  Bu bir çökme değil ama dokümante edilmiş bir sınırlama; sonraki olası
+  iş: `gravity`/`friction`/`wind` terimlerini gerçek `dt`'ye göre ölçekleyip
+  motoru kare hızından tamamen bağımsız hale getirmek.
 
 ### Önemli bir tasarım notu: "double pendulum" tuzağı
 
