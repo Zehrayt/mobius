@@ -142,3 +142,67 @@ class FabrikChain2D:
     @property
     def end_effector(self) -> np.ndarray:
         return self.points[-1]
+
+
+def clamp_joint_angle_points(
+    points: np.ndarray,
+    prev_points: np.ndarray,
+    i_base: int,
+    i_mid: int,
+    i_end: int,
+    min_bend_deg: float,
+    max_bend_deg: float,
+    bend_sign: float = 1.0,
+) -> None:
+    """`clamp_joint_angles()` ile AYNI matematik, ama bir `FabrikChain2D`
+    üzerinde değil, doğrudan bir `VerletSystem`'in ham `points`/`prev_points`
+    dizileri üzerinde çalışır -- 3 nokta (`i_base` -> `i_mid` -> `i_end`,
+    ör. kalça -> diz -> ayak) arasındaki TEK eklemin büküm açısını sınırlar.
+
+    Neden gerekli (kullanıcı geri bildirimi -- "anatomik bütünlük"):
+    `clamp_joint_angles()` SADECE aktif/IK ile çözülen `FabrikChain2D`
+    üzerinde çağrılıyordu (bkz. `physics/gait.py`). Karakterin "pasif"
+    (ragdoll) bacak temsili -- `body.points` içindeki diz/ayak noktaları --
+    sadece rijit `stick`'lerle (SABİT UZUNLUK) bağlı serbest Verlet
+    noktalarıdır; hiçbir açı kısıtı yoktu, yani ragdoll'da bacak fiziksel
+    olarak imkansız açılara (dizin tam tersine bükülmesi ya da kendi
+    üzerine tamamen katlanması) serbestçe gidebiliyordu -- ölçüldü:
+    tam pasif karelerde diz iç açısı 0.3°-142.6° arasında, HİÇBİR sınır
+    olmadan salınıyordu.
+
+    Bu fonksiyon, o pasif temsile de AYNI açı kısıtını (aktif/IK modunda
+    kullanılanla aynı ya da istenirse daha gevşek bir aralıkla) uygulamak
+    için var -- "IK kapalıyken bile eklem açısı fiziksel olarak makul
+    kalsın" fikri, çünkü gerçek bir eklemin hareket açıklığı bilinç
+    dışında (baygın/ragdoll) da bilinçli (yürürken) olduğundan farklı
+    DEĞİLDİR; sadece kim kontrol ettiği değişir.
+
+    `prev_points[i_end]` yeni konuma eşitlenir (bkz. `clamp_direction`) ki
+    bu düzeltme bir sonraki karede sahte bir hız sıçraması yaratmasın.
+    """
+    p_base, p_mid, p_end = points[i_base], points[i_mid], points[i_end]
+    prev_dir = _unit(p_mid - p_base)
+    seg_vec = p_end - p_mid
+    length = float(np.linalg.norm(seg_vec))
+    out_dir = seg_vec / (length + 1e-9)
+
+    cross_z = prev_dir[0] * out_dir[1] - prev_dir[1] * out_dir[0]
+    dot = float(np.clip(np.dot(prev_dir, out_dir), -1.0, 1.0))
+    signed_angle = float(np.degrees(np.arctan2(cross_z, dot)))
+
+    if bend_sign >= 0:
+        clamped = float(np.clip(signed_angle, min_bend_deg, max_bend_deg))
+    else:
+        clamped = float(np.clip(signed_angle, -max_bend_deg, -min_bend_deg))
+
+    if clamped == signed_angle:
+        return
+
+    theta = np.radians(clamped)
+    cos_t, sin_t = np.cos(theta), np.sin(theta)
+    rotated_dir = np.array([
+        prev_dir[0] * cos_t - prev_dir[1] * sin_t,
+        prev_dir[0] * sin_t + prev_dir[1] * cos_t,
+    ])
+    points[i_end] = points[i_mid] + rotated_dir * length
+    prev_points[i_end] = points[i_end]

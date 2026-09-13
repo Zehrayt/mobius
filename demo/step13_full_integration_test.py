@@ -59,15 +59,19 @@ import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
 from physics.gait import FootPlantingLeg
+from physics.fabrik import clamp_joint_angle_points
 from physics.collision import collide_ground
+from physics.self_collision import push_points_off_segment, apply_drag
 from physics.environment import Terrain, GustWind
-from physics.balance import upper_body_com_x, support_x, counter_balance_offset
+from physics.balance import upper_body_com_x, support_x, counter_balance_offset, reach_pulldown_offset
 from physics.ragdoll import (
     blend_point,
     blend_prev_points,
     blended_max_angle,
     blended_friction,
     driver_follow_target,
+    transition_impulse_vector,
+    apply_impulse,
 )
 
 W, H = 640, 400
@@ -102,6 +106,11 @@ WALK_SPEED = 55.0
 CAPE_SEGMENTS = 8
 CAPE_SEG_LEN = 17.0
 CAPE_WIND_SCALES = [0.4, 0.6, 0.85, 1.1, 1.4, 1.7, 2.05, 2.4]
+# DUZELTME (kullanici geri bildirimi -- "ikincil animasyon dengesizligi"):
+# pelerin govde segmentlerinden en az bu kadar (px) uzak tutulur + ekstra
+# hava surtunmesi (drag) uygulanir -- bkz. physics/self_collision.py.
+CAPE_SELF_COLLISION_DIST = 9.0
+CAPE_EXTRA_DRAG = 0.04
 
 STUMBLE_T = 4.0
 STUMBLE_KICK_PX = 45.0
@@ -111,6 +120,19 @@ BAL_MAX_ERR = 80.0
 
 KNOCKDOWN_T = 7.0
 BLEND_DOWN_DURATION = 0.6
+
+# DUZELTME (kullanici geri bildirimi -- "momentum aktarilmiyor"): bkz.
+# physics.ragdoll.transition_impulse_vector -- gecis aninda govdeye
+# enjekte edilen tek seferlik darbe.
+KNOCKDOWN_VELOCITY_GAIN = 4.0
+KNOCKDOWN_UP_KICK = -5.0
+
+# DUZELTME (kullanici geri bildirimi -- "kemik esnemesi / kutle merkezi
+# baglantisizligi"): bkz. physics.balance.reach_pulldown_offset ve
+# step9_ragdoll_blend.py'deki ayni yorum.
+PULLDOWN_GAIN_X = 0.35
+PULLDOWN_GAIN_Y = 0.55
+PULLDOWN_MAX_OFFSET = 40.0
 
 ICE_X0, ICE_X1 = 300.0, 460.0
 NORMAL_CONTACT_FRICTION = 0.35
@@ -245,6 +267,8 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
     dt = 1.0 / fps
     n_frames = int(fps * duration_s)
     kicked = False
+    knockdown_kicked = False
+    pulldown_x, pulldown_y = 0.0, 0.0
 
     hip_x_log = []
     any_nan = False
@@ -259,7 +283,7 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
             driver_x += STUMBLE_KICK_PX
             kicked = True
 
-        walk_driver_pos = np.array([driver_x, HIP_Y])
+        walk_driver_pos = np.array([driver_x + pulldown_x, HIP_Y + pulldown_y])
         hip_last_pos = body.points[idx["hip"]].copy()
         driver_target = driver_follow_target(hip_last_pos, walk_driver_pos, blend)
         body.set_pinned_position(idx["driver"], driver_target)
@@ -283,6 +307,17 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
         body.set_pinned_position(idx["cape_anchor"], shoulder_pos + [-4.0, -6.0])
         body.wind = np.array([WIND.value(t), 0.0])
 
+        # DUZELTME (kullanici geri bildirimi -- "momentum aktarilmiyor"):
+        # gecisin basladigi karede govdeye (kalca/omuz/kafa) karakterin o
+        # anki hizina orantili tek seferlik bir darbe enjekte et -- bkz.
+        # physics.ragdoll.transition_impulse_vector.
+        if not knockdown_kicked and blend < 1.0:
+            impulse_indices = [idx["hip"], idx["shoulder"], idx["head"]]
+            current_vel = body.points[idx["hip"]] - body.prev_points[idx["hip"]]
+            impulse = transition_impulse_vector(current_vel, KNOCKDOWN_VELOCITY_GAIN, KNOCKDOWN_UP_KICK)
+            apply_impulse(body.points, body.prev_points, impulse_indices, impulse)
+            knockdown_kicked = True
+
         body.step(dt=1.0)
 
         max_lean = blended_max_angle(blend, TORSO_MAX_LEAN_DEG)
@@ -295,6 +330,32 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
         # kalan) govde/bacak noktalarini etkiliyor (cakisma onlemi #2).
         collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
 
+        # DUZELTME (kullanici geri bildirimi -- "anatomik butunluk / IK
+        # dagilmasi"): pasif (ragdoll) diz/ayak temsiline de aktif IK
+        # zincirininkiyle AYNI diz aci sinirini uygula -- her zaman
+        # (blend'den bagimsiz), cunku bir eklemin hareket acikligi
+        # bilincli/bilincsiz durumdan bagimsizdir. Ayrinti icin
+        # step9_ragdoll_blend.py'deki ayni yorum.
+        for side in ("l", "r"):
+            clamp_joint_angle_points(
+                body.points, body.prev_points,
+                idx["hip"], idx[f"{side}_knee"], idx[f"{side}_foot"],
+                *KNEE_LIMITS, bend_sign=KNEE_BEND_SIGN,
+            )
+
+        # DUZELTME (kullanici geri bildirimi -- "ikincil animasyon
+        # dengesizligi"): pelerin, govdenin (kalca-omuz VE omuz-kafa)
+        # segmentlerinden itiliyor (self-collision) + ekstra hava
+        # sürtünmesi (drag) uygulanıyor -- bkz. physics/self_collision.py.
+        # Onceden bu SIFIR kodla yapiliyordu (grep ile dogrulandi), bu
+        # yuzden pelerin govdeyi serbestce kesip geciyordu (olculdu: 360
+        # karenin 4-14'unde kesisim).
+        push_points_off_segment(body.points, body.prev_points, idx["cape_points"],
+                                 idx["hip"], idx["shoulder"], CAPE_SELF_COLLISION_DIST)
+        push_points_off_segment(body.points, body.prev_points, idx["cape_points"],
+                                 idx["shoulder"], idx["head"], CAPE_SELF_COLLISION_DIST)
+        apply_drag(body.points, body.prev_points, idx["cape_points"], CAPE_EXTRA_DRAG)
+
         hip_pos = body.points[idx["hip"]]
         passive = {}
         for side in ("l", "r"):
@@ -302,6 +363,16 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
             passive[f"{side}_foot"] = body.points[idx[f"{side}_foot"]].copy()
         left_leg.update(hip_pos)
         right_leg.update(hip_pos)
+
+        # DUZELTME (kullanici geri bildirimi -- "kemik esnemesi / kutle
+        # merkezi baglantisizligi"): bkz. step9_ragdoll_blend.py'deki ayni
+        # yorum -- bacak erisemedi mi (overrun>0), bir sonraki karenin
+        # kalca hedefini asagi+ileri eger.
+        overrun = max(left_leg.last_overrun_px, right_leg.last_overrun_px)
+        pulldown_x, pulldown_y = reach_pulldown_offset(
+            overrun, PULLDOWN_GAIN_X, PULLDOWN_GAIN_Y, PULLDOWN_MAX_OFFSET, travel_dir=1.0,
+        )
+
         for side, leg in (("l", left_leg), ("r", right_leg)):
             active_knee = leg.chain.points[1]
             active_foot = leg.chain.points[2]
@@ -311,6 +382,14 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
                 blended = blend_point(pas, active_pt, blend)
                 body.points[pidx] = blended
                 body.prev_points[pidx] = blend_prev_points(body.prev_points[pidx], blended, blend)
+
+        # DUZELTME (kullanici geri bildirimi -- "zemin carpisma ihlalleri"):
+        # blend-overwrite collide_ground()'dan SONRA calistigi icin kismen
+        # IK'dan gelen ayak pozisyonu o kare icin zemine karsi hic kontrol
+        # edilmeden kalabiliyordu (r_foot'ta 34 kare, ~7-17px sizinti
+        # olculdu). Ayni kontrolu blend sonrasinda bir kez daha calistirmak
+        # o karenin de zemin kuralina uymasini saglar.
+        collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
 
         # -- Bagimsiz top: TAMAMEN AYRI bir VerletSystem/Terrain (cakisma
         # onlemi #3) -- ayni karede, ayni dongude, farkli bir fizik nesnesi.

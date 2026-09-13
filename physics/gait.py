@@ -59,6 +59,16 @@ class FootPlantingLeg:
         self.swing_start = self.planted.copy()
         self.swing_target = self.planted.copy()
         self.swing_t = 0.0
+        # DUZELTME (kullanici geri bildirimi -- "kemik esnemesi / kutle
+        # merkezi baglantisizligi"): hedef ayak konumu bacagin menzilini
+        # (chain.arm_length) astiginda FABRIK zinciri tamamen gerilip
+        # dogrultuluyor (bkz. FabrikChain2D.solve()'daki is_reachable()==
+        # False dali) -- bu, dizin GORSEL olarak kilitlenmis/dumduz
+        # gorunmesine yol aciyor. `last_overrun_px`, cagiran kodun (demo)
+        # bu asma miktarini okuyup kalcayi/govdeyi (CoM'u) asagi+ileri
+        # cekerek hedefi GERCEKTEN erisilebilir hale getirmesine izin
+        # verir -- "bacak germek" yerine "govde egilir" mimarisi.
+        self.last_overrun_px = 0.0
 
     def update(self, hip_pos: np.ndarray) -> np.ndarray:
         if self.state == "stance":
@@ -82,6 +92,7 @@ class FootPlantingLeg:
                 foot = self.planted
 
         self.chain.set_base(hip_pos)
+        self.last_overrun_px = max(0.0, float(np.linalg.norm(foot - hip_pos)) - self.chain.arm_length)
         self.chain.solve(foot)
         if self.knee_limits is not None:
             self.chain.clamp_joint_angles(*self.knee_limits, bend_sign=self.knee_bend_sign)

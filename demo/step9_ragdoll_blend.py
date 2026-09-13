@@ -65,14 +65,18 @@ import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
 from physics.gait import FootPlantingLeg
+from physics.fabrik import clamp_joint_angle_points
 from physics.collision import collide_ground
 from physics.environment import Terrain
+from physics.balance import reach_pulldown_offset
 from physics.ragdoll import (
     blend_point,
     blend_prev_points,
     blended_max_angle,
     blended_friction,
     driver_follow_target,
+    transition_impulse_vector,
+    apply_impulse,
 )
 
 W, H = 640, 400
@@ -109,6 +113,23 @@ WALK_SPEED = 65.0
 
 KNOCKDOWN_T = 3.0
 BLEND_DOWN_DURATION = 0.6
+
+# DUZELTME (kullanici geri bildirimi -- "momentum aktarilmiyor"): gecis
+# aninda kalca/govde/kafaya, karakterin O ANKI vektorel hizinin
+# `KNOCKDOWN_VELOCITY_GAIN` katina esit + kucuk bir yukari "kalkis"
+# (`KNOCKDOWN_UP_KICK`, negatif = yukari) darbesi enjekte edilir --
+# bkz. `physics.ragdoll.transition_impulse_vector`.
+KNOCKDOWN_VELOCITY_GAIN = 4.0
+KNOCKDOWN_UP_KICK = -5.0
+
+# DUZELTME (kullanici geri bildirimi -- "kemik esnemesi / kutle merkezi
+# baglantisizligi"): bacak hedefi kendi menzilini astiginda (bkz.
+# FootPlantingLeg.last_overrun_px), bacagi germek yerine kalcayi
+# asagi+ileri egerek hedefi bir sonraki karede gercekten erisilebilir
+# yapmaya calisir -- bkz. physics.balance.reach_pulldown_offset.
+PULLDOWN_GAIN_X = 0.35
+PULLDOWN_GAIN_Y = 0.55
+PULLDOWN_MAX_OFFSET = 40.0
 
 
 def build_body() -> tuple[VerletSystem, dict]:
@@ -251,6 +272,9 @@ def main() -> None:
 
     control_err_log = []
     torso_angle_log = []
+    knockdown_kicked = False
+    pulldown_x, pulldown_y = 0.0, 0.0
+    max_overrun_seen = 0.0
 
     for f in range(N_FRAMES):
         t = f * dt
@@ -259,7 +283,7 @@ def main() -> None:
         if blend > 0.0:
             driver_x += WALK_SPEED * dt * blend  # pasifte artik ilerlemiyor
 
-        walk_driver_pos = np.array([driver_x, HIP_Y])
+        walk_driver_pos = np.array([driver_x + pulldown_x, HIP_Y + pulldown_y])
         hip_last_pos = body.points[idx["hip"]].copy()
         driver_target = driver_follow_target(hip_last_pos, walk_driver_pos, blend)
         body.set_pinned_position(idx["driver"], driver_target)
@@ -270,6 +294,19 @@ def main() -> None:
         right_push = -leg_swing_push(left_leg) * ARM_COUNTER_SWING_PX * blend
         body.set_pinned_position(idx["l_anchor"], shoulder_pos + [-SHOULDER_WIDTH + left_push, 0.0])
         body.set_pinned_position(idx["r_anchor"], shoulder_pos + [SHOULDER_WIDTH + right_push, 0.0])
+
+        # DUZELTME (kullanici geri bildirimi -- "momentum aktarilmiyor"):
+        # gecisin TAM BASLADIGI karede (blend ilk kez 1.0'in altina
+        # dustugunde), karakterin O ANDAKI kendi vektorel hizini
+        # buyuterek + kucuk bir yukari kalkisla govdeye (kalca/omuz/kafa)
+        # BIR KEZ enjekte et -- boylece ragdoll, "oldugu yerde comelmek"
+        # yerine mevcut hareket yonunde/hiziyla firlatilmis gibi baslar.
+        if not knockdown_kicked and blend < 1.0:
+            impulse_indices = [idx["hip"], idx["shoulder"], idx["head"]]
+            current_vel = body.points[idx["hip"]] - body.prev_points[idx["hip"]]
+            impulse = transition_impulse_vector(current_vel, KNOCKDOWN_VELOCITY_GAIN, KNOCKDOWN_UP_KICK)
+            apply_impulse(body.points, body.prev_points, impulse_indices, impulse)
+            knockdown_kicked = True
 
         body.step(dt=1.0)
 
@@ -283,6 +320,22 @@ def main() -> None:
 
         collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
 
+        # DUZELTME (kullanici geri bildirimi -- "anatomik butunluk / IK
+        # dagilmasi"): pasif (ragdoll) diz/ayak temsiline de -- IK'nin
+        # kendi zincirinde zaten var olan -- AYNI diz aci sinirini uygula.
+        # Aksi halde bu "pasif" konum (asagida yakalanan) hicbir aci
+        # kisiti olmadan olculmustu (0.3-142.6 derece arasi serbest --
+        # dizin kendi uzerine katlanmasi ya da tersine bukulmesi dahil).
+        # Bu bir eklemin fiziksel hareket acikligi bilinc disinda (ragdoll)
+        # da bilincli (yururken) oldugundan farkli olmadigi icin HER ZAMAN
+        # (blend'den bagimsiz) uygulaniyor.
+        for side in ("l", "r"):
+            clamp_joint_angle_points(
+                body.points, body.prev_points,
+                idx["hip"], idx[f"{side}_knee"], idx[f"{side}_foot"],
+                *KNEE_LIMITS, bend_sign=KNEE_BEND_SIGN,
+            )
+
         hip_pos = body.points[idx["hip"]]
         # "Pasif" (fizigin kendi basina urettigi) diz/ayak konumlarini,
         # IK ile karistirmadan ONCE yakala.
@@ -293,6 +346,16 @@ def main() -> None:
 
         left_leg.update(hip_pos)
         right_leg.update(hip_pos)
+
+        # DUZELTME (kullanici geri bildirimi -- devam): bu karede bacaklardan
+        # biri erisemedi mi (overrun>0) diye bak, bir sonraki karenin
+        # `walk_driver_pos`'una uygulanacak asagi+ileri kalca ofsetini
+        # guncelle. Overrun temizlenince ofset de otomatik sifira doner.
+        overrun = max(left_leg.last_overrun_px, right_leg.last_overrun_px)
+        max_overrun_seen = max(max_overrun_seen, overrun)
+        pulldown_x, pulldown_y = reach_pulldown_offset(
+            overrun, PULLDOWN_GAIN_X, PULLDOWN_GAIN_Y, PULLDOWN_MAX_OFFSET, travel_dir=1.0,
+        )
 
         err_accum = 0.0
         for side, leg in (("l", left_leg), ("r", right_leg)):
@@ -305,6 +368,15 @@ def main() -> None:
                 err_accum += float(np.linalg.norm(pas - active_pt))
                 body.points[pidx] = blended
                 body.prev_points[pidx] = blend_prev_points(body.prev_points[pidx], blended, blend)
+
+        # DUZELTME (kullanici geri bildirimi -- "zemin carpisma ihlalleri"):
+        # yukaridaki blend-overwrite, diz/ayagi collide_ground()'dan SONRA
+        # degistiriyordu, yani kismen IK'dan gelen bir ayak pozisyonu o kare
+        # icin hic zemine karsi kontrol edilmeden ekrana ciziliyordu (r_foot
+        # olcumde 17 karede zemin altina sizdigi dogrulandi). Ayni kontrolu
+        # blend sonrasinda BIR KEZ DAHA calistirmak, o karenin de zemin
+        # kurallarina uymasini saglar.
+        collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
 
         control_err_log.append(err_accum / 4.0)
         vec = body.points[idx["shoulder"]] - body.points[idx["hip"]]

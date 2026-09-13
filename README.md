@@ -55,13 +55,29 @@ idi (bkz. `INDEX.md`'deki refactor notu).
 - `physics/fabrik.py` — 2D FABRIK IK çözücü (`FabrikChain2D`) +
   `clamp_joint_angles()` (bir eklemin büküm açısını ve yönünü sınırlar —
   ör. dizin tersine bükülmemesi). Bir zincirin (ör. kalça→diz→ayak bileği)
-  ucunu bir hedef noktaya ulaştırır.
+  ucunu bir hedef noktaya ulaştırır. Ayrıca `clamp_joint_angle_points()` —
+  AYNI matematik ama bir `FabrikChain2D` nesnesi üzerinde değil, doğrudan
+  `VerletSystem.points`/`prev_points` üzerinde çalışır; **pasif (ragdoll)**
+  bacak temsiline de eklem açı sınırı uygulamak için eklendi (kullanıcı
+  geri bildirimi — bkz. aşağıdaki "2. tur düzeltmeler" notu).
 - `physics/gait.py` — `FootPlantingLeg`: FABRIK + "ayak basma" (foot-
-  planting) state machine'i. Bu projede sıfırdan yazılmıştır.
+  planting) state machine'i. Bu projede sıfırdan yazılmıştır. Artık her
+  `update()` çağrısından sonra `last_overrun_px` (hedefin bacak menzilini
+  ne kadar aştığı, 0 = erişilebilir) dışa açıyor — bkz. Adım 9/13 CoM
+  tepkisi.
 - `physics/collision.py` — `collide_ground(body, floor_fn, friction_fn)`:
   `VerletSystem`'den bağımsız bir zemin çarpışma fonksiyonu (önceden
   `VerletSystem.collide_ground()` metoduydu, sorumlulukların ayrılması
-  için buraya taşındı — davranış birebir aynı, bkz. `INDEX.md`).
+  için buraya taşındı — davranış birebir aynı, bkz. `INDEX.md`). ÖNEMLİ:
+  bu fonksiyon zaten TÜM pinned-olmayan noktalara (el, pelerin, baş dahil)
+  uygulanıyor — "sadece ayak" diye bir kısıtlama YOK, bkz. "2. tur
+  düzeltmeler" notu.
+- `physics/self_collision.py` — **YENİ** (2. tur kullanıcı geri bildirimi):
+  `push_points_off_segment()` bir noktalar grubunu (ör. pelerin) bir
+  gövde segmentinden (ör. kalça-omuz) en az `min_dist` uzakta tutacak
+  şekilde iter; `apply_drag()` belirli noktalara `VerletSystem.friction`'dan
+  BAĞIMSIZ ek bir hava direnci uygular. `collide_ground()` ile aynı ruhta
+  (bağımsız, jenerik) minimal bir kendi-kendine-çarpışma mekanizması.
 - `physics/environment.py` — sahneye özgü ama karakterden bağımsız iki
   yardımcı: `Terrain` (zemin yüksekliği + x aralığına göre bölgesel
   sürtünme — buz/normal zemin gibi) ve `GustWind` (birkaç uyumsuz sinüs
@@ -69,10 +85,17 @@ idi (bkz. `INDEX.md`'deki refactor notu).
   `sin(t)` DEĞİL).
 - `physics/ragdoll.py` — aktif (IK) / pasif (ragdoll) fizik harmanı için
   paylaşılan yardımcılar (`blend_point`, `blended_max_angle`,
-  `blended_friction`, `driver_follow_target`) — bkz. Adım 9.
+  `blended_friction`, `driver_follow_target`) — bkz. Adım 9. Ayrıca
+  `transition_impulse_vector()` + `apply_impulse()` — aktif→pasif geçiş
+  ANINDA gövdeye karakterin kendi hızına orantılı tek seferlik bir darbe
+  enjekte eder (kullanıcı geri bildirimi — "momentum aktarılmıyor").
 - `physics/balance.py` — kütle merkezi (basitleştirilmiş üst-gövde vekili)
   ile destek tabanı farkına orantılı kol tepkisi yardımcıları
   (`upper_body_com_x`, `support_x`, `counter_balance_offset`) — bkz. Adım 12.
+  Ayrıca `reach_pulldown_offset()` — bir bacak hedefine erişemediğinde
+  (`FootPlantingLeg.last_overrun_px > 0`) kalçayı/gövdeyi aşağı+ileri
+  eğen mimari tepki (kullanıcı geri bildirimi — "kemik esnemesi/kütle
+  merkezi bağlantısızlığı").
 - `demo/step1_verlet_chain.py` — **Adım 1**: Tek bir verlet zincirinin
   (kuyruk/kol) sabit bir anchor'dan sarkışını, aynı anchor hareketiyle
   sürülen saf `sin()` tabanlı "robotik" bir zincirle yan yana karşılaştırır.
@@ -137,7 +160,15 @@ idi (bkz. `INDEX.md`'deki refactor notu).
   3 saniye normal yürüyor, sonra bir "darbe" 0.6 saniyede kontrolü tamamen
   bırakıp karaktere önceden `clamp_direction()` ile BİLEREK engellenmiş
   olan kaotik çift-sarkaç (double pendulum) davranışını geri veriyor —
-  bkz. aşağıdaki yol haritası maddesi 9.
+  bkz. aşağıdaki yol haritası maddesi 9. **2. tur düzeltmeler (kullanıcı
+  geri bildirimi):** (1) `collide_ground()` artık diz/ayak blend-
+  overwrite'ından SONRA bir kez daha çağrılıyor (17 kare ~7px zemin
+  ihlali → 0); (2) pasif diz/ayak temsiline `clamp_joint_angle_points()`
+  ile aktifle AYNI `KNEE_LIMITS` uygulanıyor (önce 0.3°-142.6° arası
+  tamamen serbestti); (3) geçiş anında `transition_impulse_vector()` ile
+  kalçaya/gövdeye tek seferlik bir darbe enjekte ediliyor (kalça vx
+  1.85→3.14'e sıçrıyor, sonra doğal sönümleniyor) — artık "olduğu yerde
+  çökme" değil, mevcut hareket yönünde fırlatılmış gibi başlıyor.
 - `demo/step12_balance.py` — **Adım 12 (başlangıç)**: kütle merkezi (center
   of mass) dengesi. Her karede gövdenin (kalça+omuz+baş ortalaması) yatay
   konumu ile o an zeminde duran ayağın/ayakların yatay konumu arasındaki
@@ -164,7 +195,18 @@ idi (bkz. `INDEX.md`'deki refactor notu).
   sırasıyla 327.7/375.1/239.4 çıktı, yani şu an FPS'ten BAĞIMSIZ değil.
   Bu bir çökme değil ama dokümante edilmiş bir sınırlama; sonraki olası
   iş: `gravity`/`friction`/`wind` terimlerini gerçek `dt`'ye göre ölçekleyip
-  motoru kare hızından tamamen bağımsız hale getirmek.
+  motoru kare hızından tamamen bağımsız hale getirmek. **2. tur
+  düzeltmeler:** step9 ile aynı zemin-sırası/eklem-açısı/momentum
+  düzeltmeleri burada da uygulandı, ARTI: pelerin artık
+  `physics/self_collision.py` ile gövde (kalça-omuz, omuz-kafa)
+  segmentlerinden itiliyor + ekstra hava direnci (drag) alıyor (önce 360
+  karenin birkaçında gövdeyi kesiyordu, min mesafe ~0.18px → ~2.2px'e
+  çıktı — DÜRÜST SINIR: hedef 9px korunması HER ZAMAN tutmuyor, nokta-
+  bazlı itme + çubuk gevşetmesinin etkileşimi yüzünden ara sıra daha
+  yakın kalabiliyor); ve bacak hedefi menzili aştığında (`last_overrun_px`)
+  `reach_pulldown_offset()` ile kalça/gövde aşağı+ileri eğiliyor (bu
+  sahnede ölçülen maks. aşım ~23.4px, kalçayı orantılı olarak aşağı/ileri
+  çekiyor).
 
 ### Önemli bir tasarım notu: "double pendulum" tuzağı
 
@@ -396,6 +438,96 @@ karelerde geçiş (rüzgar 0 -> tam güç) pürüzsüz, ani bir "sıçrama" yok.
     ağırlıklı CoM hesabı (kol/bacak kütleleri dahil) ve/veya ayak
     yerleşimini (capture point) buna göre ayarlayan bir denge kurtarma
     mekanizması.
+
+## 2. tur kullanıcı geri bildirimi ve düzeltmeler
+
+Kullanıcı, `step9`/`step13` videolarını izledikten sonra 5 ayrı sorun
+bildirdi. Her biri önce sayısal bir tanılama script'iyle DOĞRULANDI, sonra
+düzeltildi, sonra tekrar ölçüldü — hiçbiri "muhtemelen doğrudur" varsayılıp
+körlemesine düzeltilmedi.
+
+1. **"Zemin çarpışması sadece ayakta çalışıyor, el/pelerin zemine
+   batıyor."** Kısmen yanlış bir öncülle doğru bir gözlem: `collide_ground()`
+   MİMARİ OLARAK zaten TÜM pinned-olmayan noktalara uygulanıyordu (el/
+   pelerin/kafa dahil — "sadece ayak" diye özel bir kod YOK, grep ile
+   doğrulandı). Ölçülen ihlaller (step9: 17 kare/~7px, step13: 34 kare/
+   ~17px) SADECE `r_foot`'ta çıktı, gerçek neden ise bir SIRALAMA
+   hatasıydı: diz/ayağın aktif/pasif blend-overwrite'ı `collide_ground()`
+   çağrısından SONRA yapılıyordu, yani o karenin zemin kontrolü bir kare
+   geç kalıyordu. **Düzeltme:** `collide_ground()` blend-overwrite'tan
+   SONRA bir kez daha çağrılıyor → iki demoda da ihlal sayısı 0'a indi.
+   El/pelerin/kafa bu iki demoda zaten hiç ihlal etmiyordu (geometrik
+   olarak zemine hiç yaklaşmıyorlar) — kullanıcının "el batıyor" gözlemi
+   muhtemelen farklı bir sahne/anın yanlış hatırlanması ya da pelerinin
+   gövdeyi kesmesiyle (madde 4) karıştırılmış olabilir.
+2. **"Pasif (ragdoll) modda eklem açı sınırı yok, iskelet kırılıyor."**
+   TAMAMEN DOĞRU, kod incelemesiyle doğrulandı: `clamp_joint_angles()`
+   SADECE aktif `FabrikChain2D` üzerinde çağrılıyordu (`physics/gait.py`);
+   pasif temsil (rijit `stick`'lerle bağlı serbest Verlet noktaları) hiç
+   açı kısıtı almıyordu — ölçülen: tam pasif karelerde diz iç açısı
+   0.3°-142.6° arasında (0°=dümdüz, 180°=tamamen katlanmış) TAMAMEN
+   serbestti. **Düzeltme:** yeni `clamp_joint_angle_points()` ile pasif
+   temsile de aktifle AYNI `KNEE_LIMITS` her zaman (blend'den bağımsız)
+   uygulanıyor → ölçülen aralık artık tam olarak [8°, 150°].
+3. **"Aktiften pasife geçişte momentum aktarılmıyor, karakter turuncu
+   cisme çarpıp olduğu yerde çöküyor."** Öncül DÜZELTİLMELİ: kodda
+   karakter ile bağımsız "yumuşak top" arasında HİÇBİR çarpışma/mesafe
+   kontrolü YOK (grep ile doğrulandı, sadece `collide_ground` var) —
+   `step13`'teki "darbe" `KNOCKDOWN_T=7.0`'da SAATE göre tetiklenen
+   BAĞIMSIZ bir zamanlayıcı, topun konumuyla hiç ilgisi yok. Görsel
+   çakışma (top o sırada yakında duruyor) muhtemelen bu izlenimi
+   yaratmış. Ama alttaki genel iddia (momentum aktarılmıyor) DOĞRUYDU:
+   ölçülen kalça vx'i geçişte 1.85'ten friction ile yumuşakça 0.34'e
+   düşüyordu (darbe hissi yok). **Düzeltme:** geçişin başladığı karede
+   `transition_impulse_vector()` ile kalça/omuz/kafaya karakterin KENDİ
+   o anki hızının 4 katı + küçük bir yukarı kalkış enjekte ediliyor →
+   vx artık 1.85'ten 3.14'e SIÇRIYOR, sonra doğal sönümleniyor.
+4. **"İkincil animasyon (pelerin) gövdeyle çarpışmıyor, dengesiz."**
+   TAMAMEN DOĞRU: projede HİÇBİR self-collision kodu yoktu (grep ile
+   doğrulandı) — pelerin gövdeyi (`step13`'te 360 karenin 4-14'ünde
+   ölçüldü) serbestçe kesiyordu. **Düzeltme:** yeni `physics/
+   self_collision.py` ile pelerin gövde segmentlerinden itiliyor + ekstra
+   hava direnci. **Dürüst sınır:** nokta-bazlı itme tam bir segment-segment
+   kesişmeme GARANTİSİ vermiyor (min mesafe ~0.18px'ten ~2.2px'e çıktı,
+   hedef 9px'e her zaman ulaşamıyor) — ince tek-zincirli nesneler için
+   yeterli ama hacimli/kalın bir çarpışma modeli değil.
+5. **"Kemik esnemesi: bacak lastik gibi geriliyor, diz tam düz kilitleniyor,
+   kütle merkezi tepki vermiyor."** DOĞRU, iki katmanlı bir bulgu:
+   - **(a) Beklenen edge-case:** hedef bacağın menzilini gerçekten aştığında
+     (`FabrikChain2D.is_reachable()==False`) zincir düz bir çizgiye
+     gerilip dizin bükülmesi neredeyse sıfıra iniyor — ölçülen: en kötü
+     karede menzilin %99.76'sı. `KNEE_LIMITS` (min 8°) burada zaten devrede
+     ama 8° görsel olarak hâlâ "kilitli" gibi görünüyor. **Düzeltme
+     (kullanıcının önerdiği mimari):** `FootPlantingLeg.last_overrun_px`
+     artık aşım miktarını dışa açıyor; `reach_pulldown_offset()` bacak
+     yetişemediğinde kalçayı/gövdeyi aşağı+ileri eğerek hedefi bir sonraki
+     karede GERÇEKTEN erişilebilir yapmaya çalışıyor (bacağı germek
+     yerine) — bu sahnede ölçülen maks. aşım 23.4px, kalça buna orantılı
+     tepki veriyor.
+   - **(b) Yeni, daha temel bir bulgu (bu turda keşfedildi, DÜZELTİLMEDİ):**
+     diz bükülmesi sadece "erişilemez" anlarda değil, NORMAL yürüyüşün
+     HER karesinde de neredeyse tamamen düz (~8°) çıkıyor — ölçülen: saf
+     aktif yürüyüşte (t<4s, hiç tokezleme/darbe yokken) her iki bacağın da
+     iç açısı sabit 8.0° (KNEE_LIMITS'in minimum sınırı). Bunun nedeni,
+     bacak segmentlerinin (92px×2=184px menzil) tipik adım genişliğine
+     (~20-45px) göre ÇOK uzun olması: FABRIK, hedefe ulaşan en "tembel"
+     (neredeyse düz) çözümü buluyor, çünkü açı için doğal bir tercih/önyargı
+     yok. `KNEE_LIMITS`'in min açısını basitçe büyütmek (denendi: 8°→35°
+     arası) DENENDİ ama YAN ETKİSİ ölçüldü: stance ayağının zeminden
+     sapması 12.4px'ten (mevcut 8°'de bile zaten var) 47px'e kadar
+     büyüyor (ayak havada süzülür gibi görünüyor) — yani bu basit
+     değişiklik "lastik bacak"ı "havada yüzen ayak"la değiştiriyor,
+     daha iyi değil. Gerçek çözüm muhtemelen FABRIK'in çözümüne bir
+     "tercih edilen büküm açısı" önyargısı eklemek ya da bacak/adım
+     oranlarını yeniden ayarlamak, ki bu TÜM `step2`-`step12` demolarının
+     görünümünü etkiler — bu yüzden bu turda YAPILMADI, sadece dürüstçe
+     belgeleniyor (projenin FPS/dt bağımlılığı bulgusuyla aynı desende).
+
+**Doğrulama yöntemi:** her madde için önce/sonra sayısal bir tanılama
+script'i (ground-violation sayacı, diz iç açısı istatistiği, kalça hız
+logu, pelerin-gövde en yakın mesafe ölçümü, erişim aşımı) yazıldı, hem
+`step9` hem `step13` üzerinde koşturuldu, videolar yeniden render edilip
+ffmpeg ile kare kare görsel QA yapıldı. Hiçbir demo NaN/patlama üretmedi.
 
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 

@@ -50,14 +50,29 @@ bildirimi üzerine, daha önce demo dosyalarında hardcode olan bazı mantık
 | Modül | İçerik | Kullanan demo(lar) |
 |---|---|---|
 | `physics/verlet.py` | `VerletSystem` (nokta/çubuk motoru, gravity/wind/friction, `add_stick(compliance=...)`), `clamp_direction()` | hepsi |
-| `physics/fabrik.py` | `FabrikChain2D`, `clamp_joint_angles()` | step2-9, 12, 13 |
-| `physics/gait.py` | `FootPlantingLeg` | step2-9, 12, 13 |
+| `physics/fabrik.py` | `FabrikChain2D`, `clamp_joint_angles()`, `clamp_joint_angle_points()` (pasif/ragdoll temsili için) | step2-9, 12, 13 |
+| `physics/gait.py` | `FootPlantingLeg` (`last_overrun_px` ile erişim-aşımı dışa açık) | step2-9, 12, 13 |
 | `physics/collision.py` | `collide_ground(body, floor_fn, friction_fn)` — VerletSystem'den bağımsız zemin çarpışması | step7, 8, 9, 13 |
+| `physics/self_collision.py` | `push_points_off_segment()`, `apply_drag()` — ikincil zincirlerin (pelerin) ana gövdeden itilmesi | step13 |
 | `physics/environment.py` | `Terrain` (zemin + bölgesel sürtünme), `GustWind` (düzensiz rüzgar) | step7, 8, 9, 10, 13 |
-| `physics/ragdoll.py` | aktif/pasif blend yardımcıları (`blend_point`, `blended_max_angle`, `blended_friction`, `driver_follow_target`) | step9, 13 |
-| `physics/balance.py` | CoM-destek farkı + orantılı kol tepkisi (`upper_body_com_x`, `support_x`, `counter_balance_offset`) | step12, 13 |
+| `physics/ragdoll.py` | aktif/pasif blend yardımcıları (`blend_point`, `blended_max_angle`, `blended_friction`, `driver_follow_target`, `transition_impulse_vector`, `apply_impulse`) | step9, 13 |
+| `physics/balance.py` | CoM-destek farkı + orantılı kol tepkisi (`upper_body_com_x`, `support_x`, `counter_balance_offset`, `reach_pulldown_offset`) | step9, 12, 13 |
 
 Bu refactor SIRASINDA hiçbir sayısal davranış değişmedi -- her taşınan
 mantık, taşınmadan önceki/sonraki demo çalıştırmalarının BİREBİR aynı
 sayısal çıktıyı ürettiği doğrulanarak (regresyon) yapıldı (bkz. git commit
 mesajı).
+
+## 2. tur kullanıcı geri bildirimi (zemin sırası, eklem açısı, momentum,
+## pelerin self-collision, kemik esnemesi)
+
+Kullanıcının videoları izledikten sonra bildirdiği 5 maddelik ikinci bir
+geri bildirim turu üzerine `step9`/`step13`'e 5 hedefli düzeltme eklendi
+(hepsi önce sayısal olarak doğrulanıp sonra düzeltildi) -- ayrıntılı
+madde madde döküm için `README.md`'deki "2. tur kullanıcı geri bildirimi
+ve düzeltmeler" bölümüne bakın. Özet: zemin çarpışma sıra hatası
+düzeltildi, pasif bacağa eklem açı kısıtı eklendi, geçişte momentum
+enjeksiyonu eklendi, pelerin self-collision'ı eklendi, bacak erişim
+aşımına kalça/CoM tepkisi eklendi -- ve normal yürüyüşte dizin her karede
+neredeyse tam düz kalması (FABRIK'in "tembel" çözümü) ayrı, daha temel
+bir bulgu olarak DÜZELTİLMEDEN dürüstçe belgelendi (bkz. README).

@@ -50,3 +50,32 @@ def counter_balance_offset(error: float, gain_x: float, gain_y: float, max_err: 
     bal_x = -clipped * gain_x
     bal_y = -min(abs(error), max_err) * gain_y
     return bal_x, bal_y
+
+
+def reach_pulldown_offset(
+    overrun_px: float,
+    gain_x: float,
+    gain_y: float,
+    max_offset: float,
+    travel_dir: float = 1.0,
+) -> tuple[float, float]:
+    """Kullanıcı geri bildirimi -- "kemik esnemesi / kütle merkezi
+    bağlantısızlığı": bir bacağın hedef ayak konumu kendi menzilini
+    (`FootPlantingLeg.last_overrun_px`) aştığında, MİMARİ OLARAK DOĞRU
+    tepki bacağın kendisini (sabit uzunluklu segmentleri) germek DEĞİL,
+    kalçanın/gövdenin (basitleştirilmiş CoM) hedefe doğru AŞAĞI ve İLERİ
+    eğilmesidir -- tıpkı gerçek bir insanın erişemediği bir adımda
+    belini/kalçasını öne-aşağı sarkıtması gibi.
+
+    `overrun_px` kadar bir asma miktarını, sonraki karede uygulanacak bir
+    (yatay, dikey) kalça ofsetine çevirir -- `travel_dir` (+1/-1) yürüyüş
+    yönünü belirtir (ileri ofset bu yönde uygulanır). `max_offset` ile
+    kırpılır ki tek bir aşırı-erişim karesi kalçayı gerçekçi olmayan bir
+    mesafeye fırlatmasın.
+
+    DÜRÜST SINIR: `counter_balance_offset` gibi bu da gerçek bir ters-
+    dinamik hesap DEĞİL -- orantılı bir düzeltme. Ama `counter_balance_
+    offset`'ten farklı olarak kolları değil, doğrudan kalçanın/gövdenin
+    hedef konumunu etkiler (bkz. çağıran kod: `driver` hedefine eklenir)."""
+    magnitude = float(np.clip(overrun_px, 0.0, max_offset))
+    return magnitude * gain_x * travel_dir, magnitude * gain_y

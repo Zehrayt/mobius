@@ -55,3 +55,45 @@ def driver_follow_target(hip_last_pos: np.ndarray, walk_target: np.ndarray, blen
     bırakır (driver-hip çubuğu zaten sıfır mesafeye yakınsadığı için
     bu durumda hiçbir çekme kuvveti kalmaz)."""
     return hip_last_pos * (1.0 - blend) + walk_target * blend
+
+
+def transition_impulse_vector(
+    current_velocity: np.ndarray,
+    velocity_gain: float,
+    up_kick: float,
+) -> np.ndarray:
+    """Aktif->pasif (ragdoll) geçiş ANINDA enjekte edilecek tek seferlik
+    darbe (impulse) vektörünü hesaplar.
+
+    Neden gerekli (kullanıcı geri bildirimi -- "aktiften pasife hatali
+    gecis / momentum aktarilmiyor"): gecis oncesi kod SADECE friction'i
+    (blended_friction) ve govde/boyun sertligini (blended_max_angle)
+    yumusatiyordu -- karakterin O ANKI hizina hicbir sey EKLEMIYORDU,
+    yani ragdoll karakterin kendi mevcut yuruyus hizinin dogal
+    surtunmeyle sonumlenmesiyle basliyordu (olculdu: kalca vx gecisten
+    ~0.3s sonra 1.85'ten 0.34'e friction ile duz bir sekilde dusuyor) --
+    bu, bir "darbe" hissinden cok yumusak bir "rolantiye alma" gibi
+    goruluyor.
+
+    Bu fonksiyon, karakterin KENDI o anki vektorel hizini (`current_velocity`,
+    yon dahil) alip `velocity_gain` ile buyuterek (kullanicinin tam olarak
+    istedigi sey: "karakterin vektorel hizini ragdoll dugumlerine aktar")
+    + kucuk bir dikey "kalkis" bileseni (`up_kick`, negatif = yukari,
+    gercek bir darbenin oturttugu havaya kalkma hissi icin) dondurur.
+
+    DURUST NOT: bu demoda (step9/step13) "darbe"nin nedeni ile ilgili
+    fiziksel bir carpisma (ör. bagimsiz topa cikma) YOK -- KNOCKDOWN_T
+    sadece zamanlanmis bir tetikleyici (bkz. modul dokstring'i). Yani
+    buradaki impulse GERCEK bir carpismadan turetilen bir tepki-kuvveti
+    degil, "karakter bir seye carpmis GIBI davransin" diye elle
+    tasarlanmis, karakterin kendi hizina orantili sabit bir darbe."""
+    return current_velocity * velocity_gain + np.array([0.0, up_kick])
+
+
+def apply_impulse(points: np.ndarray, prev_points: np.ndarray, indices: list[int], impulse: np.ndarray) -> None:
+    """Verilen noktaların `prev_points`'ini `impulse` kadar GERİYE kaydırır
+    -- Verlet hızı `points - prev_points` olduğu için bu, bir sonraki
+    `step()`'te noktaya ANINDA `+impulse` kadar ek hız kazandırmış olur
+    (mevcut hızın ÜSTÜNE eklenir, üzerine yazmaz)."""
+    for i in indices:
+        prev_points[i] = prev_points[i] - impulse
