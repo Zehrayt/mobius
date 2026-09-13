@@ -25,6 +25,10 @@ python3 demo/step3_full_skeleton.py  # -> outputs/step3_full_skeleton.mp4
 python3 demo/step4_gait_tuning.py    # -> outputs/step4_gait_tuning.mp4
 python3 demo/step5_parallax.py        # -> outputs/step5_parallax.mp4
 python3 demo/step10_secondary_wind.py # -> outputs/step10_secondary_wind.mp4
+python3 demo/step8_collision_friction.py # -> outputs/step8_collision_friction.mp4
+python3 demo/step7_squash_stretch.py  # -> outputs/step7_squash_stretch.mp4
+python3 demo/step9_ragdoll_blend.py   # -> outputs/step9_ragdoll_blend.mp4
+python3 demo/step12_balance.py        # -> outputs/step12_balance.mp4
 ```
 
 ## İçerik
@@ -75,6 +79,43 @@ python3 demo/step10_secondary_wind.py # -> outputs/step10_secondary_wind.mp4
   rüzgar kapalı (pelerin sadece kendi ağırlığı + karakterin yürüyüşüyle
   sallanıyor), sonra 1.5 saniyede rüzgar açılıp pelerin arkaya doğru
   bir bayrak gibi düzleşiyor — bkz. aşağıdaki "ikincil fizik" notu.
+- `demo/step8_collision_friction.py` — **Adım 8 + 11 (başlangıç,
+  birleşik)**: zemin çarpışması + bölgesel temas sürtünmesi. Pelerin 16
+  segmente uzatıldı (karakter kısa süre durunca serbestçe yere kadar
+  sarkıyor), yeni `VerletSystem.collide_ground()` bunun zeminin altına
+  gömülmeden üzerinde sürüklenmesini sağlıyor. Ayrıca hiçbir çubuğa bağlı
+  olmayan iki serbest "taş" (biri normal zeminde biri buzlu bir şeritte,
+  aynı anda aynı hızla fırlatılıyor) bölgesel sürtünmenin GERÇEK etkisini
+  gösteriyor — bkz. aşağıdaki yol haritası maddesi 11'deki dürüst sınır
+  notu (aynı sürtünme, katı bir çubuk zincirinde neredeyse hiçbir şey
+  ifade etmiyor).
+- `demo/step7_squash_stretch.py` — **Adım 7 (başlangıç)**: momentum ve
+  esneme (squash & stretch). `physics/verlet.py`'ye eklenen
+  `add_stick(..., compliance=...)` ile halka + çapraz "jant" topolojisinde
+  kurulmuş, esnek çubuklu bir "yumuşak top" zeminine düşüp çarpıyor.
+  Tekdüze yerçekimi altında serbest düşüşte gerçek bir deformasyon
+  OLMAZ (bütün noktalar aynı ivmeyi alır) — asıl squash/stretch SADECE
+  zeminle çarpışma anında ortaya çıkıyor (alt noktalar aniden durur, üst/
+  yan noktalar bir-iki kare daha düşmeye devam edip halkayı yassıltıyor),
+  ardından esnek çubuklar topu kısmen geri yuvarlaklaştırıyor (rebound) ve
+  sönümlü bir salınımla dinleniyor. Bkz. aşağıdaki yol haritası maddesi 7.
+- `demo/step9_ragdoll_blend.py` — **Adım 9 (başlangıç)**: aktif/pasif
+  ragdoll harmanı. Bacakların diz/ayak noktaları artık HEM `FabrikChain2D`
+  ile IK-çözülüyor HEM DE aynı anda ana `VerletSystem`'in sıradan (rijit)
+  noktaları — her karede ikisi arasında bir `blend` katsayısıyla (1=tam
+  IK/aktif, 0=tam fizik/pasif) geçiş yapılıyor. Gövde/boyun
+  `clamp_direction()` sınırı da aynı `blend` ile gevşetiliyor. Karakter
+  3 saniye normal yürüyor, sonra bir "darbe" 0.6 saniyede kontrolü tamamen
+  bırakıp karaktere önceden `clamp_direction()` ile BİLEREK engellenmiş
+  olan kaotik çift-sarkaç (double pendulum) davranışını geri veriyor —
+  bkz. aşağıdaki yol haritası maddesi 9.
+- `demo/step12_balance.py` — **Adım 12 (başlangıç)**: kütle merkezi (center
+  of mass) dengesi. Her karede gövdenin (kalça+omuz+baş ortalaması) yatay
+  konumu ile o an zeminde duran ayağın/ayakların yatay konumu arasındaki
+  fark (`error`) hesaplanıp kollara bu farkla orantılı bir "dengeleme"
+  ofseti (geriye/yukarı) uygulanıyor. t=3s'te bir tokezleme itkisi bu
+  farkı aniden büyütüp kolların tepkisini net şekilde gösteriyor — bkz.
+  aşağıdaki yol haritası maddesi 12.
 
 ### Önemli bir tasarım notu: "double pendulum" tuzağı
 
@@ -194,22 +235,118 @@ karelerde geçiş (rüzgar 0 -> tam güç) pürüzsüz, ani bir "sıçrama" yok.
        çözmüyordu.
 6. Sahne kayıt/render pipeline'ının (bu depo zaten `cv2.VideoWriter`
    kullanıyor) senaryo/diyalog sistemiyle genişletilmesi
-7. Momentum ve esneme (squash & stretch) — verlet zincirlerinin hıza/düşmeye
-   tepki olarak uzayıp büzüşmesi
-8. Çoklu nokta çarpışması (multi-node collision & raycasting) — baş/omuz/
-   kalça/ayaktan zemine ve engellere ışın taraması
-9. Aktif/pasif ragdoll harmanı — IK güdümlü "aktif" durum ile tamamen
-   yerçekimine teslim "pasif ragdoll" durumu arasında pürüzsüz geçiş
+7. 🔶 Momentum ve esneme (squash & stretch) — verlet zincirlerinin hıza/
+   düşmeye tepki olarak uzayıp büzüşmesi. **Başlandı:**
+   `physics/verlet.py`'ye `add_stick(..., compliance=...)` eklendi — bir
+   çubuğun `_satisfy_sticks()` düzeltmesinin ne kadarının uygulanacağını
+   (0=tam rijit/eski davranış, >0 kısmi) ayarlıyor; sınırlı iterasyon
+   sayısında tam düzeltilemeyen çubuk momentum altında geçici esniyor.
+   bkz. `demo/step7_squash_stretch.py`: halka+jant topolojili "yumuşak
+   top" zemine düşüp çarpıyor. **Dürüst not:** tekdüze yerçekimi altında
+   serbest düşüşte hiçbir deformasyon fiziksel olarak GERÇEKLEŞMEZ (tüm
+   noktalar aynı ivmeyi alır) — squash/stretch SADECE zeminle çarpışma
+   anındaki asimetriden (alt nokta durur, üst nokta düşmeye devam eder)
+   ve ardından çubukların kısmi geri-yuvarlaklaşmasından (rebound) ortaya
+   çıkıyor. Sayısal doğrulama (bounding-box yükseklik/genişlik oranı):
+   dinlenme ~0.95 → çarpma anında min ~0.79 (yassılaşma) → rebound'da
+   maks ~0.985 (neredeyse tam yuvarlak) → son 20 karede ort. 0.941 (std
+   0.00002, tamamen sönümlenmiş). Sonraki olası genişletme: aynı
+   `compliance` mekanizmasının karakterin kendi gövde/uzuv çubuklarına
+   (ör. sert bir inişte gövdenin hafifçe sıkışması) uygulanması.
+8. 🔶 Çoklu nokta çarpışması (multi-node collision & raycasting) — baş/omuz/
+   kalça/ayaktan zemine ve engellere ışın taraması. **Başlandı (düz zemin
+   versiyonu):** `VerletSystem.collide_ground(floor_fn, friction_fn)` —
+   serbest her nokta kendi x'inde `floor_fn(x)` ile tanımlı zeminin altına
+   sızarsa yüzeye geri itiliyor (aşağı doğru tek noktalı bir "raycast").
+   bkz. `demo/step8_collision_friction.py`: 16 segmentlik uzun bir pelerin,
+   karakter kısa süre durup serbestçe yere sarktıktan sonra, tekrar
+   yürüyüşe geçince zeminin üzerinde/ altına gömülmeden sürükleniyor
+   (`collide_ground()` olmadan noktalar zeminin altına sızardı — sayısal
+   olarak doğrulandı: her karede `cape` noktalarının max y'si kesinlikle
+   330'u (GROUND_Y) geçmiyor). Henüz genel raycast/engel geometrisi yok —
+   sadece düz zemin; basamak/rampa gibi x'e bağlı yükseklik `floor_fn`
+   imzasında zaten destekleniyor ama bu demoda kullanılmadı.
+9. 🔶 Aktif/pasif ragdoll harmanı — IK güdümlü "aktif" durum ile tamamen
+   yerçekimine teslim "pasif ragdoll" durumu arasında pürüzsüz geçiş.
+   **Başlandı:** bacakların diz/ayak noktaları artık HEM ayrı bir
+   `FabrikChain2D` ile IK-çözülüyor (aktif hedef) HEM DE ana
+   `VerletSystem`'in sıradan rijit noktaları/çubukları olarak var (pasif
+   fizik serbestçe evrilebilsin diye). Her karede: önce `body.step()` +
+   `collide_ground()`'un DOĞAL sonucu ("pasif" konum) yakalanıyor, sonra
+   IK'nin ürettiği ("aktif") konumla `blend*aktif + (1-blend)*pasif`
+   olarak karıştırılıp geri yazılıyor. `blend=1`'de sonuç önceki
+   adımlardaki yürüyüşle BİREBİR aynı; `blend=0`'da bacaklar/gövde
+   tamamen serbest. Gövde/boyun `clamp_direction()`'ın izin verdiği
+   maksimum açı da aynı `blend` ile 12°'den (aktif) 180°'ye (pasif,
+   pratikte sınırsız) genişletiliyor — yani IK'nın yanı sıra gövde
+   stabilizasyonu da birlikte devre dışı kalıyor. `driver` (kalça pin'i)
+   pasifte kalçanın kendi bir önceki karedeki fizik-konumunu hedefliyor,
+   yani kalça da serbest kalıyor. Senaryo: 3 saniye normal yürüyüş →
+   0.6 saniyede "darbe" ile blend 1→0 → kontrol tamamen bırakılıyor.
+   **Sayısal doğrulama:** aktif fazda `|aktif-pasif fark|` ort. ~3.9px
+   (IK zaten fiziğe yakın bir yolda), pasif fazda ~103px'e çıkıyor (IK
+   artık hiç uygulanmıyor, gövde kendi başına hareket ediyor). Gövde açısı
+   aktifte sabit -12° (clamp limiti) iken pasifte -115°'ye kadar
+   savruluyor. **Dürüst sınır:** pasif modda ek bir eklem sönümlemesi
+   (joint damping) yok — sadece genel `friction` (pasifte 0.045'ten
+   0.30'a çıkarılıyor) var, bu yüzden çöküş birkaç saniye boyunca
+   (`physics/verlet.py`'de daha önce "aktif" modda `clamp_direction` ile
+   ÇÖZÜLEN aynı kaotik çift-sarkaç fenomeni, burada pasifte BİLEREK geri
+   getiriliyor) salınarak devam ediyor, sonunda dümdüz yatmak yerine
+   dağınık/kıvrılmış bir yığın halinde yere yakın kalıyor — daha temiz bir
+   yere-yatış için ek eklem sönümlemesi/limit sonraki olası iş. Görsel
+   doğrulama ffmpeg kare çıkarımıyla yapıldı: aktif fazda tanıdık kontrollü
+   yürüyüş, geçişten sonra net şekilde "kontrolü kaybetme" hissi var.
 10. 🔶 İkincil fizik nesneleri (secondary animation) — kuyruk/kulak/pelerin
     gibi hedefsiz, saf verlet + hava direnci (drag) ile sarkan parçalar.
     **Başlandı:** bkz. `demo/step10_secondary_wind.py` (tek pelerin +
     rüzgar). Sonraki olası genişletmeler: kuyruk/kulak gibi başka örnekler,
     karakter durunca "bir süre daha salınmaya devam etme" davranışının
     ayrıca doğrulanması.
-11. Dinamik sürtünme/tutunma — zemine/eyleme göre değişen eklem sürtünmesi
-    (buzda kayma, bir kenara tutunma)
-12. Kütle merkezi (center of mass) dengesi — denge kaybında kollarla
-    counter-balance
+11. 🔶 Dinamik sürtünme/tutunma — zemine/eyleme göre değişen temas
+    sürtünmesi (buzda kayma, bir kenara tutunma). **Başlandı, ama önemli
+    bir dürüst sınır bulundu:** `collide_ground`'un `friction_fn(x)`'i bir
+    noktanın HIZINI söndürür; bu, katı çubuklarla (stick) birbirine bağlı
+    bir zincirde (ör. pelerin) neredeyse HİÇBİR görsel fark yaratmıyor,
+    çünkü `_satisfy_sticks()` her karede noktayı komşusuna göre saf
+    GEOMETRİK olarak yeniden konumlandırıyor ve sürtünmenin azalttığı hıza
+    hiç bakmıyor (sayısal olarak ölçüldü: buzlu/normal bölgede pelerin
+    ucu-kalça mesafesi ~91.4px'e karşı ~91.8px — pratikte ayırt edilemez;
+    relaksasyon döngüsünün her iterasyonuna gömülmesi bile bunu
+    değiştirmedi). Sürtünme, ANCAK hiçbir çubuğa bağlı olmayan gerçekten
+    serbest bir parçacıkta (`demo/step8_collision_friction.py`'deki iki
+    "taş" — biri normal zeminde, biri buzda, aynı anda aynı hızla
+    fırlatılıyor) net bir şekilde görülüyor: normal zeminde ~13px kayıp
+    duruyor, buzda ~117px kayıp çok daha yavaş duruyor (~9 kat fark,
+    sayısal olarak doğrulandı). Sonraki olası iş: bacak/ayak temasına da
+    (şu an sadece FABRIK hedefi olarak ele alınıyor) gerçek bir temas
+    sürtünmesi kavramı eklemek isteniyorsa, muhtemelen `collide_ground`'u
+    genişletmek yerine ayrı bir yaklaşım gerekecek.
+12. 🔶 Kütle merkezi (center of mass) dengesi — denge kaybında kollarla
+    counter-balance. **Başlandı:** bkz. `demo/step12_balance.py`. Her
+    karede gövdenin (kalça+omuz+baş ortalaması — basitleştirilmiş bir
+    "üst gövde" kütle merkezi vekili, tam kütle-ağırlıklı bir hesap
+    DEĞİL) yatay konumu ile o an zeminde duran (stance) ayağın/ayakların
+    yatay konumu arasındaki fark (`error`) hesaplanıp kollara bu farkla
+    orantılı (negatif geri besleme) bir "dengeleme" ofseti uygulanıyor —
+    hem yatay (geriye) hem dikey (yukarı kaldırma). t=3s'te bir tokezleme
+    itkisi (`driver`'a ani bir ileri sıçrama) bu farkı büyütüp kolların
+    tepkisini net şekilde gösteriyor. **Sayısal doğrulama:** tokezleme
+    öncesi doğal yürüyüş salınımı ort. |error| ~8.65px (bu, her adımda
+    destek ayağının değişmesinden kaynaklanan normal bir gidiş-gelme —
+    tokezlemeye özgü değil), tokezleme sonrası PİK |error| ~38.8px'e
+    çıkıyor (kol tepkisi ~21.3px), kol-ofseti ile `-error` arasındaki
+    korelasyon 1.0000 (tam orantılı, uygulama doğru çalışıyor).
+    **Dürüst sınır:** bu basit bir sezgisel geri besleme — gerçek bir
+    ters-dinamik (inverse dynamics)/rigid-body coupling hesaplamıyor;
+    kollar "doğru yöne" hareket ediyor ama bu iskelette kolların kütlesi
+    gövdenin gerçek kütle merkezini fiziksel olarak geri ÇEKECEK kadar
+    büyük/bağlı değil — yani dengesizliği düzeltmiyor, sadece görsel
+    olarak DOĞRU YÖNDE ifade ediyor (oyun animasyonlarında yaygın bir
+    "ucuz tepki jesti" tekniği). Sonraki olası iş: gerçek bir kütle-
+    ağırlıklı CoM hesabı (kol/bacak kütleleri dahil) ve/veya ayak
+    yerleşimini (capture point) buna göre ayarlayan bir denge kurtarma
+    mekanizması.
 
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
