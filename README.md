@@ -624,6 +624,127 @@ görsel olarak da incelendi (diz artık doğal bükülüyor, kol gövdeye
 11px'den yakın durmuyor, çöküş sonrası gövde ~-63° civarında kalıp 90°+
 katlanmıyor).
 
+## 3. tur eki: omurgaya tork ve yay-sönümleme (Hooke Yasası)
+
+Kullanıcının 3. tur bulgularını değerlendirdiği takip mesajında (capsule
+collision / kütle dağılımı yerine) açıkça önceliklendirdiği tek madde:
+**"mevcut yapıyı kırmadan"** omurga/boyun için gerçek bir açısal
+yay-sönümleme (spring-damping, $F=-kx-cv$) mekanizması. Motor yeniden
+yazılmadı; `physics/verlet.py`'a tek bir fonksiyon (`apply_angular_spring`)
+eklendi ve mevcut `clamp_direction()` sert-tavan çağrılarının HEMEN
+ÖNCESİNE, aynı iki nokta üzerinde ek bir adım olarak eklendi (var olan
+`blended_max_angle()`/`lerp_blend()` harman mantığı AYNEN korunuyor — sert
+tavan hâlâ orada, sadece artık yay ÖNCE yumuşakça direnç gösteriyor).
+
+**Nasıl çalışıyor (dürüst sınırlarıyla):** `apply_angular_spring()`,
+`clamp_direction()` ile AYNI imzalı (points/prev_points, iki nokta, bir
+referans yön) ama pozisyonu SINIRLAMAK yerine bir açısal tork hesaplayıp
+bunu `apply_impulse()`'taki gibi `prev_points`'i kaydırarak enjekte
+ediyor (konuma asla dokunmuyor, sadece bir sonraki karenin hızını
+etkiliyor — ani pozisyon sıçraması riski yok). Açısal hız, persistan bir
+durum (state) TUTMADAN, o karedeki göreli Verlet hızının teğetsel
+izdüşümünden türetiliyor. **Dürüst sınır:** bu gerçek bir rijit-cisim
+torku/eylemsizliği DEĞİL — kütle/eylemsizlik momenti yok, sadece "bu iki
+nokta arasındaki açı sapması ve açısal hıza orantılı bir düzeltici ivme"
+uyguluyor; gerçek bir fizik motorundaki tork'un basitleştirilmiş bir
+yaklaşıklaması.
+
+**Sabitler** (`demo/step9_ragdoll_blend.py` ve `step13_full_integration_test.py`'de
+BİREBİR aynı, aktifte ikisi de 0 — yay SADECE pasif/ragdoll'da devrede):
+`PASSIVE_TORSO_STIFFNESS=0.025`, `PASSIVE_TORSO_DAMPING=0.40`,
+`PASSIVE_NECK_STIFFNESS=0.015`, `PASSIVE_NECK_DAMPING=0.30`. İlk
+denemede (stiffness=0.15/damping=0.35) karakter neredeyse dikey knockdown
+duruşuna geri çekilip düşemiyordu (görsel olarak havada asılı kalıp
+bacaklar çapraz kilitleniyordu) — **sönüm-ağırlıklı** bir ayara geçildi
+(düşük stiffness, yüksek damping), çünkü bilinçsiz bir bedenin gerçek
+kas tonusu yerçekimine karşı AKTİF geri-çağırma kuvveti değil, ÇOĞUNLUKLA
+hız-sönümleme (damping) sağlar.
+
+**Sonuç (rest açısı knockdown anına kilitlenip ölçüldü):** gövde açısı
+knockdown'da -12.0°'den başlayıp t=8.2s'de +16.1°'ye YUMUŞAKÇA yükseliyor,
+t=10.2s'de +23.8°'lik bir tepe yapıp yön değiştiriyor, t=11.0s civarında
+tekrar 0°'ı geçip t=13.0s'de -58.8°'ye iniyor — yani gerçek bir SÖNÜMLÜ
+SALINIM (damped oscillation): yükselip tepe yapıp geri dönme davranışı,
+2. tur'un sert-tavan-SADECE yaklaşımında YOKTU (orada açı tek yönde
+sürekli artıp doğrudan ±75° duvarına ÇARPIP orada DÜZ kalıyordu, bkz. bir
+önceki bölümdeki "-12.0'den 120.7'ye" ölçümü). Tüm süreç boyunca ±75°
+güvenlik duvarının dışına HİÇ çıkmadı (yay zaten duvara çarpmadan önce
+yönü çeviriyor).
+
+### Yan bulgu: yay çalışmasını doğrularken bulunan GERÇEK bir süreklilik hatası (ve düzeltmesi)
+
+Yayı görsel olarak doğrularken (ffmpeg kareleri), ragdoll'un bacaklarının
+zaman zaman havada "asılı/donmuş" göründüğü fark edildi — sayısal tanı
+(`clamp_joint_angle_points` çağrısından hemen önce ham açıyı loglayan
+geçici bir script) şunu ortaya çıkardı: knockdown darbesinden hemen sonra
+sağ dizin ham (kısıtlanmamış) açısı fiziksel olarak sürekli +82°'den
++174°'ye yükseliyordu (bacağın momentumla savrulması — GERÇEK bir fizik
+olayı). Ama `fabrik.py`'deki 3. tur "yansıtma" (reflect) düzeltmesi --
+`magnitude = clip(|açı|, min, max); clamped = ±magnitude (işaret
+`bend_sign`'a ZORLA sabitlenerek)` -- HER KAREDE bu büyük açıyı ZORLA ters
+işarete çeviriyordu (ör. +142.83° → -142.83°), bu da dizin etrafında
+TEK KAREDE ~74°-164°'lik GÖRÜNÜR bir sıçramaya yol açıyordu. Düzeltme
+ayrıca `prev_points`'i yeni konuma eşitlediği için (mevcut kod
+kuralı, bkz. `clamp_direction()` docstring'i) düzeltilen ayağın hızı da
+sıfırlanıyor, yani ayak birkaç kare boyunca "donmuş" kalıp yavaşça
+yeniden düşmeye başlıyordu (ölçüldü: sağ ayak y=304px'ten y=138px'e
+~0.4s'de sıçrayıp oradan ~1.1s boyunca düşmedi).
+
+Bu, 3. tur'un kendi "süreklilik her koşulda korunur" iddiasını ihlal eden
+GERÇEK bir kenar-durum hatasıydı (küçük yanlış-taraf açılarında —
+docstring'in kendi örneği +5°→-8°'de — sorunsuzdu, sadece BÜYÜK
+yanlış-taraf açılarında/yüksek açısal hızda ortaya çıkıyordu — normal
+yürüyüşte nadiren, güçlü bir darbeden sonra sıklıkla). **Düzeltme:**
+"büyüklüğü koru, işareti zorla" yerine, geçerli açı aralığının (`[min,
+max]` büyüklüğünde, `bend_sign` işaretli bir yay/arc) ÇEMBER ÜZERİNDEKİ
+EN YAKIN UÇ NOKTASINA katlama (`_nearest_valid_bend_deg()`,
+`physics/fabrik.py`) — bir aralığın dışındaki bir noktaya en yakın geçerli
+nokta her zaman o aralığın uçlarından biridir (temel geometri), bu da
+küçük açılarda ESKİ davranışla BİREBİR aynı sonucu verirken (+5°→-8°
+değişmedi) büyük/yüksek-hızlı durumda düzeltmeyi ~67°'ye indiriyor (164°
+yerine) ve gerçek bir sıçrama üretmiyor.
+
+**Doğrulama:** aynı diagnostic script'in düzeltme sonrası çıktısı --
+sağ diz artık aynı pencerede pürüzsüz, tek yönlü bir düşüş sergiliyor
+(304px → 330px'e yumuşakça, sıçramasız), ham açı -6° civarında sabitleniyor
+(sert sıçrama yok, ardışık kareler arası fark <1°). Yan etki olarak AKTİF
+(IK ile yürüyen) bacağın kendi ham diz açısı aralığı da düzeldi: aynı
+`diag_round3.py` testinde eskiden [-173°, +174°] (neredeyse tam çember,
+daha önce fark edilmemiş bir kararsızlık) iken düzeltmeden sonra
+[-58°, +58°]'e daraldı -- yani bu hem ragdoll'u hem de orijinal round-3
+"flamingo bacağı" düzeltmesinin kendisini daha sağlam hale getirdi. Tüm
+`step1`-`step13` regresyon paketi (3 FPS'te step13 dahil) yeniden
+çalıştırılıp hiçbir NaN/patlama üretmediği, step7/step12'nin sayısal
+çıktılarının (0.794/0.985/0.941; 8.65px/38.80px/1.0000) değişmediği
+doğrulandı.
+
+### Dürüst sınır (yeni bulunan, henüz DÜZELTİLMEMİŞ bir sorun)
+
+Sıçrama hatası düzeldikten SONRA bile, tam pasif (ragdoll) düşüş
+sırasında bacaklardan biri zaman zaman neredeyse düz (min. büküm ~8°
+sınırına yakın) bir pozda "donup" yere düşmüyor -- ekranda bacakların
+geniş bir "V" (cimnastik splits) şeklinde açık kaldığı görülebiliyor
+(hem `step9` hem `step13`'te gözlemlendi, bu yüzden yeni omurga yayından
+DEĞİL, paylaşılan pasif-bacak mimarisinden kaynaklanıyor). **Kök neden:**
+`clamp_joint_angle_points()`'in düzeltme uyguladığı HER karede
+`prev_points`'i de yeni konuma eşitlemesi (hızı sıfırlaması) --
+`clamp_direction()`'la paylaşılan, KASITLI bir tasarım kuralı ("sahte hız
+sıçraması yaratmasın" diye) -- bacağın doğal açısı sınırın (8°) hemen
+dışında SABİT kalırsa (yani düzeltme NEREDEYSE HER karede tetiklenirse),
+yerçekiminin bacağa kazandırmaya çalıştığı açısal hız her karede
+sıfırlanıp bacak fiilen "frenleniyor". Bu, `gait.py`'de zaten dokümante
+edilmiş küçük ölçekli bir sınırlamanın (aktif stance ayağında birkaç
+piksel "titreme", bkz. yukarıdaki yorum) ragdoll'da çok daha büyük
+ölçekte ortaya çıkan hâli. **Neden şimdi düzeltilmedi:** gerçek düzeltme
+ya kalıcı durum (state) tutan bir süreklilik-farkındalı yumuşatma ya da
+tam bir eklem-kısıtı fizik motoru (yay-tabanlı joint limit + restitution)
+gerektiriyor -- kullanıcının kendi önceliklendirmesiyle (bu tur SADECE
+omurga yay-sönümleme, capsule collision/kütle dağılımı GELECEK tur)
+tutarlı şekilde, motoru bu turda daha fazla büyütmek yerine burada
+DÜRÜSTÇE bir sınır olarak bırakılıyor -- olası bir sonraki iş (capsule
+collision ile aynı pakette ele alınabilir, ikisi de "gerçek eklem
+kısıtı/çarpışma fiziği" kategorisine giriyor).
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

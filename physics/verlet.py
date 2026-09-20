@@ -126,6 +126,87 @@ def clamp_direction(points: np.ndarray, prev_points: np.ndarray,
     prev_points[i_free] = points[i_free]
 
 
+def apply_angular_spring(points: np.ndarray, prev_points: np.ndarray,
+                          i_anchor: int, i_free: int,
+                          reference_dir: np.ndarray, rest_deg: float,
+                          stiffness: float, damping: float) -> float:
+    """`points[i_anchor] -> points[i_free]` segmentinin `reference_dir`'e
+    göre açısını basit bir açısal Hooke yasası (`tork = -k*theta - c*omega`)
+    ile "geri çağıran" bir yay-sönümleme (spring-damper) uygular.
+
+    EKLENME NEDENİ (3. tur eki -- kullanıcı isteği "omurgaya gerçek tork ve
+    yay-sönümleme"): `clamp_direction()` (yukarıda) SERT bir duvar --
+    açı sınırı aşılana kadar hiçbir direnç yok, aşılınca ANINDA sınıra
+    kenetleniyor. Bu, ragdoll'u ya "tamamen serbest" ya da "aniden
+    donmuş" gibi gösteriyordu (bkz. `physics/ragdoll.py`'nin
+    `blended_max_angle()`'ı ile uygulanan pasif tavan). Bu fonksiyon
+    onun YERİNE değil, YANINA (birlikte) kullanılmak üzere tasarlandı:
+    `clamp_direction()` dış güvenlik duvarı olarak kalıyor (yay yanlış
+    ayarlansa bile eklem asla anatomik olarak imkansız bir açıya
+    kilitlenemez), bu fonksiyon ise o duvara çarpmadan ÖNCE, mesafeyle
+    orantılı yumuşak bir direnç (kas tonusu hissi) sağlıyor.
+
+    Matematik:
+      - `theta` -- segmentin `reference_dir`'e göre işaretli açısı (derece,
+        `clamp_direction()` ile AYNI atan2/cross-product yöntemi).
+      - `omega` (açısal hız) -- persistan bir durum SAKLAMIYORUZ (bu motor
+        zaten hiçbir yerde ek durum tutmuyor, sadece points/prev_points);
+        bunun yerine `i_free` ve `i_anchor` noktalarının Verlet hızlarının
+        (points-prev_points) farkının segmente DİK (tanjantiyel) bileşenini
+        segment uzunluğuna bölerek anlık açısal hızı DOĞRUDAN türetiyoruz.
+      - `tork = -stiffness*(theta-rest_deg) - damping*omega` -- açısal
+        ivme (birim atalet momenti varsayımıyla -- motor zaten her noktayı
+        örtük "birim kütle" kabul ediyor, bkz. `physics/verlet.py` genel
+        tasarımı).
+      - Bu açısal ivme, `i_free` noktasının TANJANSİYEL bir çizgisel
+        ivmesine çevrilip -- `physics.ragdoll.apply_impulse()` ile AYNI
+        numarayla -- `prev_points[i_free]`'e (points'e DEĞİL) uygulanıyor.
+        Böylece bu kare `points`'te ANİ bir pozisyon sıçraması olmuyor;
+        etki bir sonraki karenin `_integrate()`'inde hıza (points-
+        prev_points farkına) yansıyarak DOĞAL bir ivmelenme gibi hissediliyor
+        -- gerçek bir kuvvetin davranışı, bir "clamp"ınki değil.
+
+    `stiffness`/`damping` = 0 verilirse fonksiyon hiçbir şey yapmaz (etkisiz).
+    Dönen değer: mevcut `theta` (derece) -- çağıran kod isterse
+    loglama/tanılama için kullanabilir.
+
+    DÜRÜST SINIR: bu gerçek bir rijit-cisim tork/eylemsizlik-momenti hesabı
+    DEĞİL -- `physics/balance.py`'deki orantılı geri beslemeyle AYNI ruhta,
+    basitleştirilmiş bir "yeterince inandırıcı" (cheap but convincing)
+    yaklaşım. Moment kolu/eylemsizlik momenti gerçek kütle dağılımına göre
+    hesaplanmıyor (motor hiç kütle taşımıyor)."""
+    if stiffness == 0.0 and damping == 0.0:
+        return 0.0
+
+    reference_dir = _unit(np.asarray(reference_dir, dtype=float))
+    anchor = points[i_anchor]
+    free = points[i_free]
+    vec = free - anchor
+    length = float(np.linalg.norm(vec))
+    direction = vec / (length + 1e-9)
+
+    cross_z = reference_dir[0] * direction[1] - reference_dir[1] * direction[0]
+    dot = float(np.clip(np.dot(reference_dir, direction), -1.0, 1.0))
+    theta_deg = float(np.degrees(np.arctan2(cross_z, dot)))
+    theta_err_rad = np.radians(theta_deg - rest_deg)
+
+    # direction'a dik (tanjansiyel) birim vektor -- cross_z ile AYNI donme
+    # yonu kuralina uyacak sekilde (yukaridaki atan2 ile tutarli).
+    perp = np.array([-direction[1], direction[0]])
+    v_free = free - prev_points[i_free]
+    v_anchor = anchor - prev_points[i_anchor]
+    angular_vel = float(np.dot(v_free - v_anchor, perp)) / (length + 1e-9)
+
+    angular_accel = -stiffness * theta_err_rad - damping * angular_vel
+    tangential_accel = perp * (angular_accel * length)
+
+    # apply_impulse() ile AYNI numara (bkz. physics/ragdoll.py): points'e
+    # degil, prev_points'e (geriye) uygulanir -- bu kareye pozisyon
+    # sicramasi degil, bir sonraki kareye hiz degisimi ekler.
+    prev_points[i_free] = prev_points[i_free] - tangential_accel
+    return theta_deg
+
+
 @dataclass
 class VerletSystem:
     """Noktalar (points) ve aralarındaki mesafe kısıtlamalarından (sticks)

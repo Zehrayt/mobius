@@ -63,7 +63,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import cv2
 
-from physics.verlet import VerletSystem, clamp_direction
+from physics.verlet import VerletSystem, clamp_direction, apply_angular_spring
 from physics.gait import FootPlantingLeg
 from physics.fabrik import clamp_joint_angle_points
 from physics.collision import collide_ground
@@ -78,6 +78,7 @@ from physics.ragdoll import (
     driver_follow_target,
     transition_impulse_vector,
     apply_impulse,
+    lerp_blend,
 )
 
 W, H = 640, 400
@@ -118,6 +119,18 @@ NECK_MAX_TILT_DEG = 18.0
 # vermiyor.
 PASSIVE_TORSO_MAX_DEG = 75.0
 PASSIVE_NECK_MAX_DEG = 85.0
+# EKLEME (3. tur eki -- kullanici istegi: "omurgaya gercek tork ve
+# yay-sonumleme"): yukaridaki sert tavan bir GUVENLIK DUVARI olarak
+# KALIYOR (asagida hala cagriliyor) -- bu sabitler onun ONUNE, kademeli
+# bir direnc (physics.verlet.apply_angular_spring, Hooke yasasi F=-kx-cv)
+# ekliyor. AKTIF modda sifir (mevcut dar sert-kelepceyle davranis AYNEN
+# korunuyor, regresyon riski yok); PASIF modda "kas tonusu" hissi veren
+# yumusak ama sonlu bir yay + salinimi birkac saniyede sonduren bir
+# sonumleme.
+ACTIVE_TORSO_STIFFNESS, PASSIVE_TORSO_STIFFNESS = 0.0, 0.025
+ACTIVE_TORSO_DAMPING, PASSIVE_TORSO_DAMPING = 0.0, 0.40
+ACTIVE_NECK_STIFFNESS, PASSIVE_NECK_STIFFNESS = 0.0, 0.015
+ACTIVE_NECK_DAMPING, PASSIVE_NECK_DAMPING = 0.0, 0.30
 # DUZELTME (3. tur kullanici geri bildirimi -- "omuz ve dirseklerin vucut
 # icinden gecmesi"): eskiden kollarin omuza gore ACISAL hicbir siniri
 # yoktu (sadece sabit uzunluklu cubuklarla baglıydı) -- sayisal tani kol/
@@ -306,6 +319,13 @@ def main() -> None:
     knockdown_kicked = False
     pulldown_x, pulldown_y = 0.0, 0.0
     max_overrun_seen = 0.0
+    # EKLEME (3. tur eki -- yay-sonumleme): pasif yayin "dinlenme" (rest)
+    # acisi UP/govde eksenine SABIT 0 degil -- bilinc kaybi aninda govde
+    # NEREDEYSE hangi acidaysa o acida "rahat" kabul edilir (gercek bir
+    # baygin insan gibi -- pasif kas tonusu YENIDEN DIKLESMEYE calismaz,
+    # sadece o andaki pozdan UZAKLASMAYA direnc gosterir). Knockdown anina
+    # kadar kullanilmiyor (stiffness=0 oldugu icin degeri onemsiz).
+    torso_rest_deg, neck_rest_deg = 0.0, 0.0
 
     for f in range(N_FRAMES):
         t = f * dt
@@ -338,12 +358,38 @@ def main() -> None:
             impulse = transition_impulse_vector(current_vel, KNOCKDOWN_VELOCITY_GAIN, KNOCKDOWN_UP_KICK)
             apply_impulse(body.points, body.prev_points, impulse_indices, impulse)
             knockdown_kicked = True
+            # EKLEME (3. tur eki): pasif yayin dinlenme acisini TAM BU
+            # ANDAKI govde/boyun acisina kilitle (bkz. yukaridaki yorum).
+            knockdown_torso_vec = body.points[idx["shoulder"]] - body.points[idx["hip"]]
+            torso_rest_deg = float(np.degrees(np.arctan2(knockdown_torso_vec[0], -knockdown_torso_vec[1])))
+            knockdown_neck_vec = body.points[idx["head"]] - body.points[idx["shoulder"]]
+            neck_rest_deg = float(np.degrees(np.arctan2(knockdown_neck_vec[0], -knockdown_neck_vec[1]))) - torso_rest_deg
 
         body.step(dt=1.0)
 
-        # Govde/boyun stabilizasyonu da blend ile "gevsetiliyor" -- aktifte
-        # dar (12/18 derece), pasifte GEVSEK AMA SONLU (3. tur duzeltmesi --
-        # bkz. PASSIVE_TORSO_MAX_DEG/PASSIVE_NECK_MAX_DEG tanimi).
+        # EKLEME (3. tur eki -- "omurgaya gercek tork ve yay-sonumleme"):
+        # sert duvardan ONCE, kademeli bir Hooke-yasasi direnci uygula --
+        # aktifte sifir etkili (mevcut davranis AYNEN korunuyor), pasifte
+        # "kas tonusu" hissi veren yumusak bir geri-cagirma + salinimi
+        # sonduren sonumleme. Govde icin dinlenme aciyla UP, boyun icin
+        # govdeye gore -- knockdown anindaki poza kilitlenmis (yukarida
+        # yakalandi), 0/dikeye degil.
+        torso_stiffness = lerp_blend(blend, ACTIVE_TORSO_STIFFNESS, PASSIVE_TORSO_STIFFNESS)
+        torso_damping = lerp_blend(blend, ACTIVE_TORSO_DAMPING, PASSIVE_TORSO_DAMPING)
+        apply_angular_spring(body.points, body.prev_points, idx["hip"], idx["shoulder"], UP,
+                              torso_rest_deg, torso_stiffness, torso_damping)
+        pre_spring_torso_dir = body.points[idx["shoulder"]] - body.points[idx["hip"]]
+        neck_stiffness = lerp_blend(blend, ACTIVE_NECK_STIFFNESS, PASSIVE_NECK_STIFFNESS)
+        neck_damping = lerp_blend(blend, ACTIVE_NECK_DAMPING, PASSIVE_NECK_DAMPING)
+        apply_angular_spring(body.points, body.prev_points, idx["shoulder"], idx["head"], pre_spring_torso_dir,
+                              neck_rest_deg, neck_stiffness, neck_damping)
+
+        # Govde/boyun stabilizasyonu -- GUVENLIK DUVARI olarak kaliyor:
+        # aktifte dar (12/18 derece, yay etkisiz oldugu icin davranis
+        # AYNEN eski), pasifte GEVSEK AMA SONLU (bkz.
+        # PASSIVE_TORSO_MAX_DEG/PASSIVE_NECK_MAX_DEG) -- yay yanlis
+        # ayarlansa/asiri hizlansa bile eklem anatomik olarak imkansiz
+        # bir acida KILITLENEMEZ.
         max_lean = blended_max_angle(blend, TORSO_MAX_LEAN_DEG, PASSIVE_TORSO_MAX_DEG)
         max_neck = blended_max_angle(blend, NECK_MAX_TILT_DEG, PASSIVE_NECK_MAX_DEG)
         clamp_direction(body.points, body.prev_points, idx["hip"], idx["shoulder"], UP, max_lean)

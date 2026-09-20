@@ -32,12 +32,25 @@ def blend_prev_points(prev_pos: np.ndarray, blended_pos: np.ndarray, blend: floa
     return prev_pos * (1.0 - blend) + blended_pos * blend
 
 
+def lerp_blend(blend: float, active_val: float, passive_val: float) -> float:
+    """Herhangi bir sayısal parametreyi `blend`'e göre `active_val`
+    (blend=1) ile `passive_val` (blend=0) arasında doğrusal karıştırır.
+
+    DÜZELTME (3. tur ek -- omurga yay-sönümleme): önceden bu formül
+    SADECE `blended_max_angle()` içinde, açı sınırına özel olarak
+    yazılıydı. Şimdi aynı formülü yay sabiti (stiffness) ve sönümleme
+    (damping) için de kullanmamız gerekti (bkz. `apply_angular_spring()`),
+    bu yüzden jenerik bir isimle buraya çıkarıldı -- `blended_max_angle()`
+    davranışı BİREBİR AYNI kalacak şekilde bunu çağırıyor (aşağıda)."""
+    return passive_val - blend * (passive_val - active_val)
+
+
 def blended_max_angle(blend: float, active_max_deg: float, passive_max_deg: float = 180.0) -> float:
     """`clamp_direction()`'a verilecek maksimum sapma açısını `blend`'e
     göre ayarlar -- `blend=1`'de dar (aktif/kontrollü duruş),
     `blend=0`'da pratik olarak sınırsız (pasif/serbest -- gövde/boyun
     stabilizasyonu da IK ile BİRLİKTE devre dışı kalır)."""
-    return passive_max_deg - blend * (passive_max_deg - active_max_deg)
+    return lerp_blend(blend, active_max_deg, passive_max_deg)
 
 
 def blended_friction(blend: float, active_friction: float, passive_friction: float) -> float:

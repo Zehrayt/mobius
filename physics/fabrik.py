@@ -40,6 +40,61 @@ def _unit(vector: np.ndarray) -> np.ndarray:
     return vector / norm
 
 
+def _circular_distance_deg(a_deg: float, b_deg: float) -> float:
+    """Iki acinin (derece) DAIRESEL mesafesi -- 350 ile 10 arasindaki
+    mesafe 340 degil 20 olmali (cember uzerinde kisa yol). `_nearest_valid_bend_deg`
+    icin gerekli: bir aralikin (arc) UC NOKTALARINA olan gercek aci
+    mesafesini bulmak icin, yoksa 3. tur'un "yansitma" (reflect) hatasi
+    tekrarlanir (asagida acikliyor)."""
+    d = abs(a_deg - b_deg) % 360.0
+    return d if d <= 180.0 else 360.0 - d
+
+
+def _nearest_valid_bend_deg(signed_angle_deg: float, min_bend_deg: float, max_bend_deg: float, bend_sign: float) -> float:
+    """Bir eklemin buyuk sinyalli acisini (`signed_angle_deg`), gecerli
+    "buyukluk" araligina ([min_bend_deg, max_bend_deg], isareti
+    `bend_sign` ile sabit) EN KUCUK aci-mesafesi ile katlar.
+
+    DUZELTME (3. tur EKI -- omurga yay-sonumleme calismasi sirasinda
+    ragdoll'un bacaklarinin havada "asili/dolasmis" gorunmesi uzerine
+    bulundu, bkz. commit mesaji): round-3'un "yansitma" (reflect)
+    fonksiyonu -- `magnitude = clip(|signed_angle|, min, max); clamped =
+    ±magnitude (bend_sign'a gore SABIT isaretle)` -- kucuk yanlis-taraf
+    acilari icin dogru calisiyordu (ör. +5° -> -8°, 13° luk kucuk bir
+    duzeltme) AMA BUYUK yanlis-taraf acilari icin KENDI SOYLEDIGI
+    "sureklilik her kosulda korunur" iddiasini ihlal ediyordu: sayisal
+    tanida (diag_fall2.py benzeri bir script) olculdu -- knockdown darbesi
+    sonrasi dizin ham (kisitlanmamis) acisi fiziksel olarak surekli
+    +82°'den +174°'ye yukseliyor (bacagin momentumla yukari savrulmasi,
+    GERCEK bir fizik olayi), ama eski kod HER KAREDE bu buyuklugu KORUYUP
+    isareti ZORLA ters cevirdigi icin (ör. +142.83° -> -142.83°) ayak,
+    diz etrafinda tek karede ~74°-164° lik GORUNUR bir sicrama yapiyordu
+    (+bu konum prev_points'e de yazildigi icin hiz sifirlaniyor, yani
+    bacak birkaç kare boyunca havada "donuyor" gibi kaliyordu -- olculdu:
+    sag ayak y=304px'ten y=138px'e ~0.4s icinde sicrayip oradan ~1.1s
+    boyunca dusmuyor).
+
+    Gercek duzeltme: "buyuklugu koru, isareti zorla" YERINE, gecerli
+    araligin (bir [lo, hi] yay/arc) CEMBER UZERINDE EN YAKIN UC NOKTASINA
+    katla -- bir araligin disindaki bir noktaya en yakin gecerli nokta
+    HER ZAMAN o araligin iki ucundan biridir (temel bir geometri gercegi),
+    magnitude'u degil ACI MESAFESINI minimize eder. Bu hem eski docstring'in
+    KUCUK yanlis-taraf ornegini (+5° -> -8°, degismedi, asagida dogrulandi)
+    HEM DE yukaridaki BUYUK yanlis-taraf/yuksek-hizli ragdoll durumunu
+    (+142.83° -> -150° gibi -- SADECE ~67° luk bir katlama, ~164° yerine)
+    dogru sekilde kapsiyor. Zaten gecerli bir aci (`lo <= signed <= hi`)
+    HICBIR degisiklik olmadan aynen donuyor -- eski davranisla BIREBIR ayni."""
+    if bend_sign >= 0:
+        lo, hi = min_bend_deg, max_bend_deg
+    else:
+        lo, hi = -max_bend_deg, -min_bend_deg
+    if lo <= signed_angle_deg <= hi:
+        return signed_angle_deg
+    if _circular_distance_deg(signed_angle_deg, lo) <= _circular_distance_deg(signed_angle_deg, hi):
+        return lo
+    return hi
+
+
 class FabrikChain2D:
     """Sabit uzunluklu segmentlerden oluşan bir 2D IK zinciri (ör. bir bacak:
     kalça -> diz -> ayak bileği)."""
@@ -126,14 +181,19 @@ class FabrikChain2D:
         tetiklenmesi için gereken sinyal gürültüsü marjı ince. Kullanıcının
         önerdiği gerçek mimari düzeltme -- "açı 180'i geçtiği an kodun dizi
         ZORLA doğru tarafa katlaması" -- burada bir SINIRA kenetlemek değil,
-        büküm BÜYÜKLÜĞÜNÜ koruyarak doğru tarafa YANSITMAK (reflect) olarak
-        uygulanıyor: `magnitude = clip(|signed_angle|, min, max); clamped =
-        ±magnitude (bend_sign'a göre)`. Böylece yanlış taraftaki küçük bir
-        açı (+5°) sıfıra/limite zıplamak yerine yumuşakça karşı tarafa
-        (-8°'ye yakın) katlanır, büyük bir yanlış-taraf açısı (+90°) ise
-        karşılığı kadar (-90°, eğer aralık izin veriyorsa) katlanır --
-        süreklilik (continuity) her koşulda korunur, gerçek bir menteşenin
-        (hinge) davranışına eski koddan daha yakın."""
+        geçerli açı ARALIĞININ (bir yay/arc) çember üzerindeki EN YAKIN UÇ
+        NOKTASINA katlanarak uygulanıyor (bkz. `_nearest_valid_bend_deg()`).
+
+        EK DÜZELTME (3. tur EKİ -- bkz. `_nearest_valid_bend_deg()`
+        docstring'i): ilk sürüm burada "büyüklüğü koru, işareti zorla"
+        yapıyordu (`magnitude = clip(|signed_angle|, min, max); clamped =
+        ±magnitude`) -- küçük yanlış-taraf açıları için doğru çalışıyordu
+        ama BÜYÜK yanlış-taraf açılarında (ör. güçlü bir darbeden sonra
+        dizin hızla +170°'ye fırlaması gibi) kendi "süreklilik her koşulda
+        korunur" iddiasını ihlal eden ~164°'ye varan tek-kare sıçramalar
+        üretiyordu -- ayrıntı ve ölçüm için `_nearest_valid_bend_deg()`'e
+        bakın. Küçük yanlış-taraf örneği (+5° -> -8°) DEĞİŞMEDEN aynı
+        kalıyor; sadece büyük/yüksek-hızlı durum düzeldi."""
         n = len(self.points)
         if n < 3:
             return  # tek segmentli zincirde ara eklem yok
@@ -148,8 +208,7 @@ class FabrikChain2D:
             dot = float(np.clip(np.dot(prev_dir, out_dir), -1.0, 1.0))
             signed_angle = float(np.degrees(np.arctan2(cross_z, dot)))
 
-            magnitude = float(np.clip(abs(signed_angle), min_bend_deg, max_bend_deg))
-            clamped = magnitude if bend_sign >= 0 else -magnitude
+            clamped = _nearest_valid_bend_deg(signed_angle, min_bend_deg, max_bend_deg, bend_sign)
 
             theta = np.radians(clamped)
             cos_t, sin_t = np.cos(theta), np.sin(theta)
@@ -212,10 +271,11 @@ def clamp_joint_angle_points(
     signed_angle = float(np.degrees(np.arctan2(cross_z, dot)))
 
     # DUZELTME (3. tur -- bkz. clamp_joint_angles() dokstring'indeki ayni
-    # yorum): sinira "clip" yerine buyuklugu koruyarak dogru tarafa
-    # "yansitma" (reflect) -- sureksiz pop yerine surekli hinge davranisi.
-    magnitude = float(np.clip(abs(signed_angle), min_bend_deg, max_bend_deg))
-    clamped = magnitude if bend_sign >= 0 else -magnitude
+    # yorum): sinira "clip" yerine gecerli araligin EN YAKIN UC NOKTASINA
+    # katlama -- bkz. `_nearest_valid_bend_deg()` (3. tur EKI: eski
+    # "buyuklugu koru, isareti zorla" yontemi buyuk yanlis-taraf acilarinda
+    # kendi sureklilik iddiasini ihlal ediyordu, orada acikliyor).
+    clamped = _nearest_valid_bend_deg(signed_angle, min_bend_deg, max_bend_deg, bend_sign)
 
     if clamped == signed_angle:
         return
