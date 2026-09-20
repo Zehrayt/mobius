@@ -117,12 +117,59 @@ def _unit(vector: np.ndarray) -> np.ndarray:
 
 def clamp_direction(points: np.ndarray, prev_points: np.ndarray,
                      i_anchor: int, i_free: int,
-                     reference_dir: np.ndarray, max_deviation_deg: float) -> None:
+                     reference_dir: np.ndarray, max_deviation_deg: float,
+                     preserve_momentum: bool = False) -> None:
     """`points[i_anchor] -> points[i_free]` segmentinin yönünü sabit bir
     `reference_dir` vektörüne göre `max_deviation_deg` ile simetrik olarak
-    sınırlar (segment uzunluğu korunur). `prev_points[i_free]` de yeni
-    konuma eşitlenir ki clamp bir sonraki karede sahte bir hız (velocity)
-    tepmesi yaratmasın.
+    sınırlar (segment uzunluğu korunur).
+
+    `preserve_momentum=False` (VARSAYILAN, ESKİ DAVRANIŞ): `prev_points[i_free]`
+    yeni konuma DOĞRUDAN eşitlenir -- yani `i_free`'nin `i_anchor`'a göre açısal
+    hızı bu düzeltmede SIFIRLANIR. Bu, 3. tur eki dokstring notunda açıklanan
+    BİLİNÇLİ kapsam kararıydı (round 4'te `clamp_joint_angle_points()`'e
+    uygulanan momentum-koruyan düzeltme buraya BİLEREK taşınmadı -- gerekçe:
+    bu fonksiyon TÜM gövde/boyun/kol eklemlerinde, hem aktif hem pasif modda
+    kullanılıyor ve momentum'u HER YERDE korumak `step3`'ün "çift sarkaç"
+    kaosunu geri getirme riski taşıyordu).
+
+    `preserve_momentum=True` (5. tur EKİ -- kullanıcı geri bildirimi
+    "sabit ~87px/s'lik dikey kaçış / vektörel yanlılık"): nokta yeni konuma
+    IŞINLANMAK yerine, düzeltmenin uyguladığı OFSET hem `points`'e hem
+    `prev_points`'e AYNI MİKTARDA eklenir -- `clamp_joint_angle_points()`
+    (`physics/fabrik.py`) ile BİREBİR AYNI matematik. Bu parametre EKLENDİ
+    (fonksiyonun geri kalanı DEĞİŞMEDİ), varsayılanı `False` -- yani mevcut
+    HİÇBİR çağrı yeri (neck, kol konileri) etkilenmedi, SADECE `demo/
+    step9_ragdoll_blend.py`/`step13_full_integration_test.py`'deki gövde-eğim
+    (torso-lean, hip->shoulder, referans=UP) çağrısı `True` olarak güncellendi.
+
+    NEDEN SADECE ORADA (kütle-ağırlıklandırma DEĞİL, hedefli momentum
+    koruma): kullanıcı "tüm kısıtlama sistemini kütle-ağırlıklı hale getir"
+    önerisini getirdiğinde, önce (round 4 sonrası) bir ΔY-toplayıcı tanısı
+    kuruldu -- her kısıtlama fonksiyonunun kendi net Y yerdeğiştirmesini
+    ayrı bir toplayıcıda biriktirip 60s'lik bir kararlı-durum penceresinde
+    karşılaştırdık. Sonuç: `zemin` (collide_ground) sızıntıya SIFIR katkı
+    veriyordu (karakter zeminden tamamen kopmuştu -- "Asimetrik Zemin
+    Çarpışması" hipotezi ELENDİ); `açı` kategorisindeki sızıntının
+    >%75'i TEK BİR çağrıdan geliyordu -- işte bu (torso-lean) -- çünkü
+    gövde açısı `PASSIVE_TORSO_MAX_DEG`'e (75°) çarpıp orada kilitlenince
+    bu clamp HER KAREDE tetikleniyor ve her seferinde omuzun kalçaya göre
+    açısal hızını sıfırlıyordu (`clamp_joint_angle_points()`'in round-4
+    ÖNCESİ "V-splits" kusuruyla AYNI mekanizma, farklı eklemde). Kütle-
+    ağırlıklı `clamp_direction` (anchor/free arası düzeltme paylaşımı)
+    AYRICA denendi -- kaçışı ~2x geciktirdi ama ORTADAN KALDIRMADI; oysa
+    SADECE bu tek çağrıyı momentum-koruyan yapmak kaçışı -87px/s'den
+    -9.7px/s'ye indirdi (9x) VE davranışı tekdüze kaçıştan SINIRLI
+    salınıma çevirdi -- bkz. `README.md`'nin "5. tur" bölümü ve
+    `/tmp/diag_dy_accum.py`, `/tmp/diag_dy_accum2.py`, `/tmp/
+    diag_confirm_torso.py` (cihaz üzerindeki tanı script'leri, repo'ya
+    dahil değil). TÜM çağrıları aynı anda momentum-koruyan yapmak (round
+    4/5 arası ayrıca denendi) "çift sarkaç" riskini geri getirip kararsız
+    kaldı -- bu yüzden değişiklik SADECE en baskın sızıntı kaynağına,
+    cerrahi şekilde uygulandı.
+
+    DÜRÜST SINIR: bu, sızıntıyı SIFIRLAMIYOR -- geriye kalan ~-9.7px/s
+    (r_elbow_hand kol-konisi + mesafe ağına dağılmış küçük paylar +
+    boyun) hâlâ tanısı tamamlanmamış, gelecekteki bir tur için not edildi.
 
     NOT: Referans olarak *başka bir serbest noktanın* yönünü (ör. çok kısa
     ve bu yüzden sayısal olarak gürültülü bir "driver->hip" vektörünü)
@@ -155,8 +202,14 @@ def clamp_direction(points: np.ndarray, prev_points: np.ndarray,
         reference_dir[0] * cos_t - reference_dir[1] * sin_t,
         reference_dir[0] * sin_t + reference_dir[1] * cos_t,
     ])
-    points[i_free] = points[i_anchor] + rotated * length
-    prev_points[i_free] = points[i_free]
+    new_free = points[i_anchor] + rotated * length
+    if preserve_momentum:
+        correction = new_free - points[i_free]
+        points[i_free] = new_free
+        prev_points[i_free] = prev_points[i_free] + correction
+    else:
+        points[i_free] = new_free
+        prev_points[i_free] = points[i_free]
 
 
 def apply_angular_spring(points: np.ndarray, prev_points: np.ndarray,

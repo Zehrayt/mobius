@@ -893,6 +893,164 @@ kafa artık bacaklardan gözle görülür şekilde daha "ağır" davranıyor.
   olabilir) -- bu turun kapsamı dışında bırakıldı.
 
 
+## 5. tur kullanıcı geri bildirimi ve düzeltmeler
+
+Kullanıcı, 4. tur commit'inden (2.67:1 kütle oranının "kararlı" bulunduğu
+rapor) sonra ilkesel bir itiraz getirdi: bulunan oranın (2.5:1, `MASS_KNEE=
+1.6`) "bir çözüm değil, bir bantlama" olduğunu, çünkü altta yatan sorunun
+Gauss-Seidel/sıralı Verlet kısıtlama çözücüsünün yapısal bir kusuru
+olduğunu savundu -- gelecekte daha ağır bir ekleme (ör. kapsül çarpışması,
+aksesuar) yapıldığında aynı kararsızlığın FARKLI bir eşikte geri
+döneceğini öngördü. Kullanıcı üç somut teknik hipotez önerdi: (a)
+`clamp_direction()`'ın kararsızlığının hız-sıfırlama YÖNTEMİYLE değil,
+düzeltmenin anchor/free arasında kütle-ağırlıklı PAYLAŞILMAMASIYLA ilgili
+olduğu; (b) "V-splits" pozunun sabit bir kısıtlama çalıştırma SIRASININ
+açı ve mesafe kısıtlamalarını sonsuza kadar birbirine karşı "kilitlemesi"
+("Constraint Iteration Order"); (c) tüm kısıtlama sistemini kütle-ağırlıklı
+hale getirerek kökten çözüm. İstek: kapsül çarpışmasını bir tur daha
+erteleyip önce bunu araştırmak.
+
+### Metodolojik kusur itirafı: yetersiz doğrulama süresi
+
+Bu araştırmaya başlamadan önce dürüstçe belirtilmesi gereken bir şey:
+4. turun "2.67:1'de KARARLI" doğrulaması SADECE demoların varsayılan
+13 saniyelik süresinde test edilmişti. 60+ saniyelik UZATILMIŞ testler
+(bu tur için özel olarak eklendi -- `demo.N_FRAMES` çalışma-zamanında
+`FPS*60`'a ezilerek, dosyaya DOKUNMADAN) 2.5:1 oranının aslında
+t≈17-25s civarında başlayan, sabit ~87px/saniyelik DOĞRUSAL bir kalça-Y
+kaçışına (karakter ekranın yukarısına doğru sonsuza sürüklenir) hâlâ
+sahip olduğunu ortaya çıkardı -- yani 4. turun "kararlı" bulgusu bir
+DÜZELTME değil, sadece bir GECİKMEYDİ. Bu, doğrulama sürecindeki gerçek
+bir eksikti: kısa süreli demo videosu yavaş biriken bir sayısal kaymayı
+gizleyebiliyor. **Yeni kural: bundan sonraki her kararlılık iddiası
+en az 60 saniyelik uzatılmış bir koşuyla test edilmeli.**
+
+### Elenen hipotezler (sistematik izolasyon testleri)
+
+Kök nedeni bulmadan önce, kullanıcının ve kendi hipotezlerimin HER BİRİ
+ayrı ayrı, izole şekilde (tek değişken, geri kalan her şey sabit) test
+edildi -- hiçbiri repo dosyalarına yazılmadan, `/tmp` altında runtime
+monkeypatch ile:
+
+- **İki-taraflı kütle-ağırlıklı `clamp_direction()`** (kullanıcının somut
+  önerisi -- standart PBD iki-cisim vektör-eşitlik kısıtlaması matematiği
+  ile doğru şekilde uygulandı): kaçışı ~t17s'den ~t30s+'a GECİKTİRDİ ama
+  ORTADAN KALDIRMADI -- kısmi doğrulama, tam çözüm değil.
+- **Sönümleme/restitüsyon gücü** (momentum korumasının %100/%85/%50'si):
+  kaçış zamanlamasında/büyüklüğünde ANLAMLI FARK YOK -- `clamp_direction()`
+  'ın hız-işleme davranışının BASKIN enerji kaynağı olmadığını gösterdi.
+- **Driver-kalça kayışının (leash) alt-gevşetilmesi (SOR)**: işleri
+  KATEGORİK OLARAK KÖTÜLEŞTİRDİ (anında, daha temiz bir doğrusal kaçış) --
+  kayışı SEBEP olmaktan çıkarıp aslında bir STABİLİZE EDİCİ mekanizma
+  olduğunu ortaya çıkardı.
+- **Global hız sınırı (12px/kare güvenlik ağı)**: kaçışı DURDURMADI --
+  neredeyse birebir aynı ~-87px/s doğrusal kaçma devam etti. Bu en
+  bilgilendirici NEGATİF sonuçtu: kaçışın kaotik/rastgele enerji patlaması
+  DEĞİL, sabit, HEP AYNI YÖNLÜ ("vektörel yanlılık") bir sızıntı olduğunu
+  kanıtladı.
+
+### ΔY toplayıcı tanısı: kaynağın izolasyonu
+
+Kullanıcının önerdiği kesin enstrümantasyon kuruldu: her kısıtlama
+fonksiyonu (yay/açı/zemin/mesafe) çağrılmadan ÖNCEKİ ve SONRAKİ Y
+pozisyonu arasındaki farkı ayrı bir toplayıcıda biriktirip, 60 saniyelik
+bir koşuda 5 saniyelik pencereler halinde raporladı (yine `/tmp` altında
+runtime monkeypatch, repo'ya yazılmadan). Sonuçlar:
+
+- **`zemin` (collide_ground): kararlı-durum bölgesinde (t>17s) TAM OLARAK
+  SIFIR katkı.** Sebep basit ama önemli: karakter o noktada zeminden
+  TAMAMEN kopmuş, havada yükseliyor -- `collide_ground()` sadece zeminin
+  ALTINA sızan noktaları düzeltir, havadaki bir noktayı asla geri çekmez.
+  **Kullanıcının "Asimetrik Zemin Çarpışması" hipotezi kararlı-durum
+  sızıntısı için ELENDİ** (ilk ~5 saniyede, hâlâ temas varken marjinal
+  bir katkısı olmuş olabilir, ama bu SÜRDÜRÜLEN kaçışın sebebi değil).
+- **`açı` ve `mesafe` ikisi de kalıcı, aynı-işaretli (negatif=yukarı) bir
+  değeri, kare-kare AYNI şekilde tekrarlıyor** -- t=20s'den t=60s'ye kadar
+  HER 5 saniyelik pencerede ondalık basamağına kadar BİREBİR AYNI toplam.
+  Sistem gerçek anlamda periyodik bir limit-cycle'a girmiş: her kare
+  aynı şeyi tekrarlıyor ve o tekrar sıfıra değil, küçük bir yukarı
+  kalıntıya yakınsıyor -- **kullanıcının "Constraint Iteration Order"
+  hipotezini güçlü şekilde destekleyen bir kanıt.**
+- **`açı` kategorisi eklem bazında kırıldığında**, sızıntının **%75'inden
+  fazlası TEK bir çağrıdan** geliyor: `clamp_direction(hip, shoulder, UP,
+  max_lean)` -- gövde-eğim (torso-lean) kısıtlaması. Kararlı-durumda tek
+  başına **-124px/s** (diğer 7 açı-kısıtlaması çağrısının TOPLAMI sadece
+  ~-35px/s). Neden: gövde açısı t≈13s'de zaten `PASSIVE_TORSO_MAX_DEG`
+  (75°) duvarına çarpıyor ve o andan itibaren bu clamp HER KAREDE
+  tetikleniyor -- ve bu fonksiyon, 3. tur'da BİLİNÇLİ olarak dokunulmadan
+  bırakılan o "hız sıfırlayan" sert clamp (`clamp_joint_angle_points()`
+  'in round-4-ÖNCESİ "V-splits" kusuruyla AYNI mekanizma, farklı eklemde).
+- **`mesafe` kategorisi** ise tek bir noktaya değil, `hip`/`l_knee`/
+  `r_knee`/`l_foot`/`r_foot`/`l_elbow`'a neredeyse birebir AYNI (~-28px/s)
+  dağılmış durumda -- muhtemelen `hip`'ten çubuk ağı üzerinden tüm
+  iskelete yayılan tek bir ortak mekanizma (driver-kalça kayışı şüpheli
+  bir aday; önceki bölümde onu gevşetmenin işleri KÖTÜLEŞTİRMESİ bununla
+  tutarlı, ama bu tur bu payı DAHA FAZLA izole etmedi -- gelecek iş).
+
+### Nedensel doğrulama ve uygulanan düzeltme
+
+Bulunan tek-baskın-kaynak hipotezi NEDENSEL olarak doğrulamak için:
+SADECE torso-lean `clamp_direction()` çağrısı momentum-koruyan hale
+getirildi (`clamp_joint_angle_points()` ile BİREBİR AYNI ofset-tabanlı
+yöntem -- `correction = yeni_konum - eski_konum`; bu hem `points`'e hem
+`prev_points`'e AYNI MİKTARDA eklenir), geri kalan 5 `clamp_direction`
+çağrısına (boyun, 2x kol konisi) HİÇ dokunulmadan:
+
+| | ham (düzeltilmemiş) | sadece torso-lean düzeltildi |
+|---|---|---|
+| t=20s→60s kalça-Y hızı | ~-87 px/s (doğrusal kaçış) | ~-9.7 px/s (9x azalma) |
+| davranış deseni | tekdüze, sınırsız kaçış | SINIRLI salınım (±150px bandı) |
+
+**Bu, kullanıcının "tüm sistemi kütle-ağırlıklı yap" önerisinden FARKLI
+ama daha kesin bir sonuç:** sorun kütle-ağırlıklandırma eksikliği değil
+(zaten mesafe kısıtlaması kütle-ağırlıklı; kütle-ağırlıklı `clamp_
+direction` de ayrıca denendi, kaçışı sadece 2x geciktirdi). Sorun,
+SPESİFİK OLARAK bir tek aşırı-sık-tetiklenen sert clamp'ın hız
+sıfırlamasıydı. TÜM `clamp_direction` çağrılarını AYNI ANDA
+momentum-koruyan yapmak (bu araştırma sırasında ayrıca denendi) "çift
+sarkaç" kaosu riskini geri getirip KARARSIZ kaldı -- bu yüzden değişiklik
+SADECE en baskın sızıntı kaynağına, cerrahi şekilde uygulandı (bkz.
+`physics/verlet.py`'nin `clamp_direction()` fonksiyonuna eklenen
+`preserve_momentum: bool = False` parametresi -- varsayılan `False`,
+yani BAŞKA HİÇBİR çağrı yeri etkilenmedi; sadece `demo/step9_ragdoll_
+blend.py` ve `demo/step13_full_integration_test.py`'deki torso-lean
+çağrısı `preserve_momentum=True` ile güncellendi).
+
+**Regresyon doğrulaması:** `step7` kanarya değerleri (0.794/0.985/0.941)
+ve `step12` kanarya değerleri (8.65px/38.80px/1.0000) BİREBİR AYNI kaldı.
+`step13`'ün 24/30/60 FPS stres testi hiçbir konfigürasyonda NaN/patlama
+üretmedi (önceden dokümante edilmiş "zaman-tutarsızlığı" sınırlaması --
+FPS'e göre farklı `hip_x` -- bu turdan BAĞIMSIZ, DEĞİŞMEDİ).
+
+**DÜRÜST YENİ BULGU (bu düzeltmenin görsel bir yan etkisi):** momentum
+korunduğu için gövde artık -75°'lik duvara çarpıp orada DONMUYOR -- bunun
+yerine "sekip" ters yöne salınıyor (bkz. `step9`'un varsayılan 13
+saniyelik demosunda gövde açısı: t=10.2s'de -75° duvarına çarpıyor,
+t=11.6s'de +6.8°'ye kadar SEKİYOR, t=12.9s'de -7.1°'de, yani neredeyse
+DİK duruyor -- round-4'ün committed videosunda aynı an -75°'de donmuş
+haldeydi). Görsel olarak üç örnek kare (`t=4.0s`, `t=10.2s`, `t=11.6s`)
+incelendi -- karakterin uzuvları birbirinin içinden geçmiyor, poz
+fiziksel olarak makul (bir "sersemlemiş, sallanan" ragdoll gibi), ama
+60 saniyelik koşuda bu salınım GÖZLE GÖRÜLÜR ŞEKİLDE SÖNMÜYOR (±150px
+bandında sabit genlikte devam ediyor) -- yani karakter artık ekrandan
+uçup gitmiyor ama aynı zamanda "yere yığılıp durmuyor" da, sürekli
+sallanıyor. Bu, `PASSIVE_TORSO_DAMPING`/`RAGDOLL_FRICTION` gibi mevcut
+sönümleme parametrelerinin bu YENİ salınım moduna karşı yeterince
+ayarlanmadığını gösteriyor -- düşük riskli bir ayar (sönümleme artışı)
+ile muhtemelen giderilebilir, ama bu turun kapsamına BİLİNÇLİ OLARAK
+DAHİL EDİLMEDİ (kullanıcı onayı "şimdilik (a) diyelim" ile mevcut hâliyle
+kabul edildi).
+
+**Kalan açık iş (gelecek tur için not edildi):** ~-9.7px/s'lik kalıntı
+kaçış tam olarak sıfırlanmadı -- muhtemel kaynaklar: `r_elbow_hand` kol
+konisi (~-34px/s payı, henüz nedensel doğrulanmadı), `mesafe` ağına
+dağılmış ~-28px/s'lik pay (driver-kalça kayışı şüpheli), boyun (~-3.5px/s).
+Ayrıca yukarıdaki salınım-sönmüyor bulgusu da ayrı bir sönümleme ayarı
+gerektirebilir. Kullanıcının kararıyla bu turda daha FAZLA kovalanmadı --
+kapsül öz-çarpışmasına geçiliyor.
+
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

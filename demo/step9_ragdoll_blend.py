@@ -429,7 +429,14 @@ def main() -> None:
         # bir acida KILITLENEMEZ.
         max_lean = blended_max_angle(blend, TORSO_MAX_LEAN_DEG, PASSIVE_TORSO_MAX_DEG)
         max_neck = blended_max_angle(blend, NECK_MAX_TILT_DEG, PASSIVE_NECK_MAX_DEG)
-        clamp_direction(body.points, body.prev_points, idx["hip"], idx["shoulder"], UP, max_lean)
+        # 5. tur EKI -- bkz. physics/verlet.py clamp_direction() dokstring notu:
+        # ΔY-toplayici tanisi bu cagriyi ("govde-egim") kararli-durum
+        # sizintisinin baskin (>%75) kaynagi olarak izole etti (govde acisi
+        # PASSIVE_TORSO_MAX_DEG=75 derecelik duvara carpip HER KAREDE bu clamp
+        # tetiklenince omuzun kalcaya gore acisal hizi sifirlaniyordu). Sadece
+        # BU cagri momentum-koruyan yapildi -- boyun/kol konisi DEGISMEDI.
+        clamp_direction(body.points, body.prev_points, idx["hip"], idx["shoulder"], UP, max_lean,
+                        preserve_momentum=True)
         torso_dir = body.points[idx["shoulder"]] - body.points[idx["hip"]]
         clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, max_neck)
 
