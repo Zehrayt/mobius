@@ -61,7 +61,7 @@ from physics.verlet import VerletSystem, clamp_direction, apply_angular_spring
 from physics.gait import FootPlantingLeg
 from physics.fabrik import clamp_joint_angle_points
 from physics.collision import collide_ground
-from physics.self_collision import push_points_off_segment, apply_drag
+from physics.self_collision import push_segment_off_segment, apply_drag
 from physics.environment import Terrain, GustWind
 from physics.balance import upper_body_com_x, support_x, counter_balance_offset, reach_pulldown_offset
 from physics.ragdoll import (
@@ -434,13 +434,29 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
         # kalan) govde/bacak noktalarini etkiliyor (cakisma onlemi #2).
         collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
 
-        # DUZELTME (3. tur -- devam): kol/govde nokta-vs-segment itme --
-        # pelerinde kullanilanla AYNI mekanizma (bkz. step9'daki yorum).
+        # DUZELTME (5. tur sonrasi kullanici istegi -- "Kapsul Tabanli
+        # Oz-Carpisma"): step9'daki AYNI yukseltme -- bkz. o dosyadaki
+        # push_segment_off_segment() yorumu icin ayrinti.
+        torso_frozen = body.pinned | {idx["hip"], idx["shoulder"]}
+        neck_frozen = body.pinned | {idx["shoulder"], idx["head"]}
+        # KUCUK RELAKSASYON DONGUSU (RELAX_ITERS'in _satisfy_sticks()'teki
+        # rolunun AYNISI): tek gecis, iki (govde+boyun) kisitlamasinin
+        # BIRBIRINI EZMESINE (govdeden kacinirken boyuna girme, tam tersi)
+        # yol aciyordu -- olculdu: tek geciste en yakin mesafe hedef
+        # 11px'in ALTINDA (~4-9px) kaliyordu. 4 iterasyon pratikte yeterli
+        # yakinsama sagliyor (bkz. README "5. tur sonrasi -- kapsul
+        # carpismasi" dogrulama olcumleri).
+        SELF_COLLISION_RELAX_ITERS = 4
         for side in ("l", "r"):
-            push_points_off_segment(body.points, body.prev_points, [idx[f"{side}_elbow"], idx[f"{side}_hand"]],
-                                     idx["hip"], idx["shoulder"], ARM_SELF_COLLISION_DIST)
-            push_points_off_segment(body.points, body.prev_points, [idx[f"{side}_elbow"], idx[f"{side}_hand"]],
-                                     idx["shoulder"], idx["head"], ARM_SELF_COLLISION_DIST)
+            for _ in range(SELF_COLLISION_RELAX_ITERS):
+                push_segment_off_segment(body.points, body.prev_points,
+                                          (idx[f"{side}_elbow"], idx[f"{side}_hand"]),
+                                          (idx["hip"], idx["shoulder"]), ARM_SELF_COLLISION_DIST,
+                                          pinned=torso_frozen, masses=body.masses)
+                push_segment_off_segment(body.points, body.prev_points,
+                                          (idx[f"{side}_elbow"], idx[f"{side}_hand"]),
+                                          (idx["shoulder"], idx["head"]), ARM_SELF_COLLISION_DIST,
+                                          pinned=neck_frozen, masses=body.masses)
 
         # DUZELTME (kullanici geri bildirimi -- "anatomik butunluk / IK
         # dagilmasi"): pasif (ragdoll) diz/ayak temsiline de aktif IK
@@ -462,10 +478,27 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
         # Onceden bu SIFIR kodla yapiliyordu (grep ile dogrulandi), bu
         # yuzden pelerin govdeyi serbestce kesip geciyordu (olculdu: 360
         # karenin 4-14'unde kesisim).
-        push_points_off_segment(body.points, body.prev_points, idx["cape_points"],
-                                 idx["hip"], idx["shoulder"], CAPE_SELF_COLLISION_DIST)
-        push_points_off_segment(body.points, body.prev_points, idx["cape_points"],
-                                 idx["shoulder"], idx["head"], CAPE_SELF_COLLISION_DIST)
+        # DUZELTME (5. tur sonrasi kullanici istegi -- "pelerinin de
+        # gövdenin içinden geçmesi imkansız olsun"): pelerin cok-segmentli
+        # bir zincir oldugu icin (16 nokta) HER ARDISIK cift bir "pelerin
+        # segmenti" olarak govde/boyun segmentine karsi push_segment_off_
+        # segment() ile test ediliyor -- artik sadece pelerin NOKTALARI
+        # degil, iki nokta ARASINDAKI cizgi de govdeyi kesip kesmedigine
+        # bakiliyor (nokta-bazli yontemin kacirdigi "orta-segment kesisimi"
+        # durumu). Govde/boyun uclari bu cagri icin sabit (pinned)
+        # muamelesi goruyor -- SADECE pelerin hareket eder, onceki nokta-
+        # bazli davranisla AYNI kapsam.
+        cape_pts = idx["cape_points"]
+        torso_frozen = body.pinned | {idx["hip"], idx["shoulder"]}
+        neck_frozen = body.pinned | {idx["shoulder"], idx["head"]}
+        for _ in range(SELF_COLLISION_RELAX_ITERS):
+            for cp_a, cp_b in zip(cape_pts[:-1], cape_pts[1:]):
+                push_segment_off_segment(body.points, body.prev_points, (cp_a, cp_b),
+                                          (idx["hip"], idx["shoulder"]), CAPE_SELF_COLLISION_DIST,
+                                          pinned=torso_frozen, masses=body.masses)
+                push_segment_off_segment(body.points, body.prev_points, (cp_a, cp_b),
+                                          (idx["shoulder"], idx["head"]), CAPE_SELF_COLLISION_DIST,
+                                          pinned=neck_frozen, masses=body.masses)
         apply_drag(body.points, body.prev_points, idx["cape_points"], CAPE_EXTRA_DRAG)
 
         hip_pos = body.points[idx["hip"]]

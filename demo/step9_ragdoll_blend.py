@@ -67,7 +67,7 @@ from physics.verlet import VerletSystem, clamp_direction, apply_angular_spring
 from physics.gait import FootPlantingLeg
 from physics.fabrik import clamp_joint_angle_points
 from physics.collision import collide_ground
-from physics.self_collision import push_points_off_segment
+from physics.self_collision import push_segment_off_segment
 from physics.environment import Terrain
 from physics.balance import reach_pulldown_offset
 from physics.ragdoll import (
@@ -453,15 +453,38 @@ def main() -> None:
 
         collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
 
-        # DUZELTME (3. tur -- devam): koni tek basina dirsegin govdeye COK
-        # YAKIN durmasini engellemiyor (genis bir koni acisinda bile kol
-        # govdeye deginebilir) -- pelerinde kullanilanla AYNI nokta-vs-
-        # segment itme mekanizmasi kol/govde icin de uygulaniyor.
+        # DUZELTME (5. tur sonrasi kullanici istegi -- "Kapsul Tabanli
+        # Oz-Carpisma"): nokta-vs-segment itme (sadece dirsek/el UC
+        # noktalarini kontrol eder) YERINE gercek segment-vs-segment
+        # carpisma -- on-kolun (dirsek->el) ARASINDAKI her nokta da artik
+        # govde/boyun segmentiyle kesisime karsi test ediliyor (bkz.
+        # physics/self_collision.py'deki push_segment_off_segment()
+        # dokstring'i). Govde/boyun uclarini (hip/shoulder/head) BU
+        # cagri icin bilincli olarak "pinned" muamelesi yapiyoruz --
+        # onceki push_points_off_segment() davranisiyla AYNI kapsam
+        # (SADECE kol hareket eder, govde/boyun bu carpismadan
+        # etkilenmez) korunuyor; govdeyi de hareket ettirmek ayri,
+        # doğrulanmasi gereken bir sonraki adim.
+        torso_frozen = body.pinned | {idx["hip"], idx["shoulder"]}
+        neck_frozen = body.pinned | {idx["shoulder"], idx["head"]}
+        # KUCUK RELAKSASYON DONGUSU (RELAX_ITERS'in _satisfy_sticks()'teki
+        # rolunun AYNISI): tek gecis, iki (govde+boyun) kisitlamasinin
+        # BIRBIRINI EZMESINE (govdeden kacinirken boyuna girme, tam tersi)
+        # yol aciyordu -- olculdu: tek geciste en yakin mesafe hedef
+        # 11px'in ALTINDA (~4-9px) kaliyordu. 4 iterasyon pratikte yeterli
+        # yakinsama sagliyor (bkz. README "5. tur sonrasi -- kapsul
+        # carpismasi" dogrulama olcumleri).
+        SELF_COLLISION_RELAX_ITERS = 4
         for side in ("l", "r"):
-            push_points_off_segment(body.points, body.prev_points, [idx[f"{side}_elbow"], idx[f"{side}_hand"]],
-                                     idx["hip"], idx["shoulder"], ARM_SELF_COLLISION_DIST)
-            push_points_off_segment(body.points, body.prev_points, [idx[f"{side}_elbow"], idx[f"{side}_hand"]],
-                                     idx["shoulder"], idx["head"], ARM_SELF_COLLISION_DIST)
+            for _ in range(SELF_COLLISION_RELAX_ITERS):
+                push_segment_off_segment(body.points, body.prev_points,
+                                          (idx[f"{side}_elbow"], idx[f"{side}_hand"]),
+                                          (idx["hip"], idx["shoulder"]), ARM_SELF_COLLISION_DIST,
+                                          pinned=torso_frozen, masses=body.masses)
+                push_segment_off_segment(body.points, body.prev_points,
+                                          (idx[f"{side}_elbow"], idx[f"{side}_hand"]),
+                                          (idx["shoulder"], idx["head"]), ARM_SELF_COLLISION_DIST,
+                                          pinned=neck_frozen, masses=body.masses)
 
         # DUZELTME (kullanici geri bildirimi -- "anatomik butunluk / IK
         # dagilmasi"): pasif (ragdoll) diz/ayak temsiline de -- IK'nin

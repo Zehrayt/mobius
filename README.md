@@ -1051,6 +1051,123 @@ kapsül öz-çarpışmasına geçiliyor.
 
 
 
+## 6. tur: Kapsül Tabanlı Öz-Çarpışma (Segment-to-Segment Collision)
+
+5. turun torso-lean düzeltmesi kabul edildikten ("şimdilik (a) diyelim")
+hemen sonra kullanıcı üç büyük özelliği sırayla istedi: (1) kapsül tabanlı
+öz-çarpışma, (2) aktif denge/refleks (CoM support-polygon kontrolü), (3)
+içsel kas kuvvetiyle ayağa kalkma (active ragdoll). Bu bölüm SADECE
+ilkini (2./3./4. turda defalarca ertelenen en kritik eksik) kapsıyor --
+kullanıcının kendi tanımıyla: "iki çizginin (segment) birbirine en yakın
+noktasını hesaplayıp, kolların, bacakların veya pelerinin gövdenin içinden
+geçmesini fiziksel olarak imkansız hale getiren matematiksel kısıtlama."
+
+### Mevcut yöntemin sınırı (neden yetersizdi)
+
+`physics/self_collision.py`'deki `push_points_off_segment()` (2. tur eki)
+sadece NOKTA-vs-SEGMENT itmesi yapıyordu: bir listedeki noktaları (ör.
+dirsek, el) sabit bir segmentin (ör. kalça->omuz) en yakın noktasından
+iter. **Kritik boşluk:** sadece `point_indices`'teki UÇ noktalar test
+edilir -- bir ön-kolun (dirsek->el) TAM ORTASI gövde çizgisini kesse bile,
+dirsek ve el kendileri segmentten yeterince uzaktaysa hiçbir çarpışma
+algılanmıyordu (birim testiyle doğrulandı, aşağıya bakın).
+
+### Yeni fonksiyon: `push_segment_off_segment()`
+
+`physics/self_collision.py`'ye iki yeni fonksiyon eklendi:
+
+- `_closest_points_segment_segment()`: iki 2D doğru parçası arasındaki
+  GERÇEK en yakın nokta çiftini hesaplayan standart algoritma (Ericson,
+  "Real-Time Collision Detection", §5.1.9 -- paralel/dejenere segmentleri
+  de doğru ele alan, sayısal olarak kararlı versiyon).
+- `push_segment_off_segment()`: bu en yakın nokta çiftini kullanıp, mesafe
+  `min_dist`'in altındaysa iki segmenti (uçların `s`/`t` enterpolasyon
+  oranlarıyla dağıtılan bir düzeltmeyle) birbirinden iter.
+  - **Kütle-ağırlıklı** (`_satisfy_sticks()`'teki AYNI ters-kütle
+    formülü, ama segment başına TEK birleşik kütle -- iki ucun ortalaması
+    -- kullanılıyor, nokta başına tam ters-kütle DEĞİL; dürüst bir
+    basitleştirme, dokstring'de belirtildi).
+  - **Pinned-farkında**: bir segmentin iki ucu da pinned'se o segment
+    tamamen sabit kabul edilir.
+  - **Momentum-koruyan** (5. turun ΔY-toplayıcı dersinden çıkan BİLİNÇLİ
+    tasarım kararı): düzeltme hem `points`'e hem `prev_points`'e AYNI
+    miktarda ekleniyor -- `push_points_off_segment()`'in ışınlama+hız-
+    sıfırlama davranışından farklı olarak, bu YENİ fonksiyon baştan hız
+    sıfırlamayan bir kısıtlama olarak tasarlandı (5. turda tam da bu tür
+    bir davranışın "vektörel yanlılık" kaynağı olabildiği görüldüğü için).
+
+### Birim testi: nokta-bazlı yöntemin kaçırdığı, yeni yöntemin yakaladığı durum
+
+Beş izole birim testi yazıldı (`/tmp/test_seg_seg.py`, repo'ya dahil
+değil): paralel segmentler arası mesafe, dik kesişen segmentler (X
+şeklinde, mesafe=0), pinned uçlarla asimetrik itme, eşit kütleli iki
+serbest segmentin simetrik itilmesi, ve momentum korumasının doğrulanması
+(`points`/`prev_points` AYNI miktar kayıyor mu). **En kritik test:** bir
+"ön-kol" segmentinin (uçları gövdeden UZAK, ör. dirsek x=-10, el x=+10)
+TAM ORTASI (x=0) bir "gövde" segmentini (dikey eksen) kesecek şekilde
+kuruldu -- `push_points_off_segment()` bu durumu KESİNLİKLE
+YAKALAYAMAZDI (uçlar segmentten uzak), `push_segment_off_segment()`
+doğru şekilde çarpışmayı algılayıp düzeltti. Tüm 5 test geçti.
+
+### Entegrasyon ve doğrulama
+
+`demo/step9_ragdoll_blend.py` ve `demo/step13_full_integration_test.py`'
+deki kol-vs-gövde/boyun çarpışma çağrıları (`push_points_off_segment` ile
+[dirsek,el] noktalarını kontrol eden) `push_segment_off_segment`'e
+yükseltildi (ön-kol SEGMENTİ artık gövde/boyun SEGMENTİNE karşı test
+ediliyor). `step13`'teki pelerin-vs-gövde çarpışması da aynı şekilde
+yükseltildi -- pelerin zincirindeki HER ARDIŞIK nokta çifti bir "pelerin
+segmenti" olarak gövde/boyun segmentine karşı test ediliyor (önceden
+sadece pelerin NOKTALARI tek tek test ediliyordu).
+
+**Kapsam kararı:** gövde/boyun uçları (`hip`/`shoulder`/`head`) bu
+çağrılar için BİLİNÇLİ olarak "pinned" muamelesi görüyor -- yani SADECE
+kol/pelerin hareket ediyor, gövde bu çarpışmadan etkilenmiyor. Bu,
+`push_points_off_segment()`'in ESKİ kapsamıyla BİREBİR AYNI (sadece
+tespit kalitesi yükseltildi, düzeltmenin kime uygulandığı DEĞİŞMEDİ) --
+gövdeyi de hareket ettirmek (iki taraflı çarpışma tepkisi) ayrı, daha
+riskli bir sonraki adım olarak bilinçli şekilde ERTELENDİ (torso-lean
+düzeltmesiyle etkileşimi ayrı doğrulama gerektirir).
+
+**Yakınsama (relaksasyon) bulgusu:** tek geçişlik bir çağrı, aynı
+taraftaki kol-vs-gövde VE kol-vs-boyun kısıtlamalarının birbirini
+EZMESİNE yol açtı (biri düzeltirken diğerini bozuyordu) -- ölçüldü: tek
+geçişte en yakın mesafe hedef 11px'in belirgin altında (~4-9px) kalıyordu.
+`_satisfy_sticks()`'teki `RELAX_ITERS` mantığıyla AYNI ruhta, kol/gövde ve
+kol/boyun çiftleri için 4 iterasyonluk küçük bir relaksasyon döngüsü
+eklendi (`SELF_COLLISION_RELAX_ITERS=4`) -- kare-sonu doğru ölçümle
+(self-collision TAMAMLANDIKTAN, diz-clamp'ten HEMEN ÖNCE) doğrulandı:
+l_torso 10.86px, r_torso 10.79px, l_neck 11.00px, r_neck 21.11px (hedef
+≥11px) -- yani pratik olarak yakınsıyor (kalan ~0.14-0.21px eksik,
+`_satisfy_sticks()`'in kendi sınırlı-iterasyon yakınsamasıyla AYNI
+mahiyette bir dürüst sınır, sonsuz iterasyon yok).
+
+**Regresyon:** `step1`-`step12` tüm kanarya değerleri (step7:
+0.794/0.985/0.941; step12: 8.65px/38.80px/1.0000) BİREBİR AYNI kaldı.
+`step13`'ün 24/30/60 FPS testi hiçbir konfigürasyonda NaN/patlama
+üretmedi, son `hip_x` değerleri (312.98/304.06/-14.02) bu turdan ÖNCEKİYLE
+BİREBİR AYNI (beklenen -- kol/pelerin çarpışması `hip`'i hiç hareket
+ettirmiyor, sadece kol/pelerin noktalarını etkiliyor). Görsel QA: en yakın
+yaklaşım anı (t=3.03s, mesafe=10.79px) çıkarılıp incelendi -- kol doğal
+şekilde gövdenin yanında duruyor, görünür bir "sıkışma"/tuhaflık yok.
+
+**Dürüst sınırlar (bilinçli olarak bu tura DAHİL EDİLMEDİ):**
+- Bacak-bacak veya bacak-gövde çarpışması hâlâ YOK (kullanıcının isteği
+  kol/bacak/pelerin üçünü de kapsıyordu; bu tur sadece kol+pelerin'i ele
+  aldı -- mevcut gait/ragdoll'da bacakların birbirine girdiği
+  GÖZLEMLENMEMİŞ bir durum, ama ragdoll flailing sırasında teorik olarak
+  mümkün; aynı `push_segment_off_segment()` fonksiyonu kullanılabilir,
+  ayrı bir doğrulama turu gerektirir).
+- Gövde/boyun uçları bu çarpışmalardan HİÇ etkilenmiyor (tek taraflı tepki)
+  -- gerçek bir "kolun gövdeye çarpması gövdeyi de hafifçe iter" fiziği
+  yok.
+- Segment başına TEK birleşik kütle (iki ucun ortalaması), nokta başına
+  tam ters-kütle değil.
+- Tek karede sonlu (4) iterasyon -- matematiksel olarak KESİN sıfır-
+  ihlal garantisi yok, sadece pratik/ölçülmüş yakınsama.
+
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
