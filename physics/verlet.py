@@ -54,7 +54,40 @@ Orijinale göre yapılan değişiklikler (Apache-2.0 madde 4(b) gereği belirtil
     birkaç kare içinde geri toparlanır (squash & stretch). Bu, XPBD/PBD
     literatüründeki "compliance" kavramının basitleştirilmiş bir hali --
     gerçek XPBD `dt^2/stiffness` ile ölçekler, burada sadece iterasyon
-    başına doğrusal bir karışım oranı kullanılıyor. `compliance=0.0`
+    başına doğrusal bir karışım oranı kullanılıyor.
+  - **Kütle (mass) hiyerarşisi eklendi** (3. tur eki -- kullanıcı geri
+    bildirimi "kağıt bebek etkisi": tüm Verlet düğümleri eşit kütleymiş
+    gibi davranıyordu, yani ağır bir gövde hafif bir bacağı gerçekçi
+    şekilde SÜRÜKLEYEMİYORDU). `add_point(..., mass=...)` ile her noktaya
+    bir kütle atanabiliyor; `_satisfy_sticks()`'teki çubuk düzeltmesi artık
+    50/50 sabit bölünmüyor, standart PBD/XPBD nokta-kütle formülüyle
+    (`w=1/kütle`; `frac_i = w_i/(w_i+w_j)`) TERS KÜTLEYLE ağırlıklanıyor
+    -- ağır nokta az hareket eder, hafif nokta farkı kapatmak için çok
+    hareket eder. `mass` verilmezse (varsayılan 1.0, TÜM demolar için
+    geçerli) ya da iki nokta eşit kütledeyse formül `frac=0.5` verir --
+    yani ESKİ davranışla BİREBİR AYNI (bkz. commit mesajındaki regresyon
+    doğrulaması). **Dürüst sınır:** yerçekimi hâlâ kütleden bağımsız bir
+    ivme olarak uygulanıyor (gerçek fizikte de doğru budur -- F=ma,
+    a=g kütleden bağımsızdır), yani kütlenin GÖRÜNÜR etkisi SADECE çubuk
+    kısıtlaması ihlal edildiğinde (ör. ani bir darbe/çarpışma anında)
+    ortaya çıkar; bu gerçek bir rijit-cisim eylemsizlik-momenti simülasyonu
+    değil, PBD literatüründeki "ters kütle ağırlıklı düzeltme" yaklaşımı.
+  - `apply_angular_spring()` eklendi (3. tur eki, aşağıda ayrıntılı
+    docstring'i var) -- omurga/boyun için basit bir açısal Hooke yasası
+    (yay-sönümleme) yardımcısı.
+  - **`clamp_direction()`'ın `prev_points`'i sıfırlama davranışı KORUNDU**
+    (3. tur eki -- kullanıcı geri bildirimi "hızı sıfırlayan kısıtlamalar"
+    genel eleştirisine rağmen, BİLİNÇLİ bir kapsam kararı): kullanıcının
+    somut şikayeti (`clamp_joint_angle_points()`'in ragdoll bacaklarını
+    "V-splits" pozunda dondurması, bkz. `physics/fabrik.py`) SADECE o
+    fonksiyonda momentum-koruyan bir düzeltmeyle giderildi. `clamp_
+    direction()` gövde/boyun/kol için ÇOK daha geniş bir alanda (hem
+    aktif hem pasif modda) kullanılıyor -- momentumu orada da korumak,
+    `step3`'ün "çift sarkaç" (double pendulum) kaosunu geri getirme
+    riski taşıyor (bu fonksiyon zaten TAM OLARAK o kaosu engellemek için
+    yazılmıştı) ve ayrı bir doğrulama turu gerektirir. Bu yüzden bu
+    turda DEĞİŞTİRİLMEDİ -- olası bir sonraki iş.
+    `compliance=0.0`
     (varsayılan) ile eski davranıştan hiçbir fark yok, bu yüzden mevcut
     hiçbir demo/iskelet etkilenmedi.
 
@@ -223,17 +256,19 @@ class VerletSystem:
     friction: float = FRICTION
     wind: np.ndarray = field(default_factory=lambda: np.zeros(2))
     wind_scale: np.ndarray = field(default_factory=lambda: np.zeros(0))  # (N,) nokta başına rüzgar çarpanı
+    masses: np.ndarray = field(default_factory=lambda: np.zeros(0))  # (N,) nokta başına kütle (bkz. add_point)
 
     @classmethod
     def empty(cls) -> "VerletSystem":
         return cls(points=np.zeros((0, 2)), prev_points=np.zeros((0, 2)))
 
-    def add_point(self, pos: Sequence[float], pinned: bool = False, wind_scale: float = 1.0) -> int:
+    def add_point(self, pos: Sequence[float], pinned: bool = False, wind_scale: float = 1.0, mass: float = 1.0) -> int:
         idx = len(self.points)
         pos = np.asarray(pos, dtype=float).reshape(1, 2)
         self.points = np.vstack([self.points, pos]) if self.points.size else pos.copy()
         self.prev_points = np.vstack([self.prev_points, pos]) if self.prev_points.size else pos.copy()
         self.wind_scale = np.append(self.wind_scale, float(wind_scale))
+        self.masses = np.append(self.masses, float(mass))
         if pinned:
             self.pinned.add(idx)
         return idx
@@ -310,6 +345,7 @@ class VerletSystem:
             self.prev_points[idx] = self.points[idx]
 
     def _satisfy_sticks(self) -> None:
+        has_masses = self.masses.shape[0] == len(self.points)
         for i, j, rest_length, compliance in self.sticks:
             pi, pj = self.points[i], self.points[j]
             delta = pj - pi
@@ -330,5 +366,29 @@ class VerletSystem:
             elif j_pinned:
                 self.points[i] += delta * diff
             else:
-                self.points[i] += delta * diff * 0.5
-                self.points[j] -= delta * diff * 0.5
+                # KUTLE HIYERARSISI (bkz. modul dokstring'indeki "Kutle
+                # (mass) hiyerarsisi" notu): duzeltme artik 50/50 degil,
+                # TERS KUTLEYLE agirlikli -- standart PBD/XPBD nokta-kutle
+                # kisitlama formulu (w=1/m; frac_i=w_i/(w_i+w_j)). Daha
+                # AGIR nokta daha AZ hareket eder, daha HAFIF nokta
+                # farki KAPATMAK icin daha COK hareket eder -- ör. agir
+                # bir kalca ile hafif bir ayak arasindaki cubuk gerildiginde
+                # ayak kalcaya dogru cok daha fazla cekilir, kalca neredeyse
+                # yerinde kalir (gercek bir govde agirliginin bacagi
+                # surukelemesi hissi). `masses` atanmamissa (has_masses
+                # False, ör. bu sistemi kullanan TUM diger demolar) ya da
+                # iki nokta esit kutledeyse frac_i=frac_j=0.5 olur --
+                # yani ESKI davranisla BIREBIR AYNI (kutle atanmamis/esit
+                # her yerde hicbir sayisal fark YOK, bkz. commit mesaji
+                # dogrulamasi).
+                if has_masses:
+                    mi = max(float(self.masses[i]), 1e-9)
+                    mj = max(float(self.masses[j]), 1e-9)
+                    wi, wj = 1.0 / mi, 1.0 / mj
+                    total = wi + wj
+                    frac_i = wi / total
+                    frac_j = wj / total
+                else:
+                    frac_i = frac_j = 0.5
+                self.points[i] += delta * diff * frac_i
+                self.points[j] -= delta * diff * frac_j

@@ -102,6 +102,43 @@ LIFT_HEIGHT = 22.0
 KNEE_LIMITS = (8.0, 150.0)
 KNEE_BEND_SIGN = -1.0
 
+# EKLEME (3. tur EKI -- bkz. step13_full_integration_test.py'deki AYNI
+# yorum / physics/verlet.py'nin modul dokstring'i): kutle hiyerarsisi.
+#
+# DUZELTME (4. tur eki -- OLCUMLE bulunan ciddi bir kararsizlik): ilk
+# denemede MASS_KNEE=0.8 / MASS_FOOT=0.4 (kalca:diz orani 5:1) kullanildi
+# ve tam entegrasyon hattinda (gait + ragdoll + govde yayi + govde/boyun
+# clamp_direction() "guvenlik duvari" + collide_ground) karakter ekrandan
+# yukari firlayip gitti (hip Y ~ -465, fiziksel olarak SAÇMA bir enerji
+# kazanimi -- NaN/crash degil ama tamamen bozuk bir sonuc). Izole testlerle
+# (RELAX_ITERS'i 8'den 64'e cikarmak degisiklik yapmadi -- yani sorun
+# kare-ici yakinsama degil, KARELER ARASI enerji birikimi; hip<->omuz,
+# hip<->diz, kutlesiz enerji-yayilma testleri sistemli sekilde denendi)
+# kok neden bulundu: govde/boyun `clamp_direction()`'in (bkz. o fonksiyonun
+# kendi dokstring'i) HER TETIKLENDIGINDE hizi sifirlamasi ile agir-kalca/
+# hafif-bacak kutle oraninin `_satisfy_sticks()` uzerinden etkilesimi,
+# 5:1 gibi asiri oranlarda kararsiz REZONANSA donusuyor. Aci kisitlamasini
+# momentum-koruyacak sekilde degistirmek de (iki farkli yontem denendi:
+# duz-oteleme ve rotasyonel-koruma) SORUNU COZMEDI -- yani mesele "hizi
+# nasil koruyoruz" degil, DUZELTMENIN olusma sikligi/agir-hafif kutle
+# etkilesimiydi. Ikili arama (bisection) ile deneysel olarak bulundu:
+# kalca:diz orani ~2.67:1'de (MASS_KNEE=1.5) KARARLI, ~3.33:1'de
+# (MASS_KNEE=1.2) TEKRAR KARARSIZ. Bu yuzden bacak kutleleri, yonelim
+# (agir govde / hafif uc) korunarak ama guvenli bir marjla (kararli
+# esigin bir miktar altinda), asagidaki degerlere COZULDU:
+MASS_HIP = 4.0
+MASS_SHOULDER = 3.0
+MASS_HEAD = 1.2
+MASS_ELBOW = 0.5
+MASS_HAND = 0.3
+MASS_KNEE = 1.6
+MASS_FOOT = 1.0
+# Dogrulama: yukaridaki degerlerle t=12.9s'deki tum nokta Y konumlari
+# (hip=247.9, shoulder=194.5, head=165.2, l_foot=158.1, r_foot=84.7)
+# gorunur sahne icinde (0-330 araligi) kaliyor -- firlama YOK, ve govde
+# hala bacaklardan/ellerden gozle gorulur sekilde daha "agir" davraniyor
+# (bkz. README.md "4. tur eki" -- once/sonra karsilastirmasi).
+
 UP = np.array([0.0, -1.0])
 TORSO_MAX_LEAN_DEG = 12.0
 NECK_MAX_TILT_DEG = 18.0
@@ -183,13 +220,13 @@ def build_body() -> tuple[VerletSystem, dict]:
     idx: dict = {}
 
     idx["driver"] = sys_.add_point([0.0, HIP_Y], pinned=True)
-    idx["hip"] = sys_.add_point([0.0, HIP_Y])
+    idx["hip"] = sys_.add_point([0.0, HIP_Y], mass=MASS_HIP)
     sys_.add_stick(idx["driver"], idx["hip"], length=3.0)
 
-    idx["shoulder"] = sys_.add_point([0.0, HIP_Y - TORSO_LEN])
+    idx["shoulder"] = sys_.add_point([0.0, HIP_Y - TORSO_LEN], mass=MASS_SHOULDER)
     sys_.add_stick(idx["hip"], idx["shoulder"], length=TORSO_LEN)
 
-    idx["head"] = sys_.add_point([0.0, HIP_Y - TORSO_LEN - HEAD_STICK_LEN])
+    idx["head"] = sys_.add_point([0.0, HIP_Y - TORSO_LEN - HEAD_STICK_LEN], mass=MASS_HEAD)
     sys_.add_stick(idx["shoulder"], idx["head"], length=HEAD_STICK_LEN)
 
     for side, x_off in (("l", -1.0), ("r", 1.0)):
@@ -197,9 +234,9 @@ def build_body() -> tuple[VerletSystem, dict]:
         anchor_pos = shoulder_pos + [x_off * SHOULDER_WIDTH, 0.0]
         anchor = sys_.add_point(anchor_pos, pinned=True)
         idx[f"{side}_anchor"] = anchor
-        elbow = sys_.add_point(anchor_pos + [0.0, ARM_SEG_LEN])
+        elbow = sys_.add_point(anchor_pos + [0.0, ARM_SEG_LEN], mass=MASS_ELBOW)
         sys_.add_stick(anchor, elbow, length=ARM_SEG_LEN)
-        hand = sys_.add_point(anchor_pos + [0.0, ARM_SEG_LEN * 2])
+        hand = sys_.add_point(anchor_pos + [0.0, ARM_SEG_LEN * 2], mass=MASS_HAND)
         sys_.add_stick(elbow, hand, length=ARM_SEG_LEN)
         idx[f"{side}_elbow"] = elbow
         idx[f"{side}_hand"] = hand
@@ -210,8 +247,8 @@ def build_body() -> tuple[VerletSystem, dict]:
     # (asagida `main()` icinde, blend ile).
     for side in ("l", "r"):
         hip_pos = sys_.points[idx["hip"]]
-        knee = sys_.add_point(hip_pos + [0.0, LEG_SEGMENT_LEN])
-        foot = sys_.add_point(hip_pos + [0.0, LEG_SEGMENT_LEN * 2])
+        knee = sys_.add_point(hip_pos + [0.0, LEG_SEGMENT_LEN], mass=MASS_KNEE)
+        foot = sys_.add_point(hip_pos + [0.0, LEG_SEGMENT_LEN * 2], mass=MASS_FOOT)
         sys_.add_stick(idx["hip"], knee, length=LEG_SEGMENT_LEN)
         sys_.add_stick(knee, foot, length=LEG_SEGMENT_LEN)
         idx[f"{side}_knee"] = knee

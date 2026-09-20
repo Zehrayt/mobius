@@ -745,6 +745,154 @@ DÜRÜSTÇE bir sınır olarak bırakılıyor -- olası bir sonraki iş (capsule
 collision ile aynı pakette ele alınabilir, ikisi de "gerçek eklem
 kısıtı/çarpışma fiziği" kategorisine giriyor).
 
+## 4. tur kullanıcı geri bildirimi ve düzeltmeler
+
+Kullanıcı, 3. tur eki (omurga yay-sönümleme) sonrası entegrasyon videosunu
+izleyip 4 yapısal sorun bildirdi: (1) `_nearest_valid_bend_deg()`'in (3.
+tur eki, bkz. yukarıdaki "Dürüst sınır") aktif yürüyüş bacağının ham diz
+açı aralığını da `[-58°,+58°]`'e daraltmasının "kazık yutmuş gibi" robotik/
+peg-leg bir yürüyüşe yol açması; (2) `clamp_joint_angle_points()`'in HER
+düzeltmede `prev_points`'i sıfırlamasının (yukarıdaki "Dürüst sınır"da
+zaten tespit edilmiş V-splits/donmuş-bacak sorunu) yerçekimini fiilen
+iptal etmesi; (3) tüm Verlet noktalarının eşit kütleymiş gibi davranması
+("kağıt bebek etkisi" -- ağır bir gövdenin hafif bir bacağı gerçekçi
+şekilde sürükleyememesi); (4) nokta-tabanlı öz-çarpışmanın yüksek momentumlu
+ragdoll flailing'inde kırılganlaşması (bu turda ele ALINMADI -- capsule
+collision hâlâ gelecek iş). Kullanıcı (2) ve (1)'in BİRLİKTE çözülmesi
+için somut bir teknik reçete verdi: önce hızı-sıfırlayan kısıtlamaları
+momentum-koruyan hale getir, SONRA diz açı aralığını doğal anatomik
+sınırlara geri çek, EN SONDA kütle hiyerarşisini kur.
+
+### (1) + (2): Momentum-koruyan kısıtlama ve anatomik diz aralığının geri verilmesi
+
+**`clamp_joint_angle_points()`** (`physics/fabrik.py`, sadece pasif/ragdoll
+bacaklarda kullanılıyor): "ışınlama + hız sıfırlama" yerine, uygulanan
+konum düzeltmesi (`correction = new_end - eski_end`) hem `points[i_end]`'e
+hem de `prev_points[i_end]`'e AYNI miktarda ekleniyor. Bu, `points -
+prev_points` farkının (Verlet hızı) düzeltmeden ÖNCEKİ değeriyle
+MATEMATİKSEL OLARAK AYNI kalmasını sağlıyor -- kısıtlama artık sadece
+YÖNÜ düzeltiyor, hızı yemiyor. Açı-katlama mantığının kendisi
+(`_nearest_valid_bend_deg()`, 3. tur eki) korundu (şiddetli darbeler
+altında hâlâ anti-teleport koruması gerekiyor) -- sadece SONUCUN nasıl
+uygulandığı değişti.
+
+**`FabrikChain2D.clamp_joint_angles()`** (`physics/gait.py`'nin kullandığı
+AYRI kod yolu, sadece AKTİF/IK bacaklarda kullanılıyor -- `prev_points`/hız
+kavramı YOK, her karede sıfırdan çözülüyor): `_nearest_valid_bend_deg()`
+kullanımı GERİ ALINDI, orijinal büyüklük-koruyan-ayna formülüne
+(`magnitude = clip(|açı|, min, max); clamped = ±magnitude`) dönüldü.
+**Neden iki farklı fonksiyon iki farklı şekilde davranıyor:** bu fonksiyonun
+noktaları her karede DEVAM EDEN bir hedeften yeniden çözülüyor, `prev_points`
+yok, yani hız-donma riski hiç YOK -- 3. tur'daki "yansıtma" sıçrama hatası
+(bkz. yukarı) sadece pasif/ragdoll tarafında geçerliydi. `_nearest_valid_
+bend_deg()`'i BURAYA da uygulamak, sıçrama riskini gidermeden derin diz
+bükülmelerini engelleyip peg-leg yürüyüşe yol açıyordu (kullanıcının
+şikayeti). Diz açı aralığı sabitleri (`KNEE_LIMITS`) de `(8.0, 150.0)`
+büyüklük aralığına genişletildi (kullanıcının "örneğin `[-10°,+140°]`"
+önerisiyle aynı yönde -- akıcı "Rain World" yürüyüşü geri getirmek için).
+
+**Doğrulama:** `git stash` A/B karşılaştırmasıyla, aktif SOL bacağın ham
+diz açı aralığının orijinal round-3 (`7bef2d4`) taban çizgisiyle BİREBİR
+aynı (`min=-82.4, max=0.7`) olduğu doğrulandı. ffmpeg kareleriyle görsel
+doğrulama: `step9`'un AKTİF fazında (t=2.0s/3.0s) bacaklar artık derin,
+doğal bir diz bükümüyle yürüyor (peg-leg YOK); GEÇİŞ anında (t=3.5s/4.0s)
+bacaklar simetrik bir V-splits'e KİLİTLENMEDEN, asimetrik/akıcı bir pozla
+pasif faza devam ediyor. `step7`/`step12` canary sayıları (0.794/0.985/
+0.941; 8.65px/38.80px/1.0000) DEĞİŞMEDİ.
+
+`clamp_direction()` (gövde/boyun/kol "güvenlik duvarı") BU turda da
+KASITLI OLARAK değiştirilmedi -- aşağıdaki kütle bölümünde bunun neden
+GEREKLİ bir sınır (ve aslında tam tersi yönde bir keşfe yol açtığı)
+açıklanıyor.
+
+### (3): Kütle hiyerarşisi -- ve bulunan GERÇEK bir kararsızlık
+
+`VerletSystem.add_point(..., mass=...)` eklendi; `_satisfy_sticks()`'teki
+çubuk düzeltmesi artık 50/50 sabit değil, standart PBD nokta-kütle
+formülüyle (`w=1/kütle`; `frac_i=w_i/(w_i+w_j)`) TERS KÜTLEYLE
+ağırlıklanıyor -- ağır nokta az hareket eder, hafif nokta farkı kapatmak
+için çok hareket eder. `mass` verilmezse ya da iki nokta eşit kütledeyse
+`frac=0.5` -- ESKİ davranışla birebir aynı (`step7`/`step12` canary'leriyle
+doğrulandı, kütlesiz/eşit-kütleli HİÇBİR demo etkilenmedi). **Dürüst
+sınır:** yerçekimi hâlâ kütleden bağımsız bir ivme (`F=ma`, `a=g` kütleden
+bağımsız, gerçek fizikte de doğru) -- kütlenin GÖRÜNÜR etkisi SADECE çubuk
+kısıtlaması ihlal edildiğinde ortaya çıkıyor; gerçek bir rijit-cisim
+eylemsizlik-momenti simülasyonu değil.
+
+**İlk denemede** (`MASS_HIP=4.0, MASS_SHOULDER=3.0, MASS_HEAD=1.2,
+MASS_ELBOW=0.5, MASS_HAND=0.3, MASS_KNEE=0.8, MASS_FOOT=0.4` -- kalça:diz
+oranı 5:1) tam entegrasyon hattında (gait + ragdoll + omurga yayı +
+`clamp_direction()` + `collide_ground`) karakter EKRANDAN YUKARI FIRLAYIP
+gitti (hip Y-konumu ~ -465px, `zemin=330`'a göre; NaN/patlama DEĞİL, ama
+fiziksel olarak saçma bir enerji kazanımı). Bu, kod git'e commit edilmeden
+ÖNCE, projenin kendi regresyon adımıyla yakalandı.
+
+**İzolasyon süreci** (birer birer devre dışı bırakma/geri alma):
+`RELAX_ITERS`'i 8'den 64'e çıkarmak HİÇBİR fark yaratmadı (yani sorun
+kare-içi PBD yakınsaması değil, KARELER ARASI enerji birikimi). Diz
+kelepçesini (`clamp_joint_angle_points`) tamamen kaldırmak sorunu
+DÜZELTMEDİ, KÖTÜLEŞTİRDİ. `apply_angular_spring()`'i devre dışı bırakmak
+da KÖTÜLEŞTİRDİ. Gövde/boyun/kol `clamp_direction()` çağrılarının HEPSİNİ
+devre dışı bırakmak sorunu TAMAMEN durdurdu (tüm noktalar temiz şekilde
+zemine, y=330'a yerleşti) -- ve tek başına SADECE kalça→omuz (`UP`
+referanslı gövde eğim) çağrısı bile aynı firlamayı tek başına
+üretebiliyordu. `clamp_direction()`'a `clamp_joint_angle_points()`'teki
+AYNI momentum-koruma tekniğini uygulamak (iki farklı yöntemle denendi:
+düz-öteleme ve rotasyonel/açısal-hız-koruma) sorunu ÇÖZMEDİ -- yani mesele
+"hızı nasıl koruyoruz" değildi. Kalça/omuz kütlelerini tek tek 1.0'a geri
+almak sorunu KISMEN azalttı ama gidermedi; asıl belirleyici kütle çiftinin
+DİZ/AYAK olduğu (bacak zincirinin `hip→knee→foot` bağlantısı) izole
+edildi. İkili aramayla (bisection): kalça:diz oranı ~2.67:1'de
+(`MASS_KNEE=1.5`) KARARLI, ~3.33:1'de (`MASS_KNEE=1.2`) TEKRAR KARARSIZ --
+yani gerçek bir sayısal kararlılık EŞİĞİ var, bu motorun (sabit 8 iterasyonlu
+Gauss-Seidel PBD, kalçanın 4 çubuğa bağlı olması) doğal bir sınırlaması.
+
+**Sonuç:** bacak kütleleri, yönelim (ağır gövde/hafif uç -- kullanıcının
+istediği "kağıt bebek" etkisinin tersi) korunarak ama kararlı eşiğin
+güvenli bir marjı altında ÇÖZÜLDÜ: `MASS_KNEE=1.6, MASS_FOOT=1.0` (kalça:
+diz oranı 2.5:1). Diğer tüm kütleler (`HIP=4.0, SHOULDER=3.0, HEAD=1.2,
+ELBOW=0.5, HAND=0.3`) değişmedi -- kol zinciri (`anchor→elbow→hand`)
+zaten pinned bir anchor'a bağlı ve dahili oranı (0.5:0.3≈1.67:1) hiç
+sorun çıkarmadı, tehlike SADECE kalça-diz bağlantısındaydı.
+
+**Doğrulama:** `step9` ve `step13`'ün TAMAMI (step13 için 24/30/60 FPS
+stres testi dahil) yeniden çalıştırılıp hem `any_nan=False` hem de HER
+karede TÜM noktaların `|Y|`'sinin makul bir aralıkta kaldığı (step13'te
+maksimum 354px, sadece başlangıç pozunda -- ragdoll firlaması YOK) ayrıca
+DOĞRULANDI (mevcut `step13`'ün kendi NaN-kontrolü bu tarz "sonlu ama saçma"
+bir patlamayı YAKALAMAZDI, bu yüzden ek bir manuel Y-sınırı kontrolü
+yapıldı). ffmpeg kareleriyle görsel doğrulama: ragdoll çöküşünde gövde/
+kafa artık bacaklardan gözle görülür şekilde daha "ağır" davranıyor.
+`step7`/`step12` canary sayıları yine DEĞİŞMEDİ.
+
+### Dürüst sınırlar (bu turda ELE ALINMAYAN/tam çözülmeyen sorunlar)
+
+- **Öz-çarpışma (kullanıcının 4. maddesi):** nokta-tabanlı öz-çarpışma
+  (`push_points_off_segment()`) bu turda hiç değiştirilmedi -- capsule
+  collision hâlâ ayrı bir gelecek iş olarak duruyor.
+- **`clamp_direction()`'ın kendisi hâlâ hız-sıfırlıyor:** yukarıdaki
+  izolasyon sürecinde momentum-koruma denendi ve kararlılığı DÜZELTMEDİĞİ
+  için GERİ ALINDI -- yani gövde/boyun/kol için "hızı sıfırlayan
+  kısıtlamalar" eleştirisi TAM olarak giderilmedi, sadece (a) asıl somut
+  şikayet konusu olan bacak/diz tarafında giderildi ve (b) kütle
+  hiyerarşisi bu fonksiyonu DEĞİŞTİRMEDEN, sadece bacak kütle oranını
+  kısıtlı tutarak güvenli hale getirildi. Gövde/boyun için gerçek bir
+  momentum-koruyan çözüm hâlâ AÇIK bir problem (muhtemelen `clamp_
+  direction()`'ı özünden mass-aware/iki-taraflı bir kısıtlamaya çevirmeyi
+  gerektiriyor -- tek başına denenip işe yaramadı, bkz. yukarı).
+  Kararlılık eşiği (2.67:1 civarı) da EMPİRİK bulundu, kapalı-form bir
+  türetim değil -- daha büyük/karmaşık iskeletlerde yeniden ölçülmesi
+  gerekir.
+- **Tam pasif düşüşte bazen "yere tam yerleşmeyen, havada asılı kalan"
+  bir tümbling pozu** (bkz. `step9`/`step13`'ün geç karelerinde bacakların
+  yukarı-dışa açık kaldığı gözlemi) -- bu davranış kütle hiyerarşisinden
+  ÖNCE de (kütlesiz/eşit-kütleli baseline'da da) AYNEN mevcuttu, yani BU
+  turun bir regresyonu DEĞİL, önceden var olan ayrı bir sınırlama
+  (muhtemelen basit 2 bacaklı ragdoll'un tam "yatarak dinlenme" durumuna
+  hiç ulaşamaması, öz-çarpışma/eklem-limiti eksikliğiyle ilişkili
+  olabilir) -- bu turun kapsamı dışında bırakıldı.
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

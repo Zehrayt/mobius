@@ -181,19 +181,32 @@ class FabrikChain2D:
         tetiklenmesi için gereken sinyal gürültüsü marjı ince. Kullanıcının
         önerdiği gerçek mimari düzeltme -- "açı 180'i geçtiği an kodun dizi
         ZORLA doğru tarafa katlaması" -- burada bir SINIRA kenetlemek değil,
-        geçerli açı ARALIĞININ (bir yay/arc) çember üzerindeki EN YAKIN UÇ
-        NOKTASINA katlanarak uygulanıyor (bkz. `_nearest_valid_bend_deg()`).
+        büküm BÜYÜKLÜĞÜNÜ koruyarak doğru tarafa YANSITMAK (reflect) olarak
+        uygulanıyor: `magnitude = clip(|signed_angle|, min, max); clamped =
+        ±magnitude (bend_sign'a göre)`.
 
-        EK DÜZELTME (3. tur EKİ -- bkz. `_nearest_valid_bend_deg()`
-        docstring'i): ilk sürüm burada "büyüklüğü koru, işareti zorla"
-        yapıyordu (`magnitude = clip(|signed_angle|, min, max); clamped =
-        ±magnitude`) -- küçük yanlış-taraf açıları için doğru çalışıyordu
-        ama BÜYÜK yanlış-taraf açılarında (ör. güçlü bir darbeden sonra
-        dizin hızla +170°'ye fırlaması gibi) kendi "süreklilik her koşulda
-        korunur" iddiasını ihlal eden ~164°'ye varan tek-kare sıçramalar
-        üretiyordu -- ayrıntı ve ölçüm için `_nearest_valid_bend_deg()`'e
-        bakın. Küçük yanlış-taraf örneği (+5° -> -8°) DEĞİŞMEDEN aynı
-        kalıyor; sadece büyük/yüksek-hızlı durum düzeldi."""
+        DÜZELTME/GERİ ALMA (3. tur EKİ -- kullanıcı geri bildirimi "robotik
+        ve sakat yürüyüş"): bu fonksiyon kısa bir süre `_nearest_valid_
+        bend_deg()`'in çember-üzerinde-en-yakın-uç-noktaya-katlama mantığını
+        kullanacak şekilde değiştirilmişti (ragdoll'daki bir sıçrama hatasını
+        düzeltirken). AMA bu, buradaki AKTİF/IK bacağı için YANLIŞ bir
+        değişiklikti -- ölçüldü: yürüyüş döngüsündeki ham diz açısı aralığı
+        [-173°,+174°]'ten [-58°,+58°]'e daralıp bacak neredeyse hiç
+        bükülemeyen, kazık yutmuş gibi bir "peg-leg" yürüyüşe dönüştü
+        (kullanıcı geri bildirimi doğrulandı). Sebep: bu fonksiyonun
+        `points`'i, `FabrikChain2D.solve()` tarafından HER KAREDE sıfırdan,
+        SÜREKLİ bir hedefe göre yeniden hesaplanıyor -- yani burada
+        `clamp_joint_angle_points()`'teki gibi bir "hız donması" riski YOK
+        (bu sınıfta `prev_points` kavramı bile yok). Büyük yanlış-taraf
+        açılarındaki potansiyel sıçrama da pratikte zararsız çünkü bir
+        sonraki karede FABRIK zaten hedefe göre baştan çözüyor. Yani bu
+        fonksiyon için orijinal "büyüklüğü koru" yaklaşımının (doğal, derin
+        diz bükümü verir) `_nearest_valid_bend_deg()`'in ürettiği sıçrama-
+        güvenli ama SIĞ (neredeyse düz bacağa katlayan) sonuçtan daha iyi
+        olduğu ortaya çıktı. `_nearest_valid_bend_deg()` GERÇEKTEN gerekli
+        olduğu tek yer -- ani darbe/momentum altındaki SERBEST (Verlet)
+        ragdoll bacağı -- `clamp_joint_angle_points()`'te (aşağıda) hâlâ
+        kullanılıyor, sadece BURADA (aktif/IK zincirinde) geri alındı."""
         n = len(self.points)
         if n < 3:
             return  # tek segmentli zincirde ara eklem yok
@@ -208,7 +221,8 @@ class FabrikChain2D:
             dot = float(np.clip(np.dot(prev_dir, out_dir), -1.0, 1.0))
             signed_angle = float(np.degrees(np.arctan2(cross_z, dot)))
 
-            clamped = _nearest_valid_bend_deg(signed_angle, min_bend_deg, max_bend_deg, bend_sign)
+            magnitude = float(np.clip(abs(signed_angle), min_bend_deg, max_bend_deg))
+            clamped = magnitude if bend_sign >= 0 else -magnitude
 
             theta = np.radians(clamped)
             cos_t, sin_t = np.cos(theta), np.sin(theta)
@@ -257,8 +271,25 @@ def clamp_joint_angle_points(
     dışında (baygın/ragdoll) da bilinçli (yürürken) olduğundan farklı
     DEĞİLDİR; sadece kim kontrol ettiği değişir.
 
-    `prev_points[i_end]` yeni konuma eşitlenir (bkz. `clamp_direction`) ki
-    bu düzeltme bir sonraki karede sahte bir hız sıçraması yaratmasın.
+    DÜZELTME (3. tur EKİ -- kullanıcı geri bildirimi "hızı sıfırlayan açı
+    kısıtlamaları" / "uçan bacaklar"): bu fonksiyon ÖNCEDEN `clamp_
+    direction()` ile AYNI kuralı izliyordu -- düzeltilen noktanın
+    `prev_points`'ini doğrudan YENİ konumuna eşitleyip hızını (points-
+    prev_points farkını) SIFIRLIYORDU. Kullanıcının tespit ettiği kusur
+    tam olarak buydu: ragdoll serbest düşerken diz açısı sınırın hemen
+    dışında SABİT kalıyorsa (ör. -6° iken sınır -8°), bu düzeltme HER
+    KAREDE tetikleniyor, her seferinde yerçekiminin bacağa o kareye kadar
+    kazandırdığı açısal hızı siliyordu -- net etki: bacak fiilen
+    "frenleniyor", yerçekimine rağmen düşemeyip geniş bir "V" (splits)
+    pozunda havada asılı kalıyordu (ölçüldü: sağ ayak ~1+ saniye boyunca
+    y=140-180px bandında donup düşmedi). **Gerçek düzeltme (kullanıcının
+    önerisi -- momentum-koruyan kısıtlama):** nokta yeni konuma
+    IŞINLANMAK yerine, düzeltmenin uyguladığı OFSET hem `points`'e hem
+    `prev_points`'e AYNI MİKTARDA ekleniyor -- pozisyon düzelirken hız
+    (points-prev_points farkı) MATEMATİKSEL OLARAK korunuyor (bkz. kod).
+    Bu, `clamp_direction()`'da KASITLI olarak DEĞİŞTİRİLMEDİ (bkz.
+    `physics/verlet.py`'nin modül dokstring'indeki kapsam notu) -- SADECE
+    burada, kullanıcının somut olarak tespit ettiği yerde uygulanıyor.
     """
     p_base, p_mid, p_end = points[i_base], points[i_mid], points[i_end]
     prev_dir = _unit(p_mid - p_base)
@@ -286,5 +317,11 @@ def clamp_joint_angle_points(
         prev_dir[0] * cos_t - prev_dir[1] * sin_t,
         prev_dir[0] * sin_t + prev_dir[1] * cos_t,
     ])
-    points[i_end] = points[i_mid] + rotated_dir * length
-    prev_points[i_end] = points[i_end]
+    new_end = points[i_mid] + rotated_dir * length
+    correction = new_end - points[i_end]
+    points[i_end] = new_end
+    # DUZELTME (3. tur EKI, bkz. yukaridaki docstring): ISINLAMA + hiz
+    # sifirlama YERINE, ayni ofset prev_points'e de eklenir -- boylece
+    # hiz (points-prev_points farki) bu duzeltmeden ONCEKI degeriyle
+    # MATEMATIKSEL OLARAK AYNI kalir (momentum-koruyan kisitlama).
+    prev_points[i_end] = prev_points[i_end] + correction
