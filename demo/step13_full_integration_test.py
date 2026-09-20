@@ -95,6 +95,18 @@ KNEE_BEND_SIGN = -1.0
 UP = np.array([0.0, -1.0])
 TORSO_MAX_LEAN_DEG = 12.0
 NECK_MAX_TILT_DEG = 18.0
+# DUZELTME (3. tur kullanici geri bildirimi -- "ragdoll'da omurga
+# cokmesi" + "omuz/dirsek govde icinden geciyor"): step9_ragdoll_blend.py
+# ile AYNI sabitler/gerekce -- bkz. oradaki yorum ve diag_round3.py'deki
+# sayisal olcum (knockdown sonrasi govde acisi 120 dereceyi asiyordu;
+# aktif yurumede bile sag kol/govde mesafesi 210 karenin 151'inde <10px).
+PASSIVE_TORSO_MAX_DEG = 75.0
+PASSIVE_NECK_MAX_DEG = 85.0
+ARM_CONE_ACTIVE_DEG = 45.0
+ARM_CONE_PASSIVE_DEG = 100.0
+ELBOW_CONE_ACTIVE_DEG = 55.0
+ELBOW_CONE_PASSIVE_DEG = 120.0
+ARM_SELF_COLLISION_DIST = 11.0
 
 ACTIVE_GRAVITY = np.array([0.0, 0.065])
 ACTIVE_FRICTION = 0.045
@@ -320,15 +332,33 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
 
         body.step(dt=1.0)
 
-        max_lean = blended_max_angle(blend, TORSO_MAX_LEAN_DEG)
-        max_neck = blended_max_angle(blend, NECK_MAX_TILT_DEG)
+        max_lean = blended_max_angle(blend, TORSO_MAX_LEAN_DEG, PASSIVE_TORSO_MAX_DEG)
+        max_neck = blended_max_angle(blend, NECK_MAX_TILT_DEG, PASSIVE_NECK_MAX_DEG)
         clamp_direction(body.points, body.prev_points, idx["hip"], idx["shoulder"], UP, max_lean)
         torso_dir = body.points[idx["shoulder"]] - body.points[idx["hip"]]
         clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, max_neck)
 
+        # DUZELTME (3. tur -- "omuz/dirsek govde icinden geciyor"): "Ulasim
+        # Konisi" -- bkz. step9_ragdoll_blend.py'deki ayni yorum.
+        arm_cone = blended_max_angle(blend, ARM_CONE_ACTIVE_DEG, ARM_CONE_PASSIVE_DEG)
+        elbow_cone = blended_max_angle(blend, ELBOW_CONE_ACTIVE_DEG, ELBOW_CONE_PASSIVE_DEG)
+        arm_hang_dir = -torso_dir
+        for side in ("l", "r"):
+            clamp_direction(body.points, body.prev_points, idx[f"{side}_anchor"], idx[f"{side}_elbow"], arm_hang_dir, arm_cone)
+            upper_arm_dir = body.points[idx[f"{side}_elbow"]] - body.points[idx[f"{side}_anchor"]]
+            clamp_direction(body.points, body.prev_points, idx[f"{side}_elbow"], idx[f"{side}_hand"], upper_arm_dir, elbow_cone)
+
         # Ayni collide_ground cagrisi HEM pelerini HEM (pasif modda serbest
         # kalan) govde/bacak noktalarini etkiliyor (cakisma onlemi #2).
         collide_ground(body, TERRAIN.floor_fn, TERRAIN.friction_fn)
+
+        # DUZELTME (3. tur -- devam): kol/govde nokta-vs-segment itme --
+        # pelerinde kullanilanla AYNI mekanizma (bkz. step9'daki yorum).
+        for side in ("l", "r"):
+            push_points_off_segment(body.points, body.prev_points, [idx[f"{side}_elbow"], idx[f"{side}_hand"]],
+                                     idx["hip"], idx["shoulder"], ARM_SELF_COLLISION_DIST)
+            push_points_off_segment(body.points, body.prev_points, [idx[f"{side}_elbow"], idx[f"{side}_hand"]],
+                                     idx["shoulder"], idx["head"], ARM_SELF_COLLISION_DIST)
 
         # DUZELTME (kullanici geri bildirimi -- "anatomik butunluk / IK
         # dagilmasi"): pasif (ragdoll) diz/ayak temsiline de aktif IK

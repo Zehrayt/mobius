@@ -110,7 +110,30 @@ class FabrikChain2D:
         poz elde etmenin kabul edilen bedeli budur. (FABRIK'in kendisinde
         yerleşik bir açı kısıtlaması yoktur; bu, literatürde yaygın olan bir
         "solve sonrası clamp" tekniğidir, orijinal projeden alınmamıştır.)
-        """
+
+        DÜZELTME (3. tur kullanıcı geri bildirimi -- "flamingo bacağı /
+        tersine bükülen dizler"): sayısal tanı (bkz. `diag_round3.py`,
+        commit mesajında özetlendi) BU projede normal yürüyüş sırasında
+        gözle görülür bir ters-bükülme KARESİ bulamadı (t=3.2s/4.2s'de her
+        iki dizin ham açısı da beklenen işaret aralığındaydı) -- kullanıcının
+        somut iddiası bu haliyle DOĞRULANMADI. Ama inceleme GERÇEK, farklı
+        bir kırılganlık ortaya çıkardı: eski kod `clip(signed_angle,
+        -max,-min)` kullanıyordu -- yani FABRIK'in doğal çözümü YANLIŞ
+        tarafa (ör. +50°) düşerse, sonuç doğrudan en yakın SINIRA
+        (-8°, neredeyse düz bacak) SIÇRIYORDU: süreksiz, ani bir "pop".
+        Bu proje zaten dizi sık sık 8° sınırına yakın tutuyor (bkz.
+        "Ertelenen konular" -- tembel FABRIK çözümü), yani bu sıçramanın
+        tetiklenmesi için gereken sinyal gürültüsü marjı ince. Kullanıcının
+        önerdiği gerçek mimari düzeltme -- "açı 180'i geçtiği an kodun dizi
+        ZORLA doğru tarafa katlaması" -- burada bir SINIRA kenetlemek değil,
+        büküm BÜYÜKLÜĞÜNÜ koruyarak doğru tarafa YANSITMAK (reflect) olarak
+        uygulanıyor: `magnitude = clip(|signed_angle|, min, max); clamped =
+        ±magnitude (bend_sign'a göre)`. Böylece yanlış taraftaki küçük bir
+        açı (+5°) sıfıra/limite zıplamak yerine yumuşakça karşı tarafa
+        (-8°'ye yakın) katlanır, büyük bir yanlış-taraf açısı (+90°) ise
+        karşılığı kadar (-90°, eğer aralık izin veriyorsa) katlanır --
+        süreklilik (continuity) her koşulda korunur, gerçek bir menteşenin
+        (hinge) davranışına eski koddan daha yakın."""
         n = len(self.points)
         if n < 3:
             return  # tek segmentli zincirde ara eklem yok
@@ -125,10 +148,8 @@ class FabrikChain2D:
             dot = float(np.clip(np.dot(prev_dir, out_dir), -1.0, 1.0))
             signed_angle = float(np.degrees(np.arctan2(cross_z, dot)))
 
-            if bend_sign >= 0:
-                clamped = float(np.clip(signed_angle, min_bend_deg, max_bend_deg))
-            else:
-                clamped = float(np.clip(signed_angle, -max_bend_deg, -min_bend_deg))
+            magnitude = float(np.clip(abs(signed_angle), min_bend_deg, max_bend_deg))
+            clamped = magnitude if bend_sign >= 0 else -magnitude
 
             theta = np.radians(clamped)
             cos_t, sin_t = np.cos(theta), np.sin(theta)
@@ -190,10 +211,11 @@ def clamp_joint_angle_points(
     dot = float(np.clip(np.dot(prev_dir, out_dir), -1.0, 1.0))
     signed_angle = float(np.degrees(np.arctan2(cross_z, dot)))
 
-    if bend_sign >= 0:
-        clamped = float(np.clip(signed_angle, min_bend_deg, max_bend_deg))
-    else:
-        clamped = float(np.clip(signed_angle, -max_bend_deg, -min_bend_deg))
+    # DUZELTME (3. tur -- bkz. clamp_joint_angles() dokstring'indeki ayni
+    # yorum): sinira "clip" yerine buyuklugu koruyarak dogru tarafa
+    # "yansitma" (reflect) -- sureksiz pop yerine surekli hinge davranisi.
+    magnitude = float(np.clip(abs(signed_angle), min_bend_deg, max_bend_deg))
+    clamped = magnitude if bend_sign >= 0 else -magnitude
 
     if clamped == signed_angle:
         return

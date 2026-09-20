@@ -529,6 +529,101 @@ logu, pelerin-gövde en yakın mesafe ölçümü, erişim aşımı) yazıldı, h
 `step9` hem `step13` üzerinde koşturuldu, videolar yeniden render edilip
 ffmpeg ile kare kare görsel QA yapıldı. Hiçbir demo NaN/patlama üretmedi.
 
+## 3. tur kullanıcı geri bildirimi ve düzeltmeler
+
+Kullanıcı "bilgisayar mühendisliği perspektifinden" (nodelar/vektörler var
+ama aralarında çalışacak kural setleri eksik) 4 sorun bildirdi, `fabrik.py`/
+`gait.py`/ragdoll omurgası için somut kod önerileriyle birlikte. Aynı
+yöntem: `demo/step13_full_integration_test.py` sahnesi üzerinde çalışan bir
+tanılama script'i (`diag_round3.py` — bir kerelik, commit'e dahil değil)
+yazıldı, her iddia önce/sonra sayısal olarak ölçüldü.
+
+1. **"Flamingo bacağı: özellikle 3.2s ve 4.2s'de diz tersine bükülüyor."**
+   İDDİA EDİLEN HALİYLE DOĞRULANMADI, ama daha temel bir bulguya çıktı:
+   t=3.2s ve 4.2s'deki ham (clamp öncesi) diz açıları her iki bacakta da
+   beklenen işaret aralığındaydı (sol: -74.6°..-50.4°, sağ bu iki anda
+   -9°..-12° civarı) — tam bu iki karede görünür bir ters bükülme YOK.
+   Ama tüm 12 saniyelik sahne taranınca gerçek bir kırılganlık bulundu:
+   sağ bacağın ham açısı 360 karenin 128'inde (%36) POZİTİF çıkıyordu
+   (FABRIK'in doğal çözümü dizi anatomik olarak yanlış tarafa koyuyordu)
+   ve eski kod bunu `clip(açı, -max, -min)` ile en yakın SINIRA (-8°,
+   neredeyse düz) sıçratıyordu — süreksiz bir "pop". Bu, projenin daha
+   önce ERTELENMİŞ "tembel FABRIK diz" bulgusuyla (bkz. madde 5b, 2. tur)
+   AYNI kök nedene çıktı. **Düzeltme:** `clamp_joint_angles()` /
+   `clamp_joint_angle_points()` artık yanlış-taraf açısını sınıra
+   kenetlemek yerine, büküm BÜYÜKLÜĞÜNÜ koruyarak doğru tarafa YANSITIYOR
+   (`magnitude = clip(|açı|, min, max); clamped = ±magnitude`) — kullanıcının
+   "açı 180'i geçtiği an kodun dizi zorla doğru tarafa katlaması" önerisinin
+   süreklilik-koruyan (reflect) hali. **Beklenmeyen ama sayısal olarak
+   doğrulanmış yan etki:** bu tek değişiklik, 2. turda ERTELENMİŞ "diz her
+   karede sabit ~8°" sorununu da düzeltti — aktif yürüyüşte nihai (clamp
+   SONRASI) diz açısı artık -8.0°'den -84.7°'ye kadar doğal bir dağılımla
+   değişiyor (ortalama ≈-62°, std≈9-10°; önceden 210 karenin 209'u ~8°
+   civarındaydı, şimdi sadece 1'i).
+2. **"Omuz ve dirsekler göğüs kafesinin içinden geçiyor, kol 360° dönebiliyor."**
+   TAMAMEN DOĞRU: kollar sadece sabit uzunluklu çubuklarla omuza bağlıydı,
+   HİÇBİR açısal sınır yoktu (grep ile doğrulandı — pelerin için
+   `self_collision.py` vardı, kollar için hiçbir mekanizma yoktu). Ölçülen:
+   AKTİF yürüyüşte bile sağ kol/gövde en yakın mesafesi 210 karenin
+   151'inde 10px'in altına (bazı karelerde tam 0px'e, yani gövdenin
+   üzerine) düşüyordu. **Düzeltme (kullanıcının önerdiği iki katman
+   birlikte uygulandı):** (a) "Ulaşım Konisi" — omuz→dirsek ve dirsek→el
+   yönleri gövde eksenine göre `clamp_direction()` ile sınırlanıyor
+   (yeni kod değil, gövde/boyun için zaten var olan AYNI jenerik
+   fonksiyonun tekrar kullanımı); aktifte dar (45°/55°), pasifte gevşek
+   (100°/120°) — bkz. `blended_max_angle()`. (b) Nokta-vs-segment itme —
+   pelerinde kullanılan `push_points_off_segment()` artık kol için de
+   (gövdenin iki segmentine karşı) çağrılıyor, min. mesafe 11px.
+   **Sonuç:** aynı sahnede kol/gövde en yakın mesafesi artık HİÇBİR karede
+   11px'in altına inmiyor (önce: 88/360 kare <5px, şimdi: 0/360).
+3. **"Ağırlık transferi ve ayak sürüklenmesi: adım atarken ayak buz pateni
+   gibi düz bir çizgide kayıyor."** İDDİA EDİLEN HALİYLE DOĞRULANMADI:
+   swing fazı zaten `sin(πt)` ile ayağı yerden açıkça kaldırıyordu ve
+   STANCE fazında sol ayak zaten tam sabitti (std=0.0000px — hiç
+   kaymıyordu). Ama sağ ayakta GERÇEK, farklı bir kusur bulundu:
+   `clamp_joint_angles()`'ın diz açısını düzeltirken uç-efektörü (ayağı)
+   yan etki olarak kaydırması yüzünden (bkz. fonksiyonun kendi dokstring'i
+   — "uç-efektör hedefe tam ulaşamayabilir"), STANCE sırasında bile sağ
+   ayak std=4.31px titriyordu (bazı karelerde zeminden ~12.5px sapma) —
+   "kayma" değil ama gözle benzer bir izlenim verebilecek bir titreme.
+   **Düzeltme:** (a) kullanıcının önerdiği gibi swing artık bağımsız
+   ease(x)+sin(y) yerine TEK bir ikinci-derece Bezier eğrisiyle
+   (`_quadratic_bezier()`) hesaplanıyor — kontrol noktası düz çizginin
+   ortasının `2×lift_height` üstünde; (b) STANCE fazında diz-açısı kısıtı
+   uygulandıktan HEMEN SONRA ayak (`chain.points[-1]`) her zaman tam
+   olarak `self.planted` hedefine yeniden kenetleniyor. **Sonuç:** iki
+   ayağın da stance std sapması artık tam 0.0000px.
+4. **"Ragdoll'da omurga 8.2s sonrası pasife geçince anında 90° kırılıp
+   kendi içine çöküyor."** YÖN OLARAK DOĞRU, rakam biraz farklı ama ÖZÜNDE
+   doğrulandı: `blended_max_angle()` pasif modda varsayılan
+   `passive_max_deg=180.0` (pratikte sınırsız) kullanıyordu — ölçülen:
+   knockdown sonrası gövde açısı t=7.6s'de 24.4°'den t=10.0s'de 120.7°'ye
+   savruluyordu (gerçek bir omurganın yapamayacağı bir katlanma miktarı;
+   7.6→8.2s arası tek başına +16°). **Düzeltme:** kullanıcının "Verlet
+   yaylarına sertlik atanması" önerisinin bu mimarideki (point-stick,
+   gerçek açısal yay YOK) en doğrudan karşılığı — demo'larda artık
+   `blended_max_angle()`'a pasif için sonsuz (180°) yerine SONLU, gevşek
+   bir tavan veriliyor (gövde 75°, boyun 85°) — hâlâ aktiften çok daha
+   serbest (ragdoll hissi korunuyor) ama fiziksel olarak imkânsız
+   tam-katlanmaya izin vermiyor. **Sonuç:** aynı sahnede gövde açısı
+   artık ±75°'yi hiç aşmıyor. **Dürüst sınır:** bu gerçek bir açısal
+   yay/sönümleme (spring/damping) DEĞİL, hâlâ projenin `clamp_direction()`
+   tabanlı sert-sınır (hard-clamp) yaklaşımı — sadece tavanı 180'den
+   düşürüyor; iki nokta arasında gerçek bir tork/geri-çağırma kuvveti
+   uygulayan bir "Verlet açısal yayı" bu basit motor için henüz yok
+   (olası bir sonraki iş).
+
+**Doğrulama:** `diag_round3.py`, `step13` sahnesini önce/sonra çalıştırıp
+4 maddeyi de sayısal olarak ölçtü (yukarıdaki rakamlar oradan). Ayrıca
+TÜM demo dosyaları (`step1`-`step13`) yeniden çalıştırılıp (a) hiçbirinin
+hata/NaN üretmediği, (b) bu turun değişikliklerinden ETKİLENMEMESİ
+gereken step7/step12'nin sayısal çıktılarının (0.794/0.985/0.941 squash
+oranları; 8.65px/38.80px/1.0000 denge korelasyonu) ÖNCEKİ turla BİREBİR
+AYNI kaldığı doğrulandı. t=3.2s/4.2s/8.2s kareleri ayrıca ffmpeg ile
+görsel olarak da incelendi (diz artık doğal bükülüyor, kol gövdeye
+11px'den yakın durmuyor, çöküş sonrası gövde ~-63° civarında kalıp 90°+
+katlanmıyor).
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

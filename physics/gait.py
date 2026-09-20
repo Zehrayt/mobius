@@ -22,13 +22,35 @@ from physics.fabrik import FabrikChain2D
 
 
 def _smoothstep(t: float) -> float:
-    """Swing fazının x ilerlemesi için ease-in/ease-out eğrisi (3t^2 - 2t^3).
-    Ayak kalkarken sıfırdan, inerken sıfıra yumuşak hızlanıp yavaşlar --
-    sabit hızlı (lineer) bir süpürme yerine gerçek bir bacağın atalet/kas
-    ivmesine daha yakın bir his verir. Bu da saat/zaman tabanlı bir eğri
-    DEĞİL: girdi olarak yine bacağın kendi swing_t ilerlemesini alıyor,
-    sadece o ilerlemeyi lineer yerine ease-in/out olarak yeniden eşliyor."""
+    """Ease-in/ease-out eğrisi (3t^2 - 2t^3): swing ilerlemesi sıfırdan
+    başlayıp sıfıra biterken yumuşak hızlanıp yavaşlar -- sabit hızlı
+    (lineer) bir süpürme yerine gerçek bir bacağın atalet/kas ivmesine
+    daha yakın bir his verir. Zaman tabanlı DEĞİL: girdi bacağın kendi
+    swing_t ilerlemesi, sadece lineer yerine ease-in/out'a yeniden eşliyor."""
     return t * t * (3.0 - 2.0 * t)
+
+
+def _quadratic_bezier(p0: np.ndarray, control: np.ndarray, p1: np.ndarray, t: float) -> np.ndarray:
+    """İkinci dereceden (quadratic) Bezier eğrisi: B(t) = (1-t)^2*p0 +
+    2(1-t)t*control + t^2*p1.
+
+    DÜZELTME (3. tur kullanıcı geri bildirimi -- "ağırlık transferi ve ayak
+    sürüklenmesi / buz pateni hissi"): eski kod, swing fazının yatay (x)
+    ilerlemesi için `_smoothstep(t)`, dikey (y) kalkışı için ise BAĞIMSIZ
+    bir `sin(pi*t)` eğrisi kullanıyordu -- ikisi de aynı `t`'ye bağlı olsa
+    da matematiksel olarak farklı eğriler, yani ayağın izlediği yol tek bir
+    tutarlı yay (arc) DEĞİL, iki ayrı fonksiyonun çakıştırılmasıydı. Sayısal
+    tanı (`diag_round3.py`) STANCE fazında ayağın zaten tam sabit kaldığını
+    (sol ayak std=0.0000px) doğruladı -- yani "kayma" swing eğrisinin
+    KENDİSİNDE değildi. Yine de kullanıcının somut önerisi olan tek-
+    parametreli Bezier eğrisine geçmek matematiksel olarak daha temiz ve
+    daha kolay ayarlanabilir (tek bir kontrol noktası = kalkış yüksekliği +
+    yatay "sekme" şekli), bu yüzden benimsendi. Kontrol noktası, düz
+    çizginin (`p0`-`p1`) ortasının `lift_height`'in İKİ KATI kadar üstüne
+    konur -- ikinci derece Bezier'in t=0.5'teki değeri kontrol noktasının
+    sadece YARISI kadar ağırlık taşıdığı için (bkz. çağıran kod)."""
+    one_minus_t = 1.0 - t
+    return (one_minus_t ** 2) * p0 + 2.0 * one_minus_t * t * control + (t ** 2) * p1
 
 
 class FootPlantingLeg:
@@ -81,11 +103,15 @@ class FootPlantingLeg:
                 foot = self.swing_start
         else:
             self.swing_t += 1.0 / self.swing_duration_frames
-            t = min(self.swing_t, 1.0)
-            x_t = _smoothstep(t)
-            x = self.swing_start[0] + (self.swing_target[0] - self.swing_start[0]) * x_t
-            lift = np.sin(np.pi * t) * self.lift_height
-            foot = np.array([x, self.ground_y - lift])
+            t_raw = min(self.swing_t, 1.0)
+            t = _smoothstep(t_raw)
+            # DUZELTME (3. tur -- bkz. _quadratic_bezier() dokstring'i):
+            # tek bir Bezier egrisi -- kontrol noktasi duz cizginin
+            # ortasinin 2*lift_height ustunde, ki t=0.5'te gercek tepe
+            # yuksekligi tam `lift_height` olsun.
+            mid_x = (self.swing_start[0] + self.swing_target[0]) / 2.0
+            control = np.array([mid_x, self.ground_y - 2.0 * self.lift_height])
+            foot = _quadratic_bezier(self.swing_start, control, self.swing_target, t)
             if self.swing_t >= 1.0:
                 self.planted = self.swing_target.copy()
                 self.state = "stance"
@@ -96,4 +122,19 @@ class FootPlantingLeg:
         self.chain.solve(foot)
         if self.knee_limits is not None:
             self.chain.clamp_joint_angles(*self.knee_limits, bend_sign=self.knee_bend_sign)
+            # DUZELTME (3. tur kullanici geri bildirimi -- "ayak surukleniyor
+            # / buz pateni"): sayisal tani, STANCE ayaginin -- FABRIK hedefi
+            # tam olarak sabit `self.planted` olsa bile -- diz-aci clamp'inin
+            # yan etkisiyle (bkz. clamp_joint_angles() -- uc-efektor hedefe
+            # tam ulasamayabilir) birkac piksel oynadigini olctu (sag ayak:
+            # stance karelerinde std=4.31px, bazi karelerde zeminden ~12.5px
+            # sapma). Bu, "kayma" degil ama gorsel olarak ayni izlenimi
+            # verebilecek bir titreme. STANCE'ta ayagin ZATEN hareket etmemesi
+            # GEREKTIGI icin (bu, swing'teki -- kabul edilebilir -- erisim
+            # odununden FARKLI, orada zaten dokumante edilmis bir esneme var),
+            # diz acisi kisitini bacagin GENEL duruşu icin uygulamaya devam
+            # edip uc-efektoru (ayak) HER ZAMAN tam olarak hedefine geri
+            # kenetliyoruz.
+            if self.state == "stance":
+                self.chain.points[-1] = self.planted.copy()
         return foot
