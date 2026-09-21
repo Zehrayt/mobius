@@ -63,7 +63,11 @@ from physics.fabrik import clamp_joint_angle_points
 from physics.collision import collide_ground
 from physics.self_collision import push_segment_off_segment, apply_drag
 from physics.environment import Terrain, GustWind
-from physics.balance import upper_body_com_x, support_x, counter_balance_offset, reach_pulldown_offset
+from physics.balance import (
+    upper_body_com_x, support_x, counter_balance_offset, reach_pulldown_offset,
+    support_interval, outside_interval_error, FallRiskMonitor,
+    emergency_counter_balance_offset,
+)
 from physics.ragdoll import (
     blend_point,
     blend_prev_points,
@@ -184,6 +188,20 @@ STUMBLE_KICK_PX = 45.0
 BAL_GAIN_X = 0.55
 BAL_GAIN_Y = 0.12
 BAL_MAX_ERR = 80.0
+
+# -- 7. tur eki: destek-poligonu tabanli tehlike tespiti + buyutulmus
+#    refleks (bkz. demo/step12_balance.py + physics/balance.py + README) --
+#    STUMBLE_T (4.0s) ile KNOCKDOWN_T (7.0s) arasinda, blend HALA TAM AKTIF
+#    (1.0) iken ikinci, cok daha buyuk bir itki -- ragdoll gecis
+#    anlatisiyla CAKISMAMASI icin KNOCKDOWN_T'den ONCE.
+FALL_RISK_ENTER_PX = 45.0
+FALL_RISK_EXIT_PX = 20.0
+EMERGENCY_GAIN_X = 0.9
+EMERGENCY_MAX_ERR = 220.0
+EMERGENCY_STEP_LEAD_PX = 15.0
+EMERGENCY_SWING_SPEEDUP = 2.5
+BIG_PUSH_T = 5.5
+BIG_PUSH_KICK_PX = 220.0
 
 KNOCKDOWN_T = 7.0
 BLEND_DOWN_DURATION = 0.6
@@ -340,6 +358,8 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
 
     hip_x_log = []
     any_nan = False
+    big_pushed = False
+    risk_monitor = FallRiskMonitor(FALL_RISK_ENTER_PX, FALL_RISK_EXIT_PX)
 
     for f in range(n_frames):
         t = f * dt
@@ -350,6 +370,9 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
         if not kicked and t >= STUMBLE_T:
             driver_x += STUMBLE_KICK_PX
             kicked = True
+        if not big_pushed and t >= BIG_PUSH_T:
+            driver_x += BIG_PUSH_KICK_PX  # 7. tur eki -- bkz. yukaridaki sabit blogu
+            big_pushed = True
 
         walk_driver_pos = np.array([driver_x + pulldown_x, HIP_Y + pulldown_y])
         hip_last_pos = body.points[idx["hip"]].copy()
@@ -363,7 +386,27 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
         com_x = upper_body_com_x(body.points, [idx["hip"], idx["shoulder"], idx["head"]])
         base_x = leg_support_x(left_leg, right_leg)
         error = com_x - base_x
-        bal_x, bal_y = counter_balance_offset(error, BAL_GAIN_X, BAL_GAIN_Y, BAL_MAX_ERR)
+
+        # 7. tur eki: gercek destek araligi + tehlike tespiti + buyutulmus
+        # refleks -- SADECE blend TAM AKTIFKEN (>0.99) anlamli, tipki
+        # normal denge/adim mekaniklerinin zaten blend'e bagli olmasi gibi
+        # (cakisma onlemi #1'in AYNI mantigi -- bkz. modul dokstring'i).
+        if blend > 0.99:
+            stance_xs = [leg.planted[0] for leg in (left_leg, right_leg) if leg.state == "stance"]
+            fallback_xs = [left_leg.swing_target[0], right_leg.swing_target[0]]
+            interval = support_interval(stance_xs, fallback_x=fallback_xs)
+            real_error = outside_interval_error(com_x, interval)
+            in_danger = risk_monitor.update(real_error)
+            if in_danger:
+                bal_x, bal_y = emergency_counter_balance_offset(real_error, EMERGENCY_GAIN_X, BAL_GAIN_Y, EMERGENCY_MAX_ERR)
+                target_x = com_x + np.sign(real_error) * EMERGENCY_STEP_LEAD_PX
+                for leg in (left_leg, right_leg):
+                    if leg.trigger_emergency_step(target_x, speedup=EMERGENCY_SWING_SPEEDUP):
+                        break
+            else:
+                bal_x, bal_y = counter_balance_offset(error, BAL_GAIN_X, BAL_GAIN_Y, BAL_MAX_ERR)
+        else:
+            bal_x, bal_y = counter_balance_offset(error, BAL_GAIN_X, BAL_GAIN_Y, BAL_MAX_ERR)
         bal_x *= blend
         bal_y *= blend
 

@@ -1168,6 +1168,157 @@ yaklaşım anı (t=3.03s, mesafe=10.79px) çıkarılıp incelendi -- kol doğal
 
 
 
+## 7. tur: Aktif Denge ve Refleks (Center of Mass Recovery)
+
+Kapsül öz-çarpışmasının ("6. tur") kabulünden hemen sonra kullanıcının
+sıraladığı üç büyük özellikten ikincisi. Kullanıcının kendi tarifi:
+"Karakter iteratif olarak yürüyor ama dengesini kaybettiğinde (örneğin
+dışarıdan bir kuvvet uygulandığında) bunu 'fark etmiyor'. Kütle merkezinin
+(kalça/gövde) ayakların yere bastığı izdüşümün (support polygon) dışına
+çıkıp çıkmadığını her karede ölçmeliyiz. Karakter düşeceğini anladığında,
+dengesini sağlamak için kollarını ters yöne savurarak (counter-balance)
+veya fazladan bir adım atarak refleks göstermeli." DURUM: **TAMAMLANDI,
+commit edildi** -- ama aşağıdaki "dürüst bulgular" bölümünde açıklanan,
+bilinçli olarak bu tura dahil edilmeyen bir sınır var.
+
+**Önce sayısal doğrulama (mevcut sistemin gerçekten "fark etmediği" mi?):**
+`physics/balance.py`'deki mevcut `counter_balance_offset()` sürekli çalışan,
+küçük genlikli bir orantılı geri besleme -- ne bir "tehlike" eşiği var, ne
+de gerçek bir destek ARALIĞI (eski `support_x()` tek bir NOKTA döndürüyor,
+ayağın fiziksel genişliğini saymıyor). Bir tanı script'i `demo/
+step12_balance.py`'nin sahnesine 55/150/300px'lik üç farklı büyüklükte
+"tokezleme" uygulayıp ölçtü:
+- **55px** (orijinal demo değeri): gerçek destek-aralığı-dışı mesafe sadece
+  ~27px -- kol tepkisi (`BAL_MAX_ERR=80px`) DOYMUYOR, yani zaten yeterli.
+- **150px**: gerçek dışı-mesafe ~103px, kol tepkisi **-44px'te DOYUYOR**.
+- **300px**: gerçek dışı-mesafe ~240px (150px'in neredeyse 2.5 katı
+  gerçek tehlike), ama kol tepkisi YİNE **-44px'te DOYUYOR** -- yani
+  sistem 103px'lik bir tehlike ile 240px'lik bir tehlike arasında HİÇBİR
+  AYRIM YAPMIYOR.
+- Adım zamanlaması: her üç itki büyüklüğünde de İLK adım tam olarak AYNI
+  karede tetikleniyor -- ama bu, sistemin dengeyi "fark etmesinden" değil,
+  bacağın kendi kinematik `stride_release=18px` eşiğinin (kalçanın ayaktan
+  ne kadar uzaklaştığına bakan, dengeden tamamen habersiz bir kural) HER
+  itki büyüklüğünde zaten aşılmasından kaynaklanıyor -- **tesadüfi bir
+  yan etki**, kasıtlı bir refleks değil.
+
+Kullanıcının iddiası böylece sayısal olarak doğrulandı: sistem gerçekten
+"fark etmiyor" -- ne destek poligonuna bakıyor, ne tehlike büyüklüğüne
+göre ölçekleniyor, ne de ekstra bir adım atıyor.
+
+**Yeni katman** (`physics/balance.py`, mevcut `counter_balance_offset()`
+DEĞİŞTİRİLMEDEN, üzerine eklendi):
+- `support_interval(stance_foot_x, foot_half_len, fallback_x)`: destek
+  tabanını artık tek bir nokta değil, o an zeminde duran ayağın/ayakların
+  fiziksel genişliğini (`FOOT_HALF_LEN=12px`, tek bir sabit yaklaşıklık)
+  de sayan bir ARALIK olarak modelliyor.
+- `outside_interval_error(com_x, interval)`: kütle merkezinin bu aralığın
+  GERÇEKTEN dışına çıkma mesafesi (0 = güvenli, normal yürüyüş salınımı
+  aralık içinde kaldığı sürece "tehlike" sayılmıyor).
+- `FallRiskMonitor`: histerezisli (giriş eşiği ≠ çıkış eşiği) bir durum
+  makinesi -- tek bir gürültülü karenin tehlikeyi tetikleyip hemen
+  kapatmasını önlüyor, `FootPlantingLeg`'in kendi durum makinesiyle aynı
+  tasarım ilkesi.
+- `emergency_counter_balance_offset()`: `counter_balance_offset` ile aynı
+  yön/şekil mantığı, ama çok daha büyük `gain_x`/`max_err` ile -- gerçek
+  tehlikede kolları "ters yöne savurma" büyüklüğünde bir tepki.
+- `physics/gait.py`'ye `FootPlantingLeg.trigger_emergency_step(target_x,
+  speedup)`: bacak o an STANCE durumundaysa, normal `stride_release`
+  beklemesini atlayıp hemen SWING'e geçirip yeni hedefe (çağıran kodun
+  kütle merkezinin düştüğü yöne göre hesapladığı bir "yakalama noktası")
+  yönlendiriyor, `speedup>1` ile swing süresini kısaltıyor (daha hızlı/
+  aceleci bir adım). Bacak zaten SWING'teyse (havadaki bir adımın
+  ortasındaysa) hiçbir şey yapmıyor ve `False` dönüyor -- fiziksel olarak
+  yarım kalmış bir adımı kesintiye uğratmak bu turun kapsamına alınmadı.
+
+**Entegrasyon** (`demo/step12_balance.py` + `demo/step13_full_integration_
+test.py`): orijinal t=3.0s/55px "tokezleme" BİLİNÇLİ OLARAK dokunulmadan
+bırakıldı (`FALL_RISK_ENTER_PX=45px` bu tokezlemenin gerçek dışı-mesafesinin
+[~27px] ÜZERİNDE seçildi) -- eski kanarya sayıları (tokezleme öncesi/sonrası
+`|error|`, kol-ofseti korelasyonu) BİREBİR AYNI kalıyor: `8.65px` / `38.80px`
+/ `1.0000`. t=5.5s'de (step13'te STUMBLE_T=4.0 ile KNOCKDOWN_T=7.0 arasında,
+blend hâlâ tam aktifken) çok daha büyük (220px) ikinci bir kalça itkisi
+eklendi; bu itkide `FallRiskMonitor` tehlikeye giriyor, kollar
+`emergency_counter_balance_offset` ile savruluyor, ve o an zemindeki bacak
+`trigger_emergency_step` ile erken/hızlı bir yakalama adımı atıyor.
+
+**Doğrulama:**
+- Emergency tepkinin gerçek tehlikeyle ÖLÇEKLENDİĞİ sayısal olarak
+  doğrulandı -- eski formül 103px/190px/240px'lik üç farklı gerçek
+  tehlikede de aynı **-44px**'te doyarken (ayırt edemiyor), yeni
+  `emergency_counter_balance_offset` aynı üç değerde **-92.7px / -170.8px
+  / -198.0px** üretiyor -- gerçek büyüklükle orantılı, ~4.5 kat daha büyük
+  bir tepki aralığı.
+- 220px'lik itki sonrası: tehlikeye giriş frame 166 (t=5.53s), kurtulma
+  frame 174 (t=5.80s) -- **8 karede** (0.27s) toparlanma, acil adım(lar)
+  doğru bacak(lar)da tetiklendi (`[(172,'r'),(173,'l')]`).
+- Görsel QA (3 kare: t=5.53s/tehlike girişi, t=5.73s/en derin düşüş +
+  yakalama adımı bacağı uzatılmış, t=5.80s/toparlanmış normal duruş) --
+  karakter gerçekten "yakalıyor" gibi görünüyor, uzuvlar birbirinin içinden
+  geçmiyor.
+- 60 saniyelik uzatılmış kararlılık testi (round-5'in dersi -- kısa
+  doğrulama YETERSİZ olabilir kuralı bu tura da uygulandı): 8 saniyede bir
+  tekrarlanan aynı (220px) itki 60s boyunca NaN/patlama üretmedi, dikey
+  (Y) sapma hep <6px kaldı (yatayda biriken ~5100px tamamen beklenen --
+  60s boyunca kesintisiz yürüme + 7 itkinin toplam mesafesi, bir patlama
+  DEĞİL). `FallRiskMonitor` her tetiklendiğinde TEMİZ giriş/çıkış yaptı,
+  çırpınma (aynı olaydan birden fazla tetiklenme) YOK.
+- Tam regresyon: step1-step12 (step7: 0.794/0.985/0.941; step12: kendi
+  3 kanarya sayısı BİREBİR AYNI) + step13'ün 24/30/60 FPS testinde
+  NaN yok. step13'ün son `hip_x` değerleri DEĞİŞTİ (304→478 @ 30 FPS) --
+  bu bir regresyon DEĞİL, bilinçli olarak eklenen yeni 220px'lik itki
+  olayȅneşenin kalcayı ekstra ileri sürüklemesinin doğrudan/beklenen sonucu.
+
+**Dürüst bulgular (bilinçli olarak bu tura DAHİL EDİLMEDİ veya çözülemedi):**
+- **En önemli mimari sınır -- "ekstra adım" reflex'i step12/13'ün
+  KİNEMATİK kalça mimarisinde ayrı bir kazanım olarak ÖLÇÜLEMEDİ:** bu
+  sahnelerde kalça (`driver`) her zaman doğrudan pinned bir noktaya kısa
+  bir çubukla bağlı (fiziksel eylemsizliği yok) ve bacağın kendi
+  `stride_release=18px` eşiği, gerçek tehlike için gereken herhangi bir
+  itki büyüklüğünden (>45px) ÇOK daha küçük. Bu yüzden support-polygon
+  tabanlı tehlikeyi yaratacak KADAR büyük HERHANGİ bir kalça itkisi, aynı
+  anda (aynı karede) var olan kinematik `stride_release` eşiğini de
+  otomatik olarak tetikliyor -- eski VE yeni sistem, 220px'lik itkiden
+  sonra AYNI karede (166→174, 8 kare) "toparlanıyor" çünkü ikisi de aynı
+  tesadüfi mekanizmadan faydalanıyor. Bunu ayırt etmek için govdeye/başa
+  SADECE bir hız-darbesi (kalçaya dokunmadan) da denendi, ama bu sahnede
+  gövde/boyun HER KAREDE sert bir `TORSO_MAX_LEAN_DEG=12°` kenetlemesiyle
+  kalçaya bağlı olduğundan, darbe büyüklüğü ne olursa olsun (80-320px/kare
+  arası denendi) gerçek dışı-mesafe hep ~25-28px'de SABİT kaldı --
+  tehlike eşiğinin (45px) altında, yani bu sahnede YETERLİ bir "gerçek
+  tehlike" hiç yaratılamadı. Sonuç: `trigger_emergency_step()` mekanizması
+  doğru çalışıyor (kendi izole birim testinde doğrulandı -- bkz. "acil
+  adım" tetiklenmesi/hızlanması), commit edildi ve zarar vermiyor (normal
+  yürüyüşte hiç tetiklenmiyor), ama BU İKİ DEMONUN kinematik-kalça
+  mimarisinde "eski sisteme göre daha hızlı toparlanma" olarak AYRI/net
+  şekilde GÖSTERİLEMEDİ -- gerçek kazanç muhtemelen 3. maddedeki (İçsel
+  Kas Kuvveti / Active Ragdoll) kalçaya GERÇEK eylemsizlik kazandıran
+  çalışmadan SONRA ortaya çıkacak (kalça artık pinned bir noktaya değil,
+  gerçek fiziğe tepki verirse, "büyük ama stride_release'i tetiklemeyen"
+  bir itki senaryosu mümkün olur).
+- **Aynı büyüklükteki tekrarlanan itkiler HER ZAMAN tehlikeyi
+  tetiklemiyor:** 60s testinde 7 tekrardan sadece 4'ü `FallRiskMonitor`'ü
+  tetikledi (diğer 3'ünde gerçek dışı-mesafe ~38px'de kaldı, 45px eşiğinin
+  altında) -- itkinin YÜRÜYÜŞ FAZININ (o an hangi ayağın stance/swing
+  olduğu, kütle merkezinin faz içindeki konumu) hangi anına denk geldiğine
+  bağlı. Bu bir çırpınma/kararsızlık DEĞİL (her tetiklenme temiz giriş/
+  çıkış yapıyor) ama beklenmedik bir hassasiyet -- aynı darbe her zaman
+  aynı tepkiyi ÜRETMEYEBİLİR, gait fazına göre değişir.
+- `outside_interval_error` yalnızca ANLIK konuma bakıyor -- gerçek
+  biyomekanikteki "extrapolated center of mass" (hız/momentum
+  projeksiyonu ile ÖNCEDEN tahmin) gibi bir öngörü YOK, yani hızlı bir
+  düşüşte geç kalabilir.
+- `support_interval` ayak genişliğini tek bir sabitle (`FOOT_HALF_LEN`)
+  yaklaşıklıyor, gerçek ayak geometrisi/basma noktası yok.
+- Bu hâlâ gerçek bir ters-dinamik/rigid-body denge kontrolcüsü DEĞİL --
+  eşik tabanlı bir refleks anahtarlama katmanı (`counter_balance_offset`
+  gibi, sadece daha büyük/koşullu).
+- Kalan iki büyük özellik (Aktif Denge tamamlandı; sırada: 3. madde --
+  İçsel Kas Kuvveti ve Ayağa Kalkma) henüz başlanmadı.
+
+Commit: (bu turun commit'i README ile birlikte yapılacak).
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

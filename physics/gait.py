@@ -92,6 +92,44 @@ class FootPlantingLeg:
         # verir -- "bacak germek" yerine "govde egilir" mimarisi.
         self.last_overrun_px = 0.0
 
+        # EKLEME (7. tur -- "Aktif Denge ve Refleks / Center of Mass
+        # Recovery" -- kullanici talebi): normalde her swing tam olarak
+        # `swing_duration_frames` surer -- bu, cagiran kodun (bkz.
+        # `trigger_emergency_step()`) BIR SEFERLIK, daha hizli/acil bir
+        # adim icin bu sureyi geçici olarak kisaltabilmesini saglayan ic
+        # degisken (varsayilan = normal sure, her normal adim baslangicinda
+        # sifirlanir -- bkz. `update()`).
+        self._active_swing_duration = float(swing_duration_frames)
+        self.emergency_step_active = False
+
+    def trigger_emergency_step(self, target_x: float, speedup: float = 2.0) -> bool:
+        """DUSME REFLEKSI: bacak o an STANCE durumundaysa, normal 'kalca
+        stride_release'i asana kadar bekle' kuralini BEKLEMEDEN hemen
+        SWING'e gecirip yeni hedefi `target_x`'e (cagiran kodun -- bkz.
+        `demo/step12_balance.py` -- kutle merkezinin destek poligonunun
+        NERESINE dustugune gore hesapladigi bir "yakalama" noktasi)
+        yonlendirir. `speedup` (>1) swing suresini kisaltir (`swing_
+        duration_frames / speedup`) -- gercek bir insanin dengesini
+        kaybettiginde attigi adimin NORMAL bir adimdan daha hizli/aceleci
+        olmasinin kaba bir modeli.
+
+        DURUST SINIR: bacak zaten SWING durumundaysa (havadaki bir adimin
+        ORTASINDAYSA) hicbir sey yapmaz ve `False` doner -- fiziksel olarak
+        yarim kalmis bir adimi havada yon degistirip kesintiye ugratmak bu
+        turun kapsamina alinmadi (gercekci degil / ayri bir karmasiklik).
+        Yani bu refleks SADECE o an zeminde duran bacak icin calisir --
+        gercek bir insan da "havadaki" ayagini degil, YERDEKI ayagini
+        iterek/atarak dengesini kurtarir, bu bakimdan mimari olarak tutarli."""
+        if self.state != "stance":
+            return False
+        self.state = "swing"
+        self.swing_start = self.planted.copy()
+        self.swing_target = np.array([target_x, self.ground_y])
+        self.swing_t = 0.0
+        self._active_swing_duration = max(1.0, self.swing_duration_frames / max(speedup, 1e-6))
+        self.emergency_step_active = True
+        return True
+
     def update(self, hip_pos: np.ndarray) -> np.ndarray:
         if self.state == "stance":
             foot = self.planted
@@ -100,9 +138,11 @@ class FootPlantingLeg:
                 self.swing_start = self.planted.copy()
                 self.swing_target = np.array([hip_pos[0] + self.stride_ahead, self.ground_y])
                 self.swing_t = 0.0
+                self._active_swing_duration = float(self.swing_duration_frames)
+                self.emergency_step_active = False
                 foot = self.swing_start
         else:
-            self.swing_t += 1.0 / self.swing_duration_frames
+            self.swing_t += 1.0 / self._active_swing_duration
             t_raw = min(self.swing_t, 1.0)
             t = _smoothstep(t_raw)
             # DUZELTME (3. tur -- bkz. _quadratic_bezier() dokstring'i):
@@ -115,6 +155,7 @@ class FootPlantingLeg:
             if self.swing_t >= 1.0:
                 self.planted = self.swing_target.copy()
                 self.state = "stance"
+                self.emergency_step_active = False
                 foot = self.planted
 
         self.chain.set_base(hip_pos)

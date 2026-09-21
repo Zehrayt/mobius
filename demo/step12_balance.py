@@ -35,6 +35,27 @@ farki yaratiyor. Kollarin buna orantili tepkisi sayisal olarak asagida
 dogrulanmistir.
 
 Cikti: outputs/step12_balance.mp4
+
+7. TUR EKI (kullanici talebi -- "Aktif Denge ve Refleks / Center of Mass
+Recovery"): yukaridaki t=3.0s'lik "surtme" (55px) kucuk bir tokezlemedir --
+DIAGNOSTIC OLCUM (bkz. commit mesaji / README) bunun destek poligonunun
+SADECE ~27px disina ciktigini gosterdi, yani orantili kol tepkisi zaten
+yeterli (BAL_MAX_ERR=80px'te DOYMUYOR). Kullanicinin sikayeti DAHA BUYUK,
+gercek bir "dusme tehlikesi" icin: sistem bunu "fark etmiyor" (adim
+zamanlamasi degismiyor, kol tepkisi erken doyup buyumuyor). Bunu
+gostermek/dogrulamak icin t=5.5s'de cok daha buyuk (220px) IKINCI bir kalca
+itkisi eklendi (govde-sadece bir darbe DENENDI ama bu sahnenin sert govde-
+kenetlemesi yuzunden yeterli buyuklukte bir tehlike yaratamadi -- bkz.
+BIG_PUSH_KICK_PX sabitinin dokstring'i ve README'deki durust bulgu). Bu itkide `physics.balance.FallRiskMonitor` "tehlike" durumuna
+giriyor ve iki yeni refleks devreye giriyor: (1) kollar
+`emergency_counter_balance_offset` ile COK DAHA BUYUK bir genlikte "ters
+yone savruluyor" (2) o an ZEMINDE DURAN bacak, normal adim ritmini
+BEKLEMEDEN, kutle merkezinin dustugu yonde erken/hizli bir "yakalama
+adimi" atiyor (`FootPlantingLeg.trigger_emergency_step`). Ilk (55px)
+tokezleme BILINCLI OLARAK degistirilmedi -- eski kanarya sayilari
+(tokezleme oncesi/sonrasi |error|, korelasyon) hala gecerli, cunku
+FALL_RISK_ENTER_PX esigi bu kucuk tokezlemenin GERCEK aralik-disi
+mesafesinin (~27px) UZERINDE secildi.
 """
 from __future__ import annotations
 
@@ -48,7 +69,11 @@ import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
 from physics.gait import FootPlantingLeg
-from physics.balance import upper_body_com_x, support_x, counter_balance_offset
+from physics.balance import (
+    upper_body_com_x, support_x, counter_balance_offset,
+    support_interval, outside_interval_error, FallRiskMonitor,
+    emergency_counter_balance_offset,
+)
 
 W, H = 640, 400
 FPS = 30
@@ -87,6 +112,32 @@ STUMBLE_KICK_PX = 55.0  # aniden takilma/kayma -- bir kerelik disaridan itki
 BAL_GAIN_X = 0.55
 BAL_GAIN_Y = 0.12
 BAL_MAX_ERR = 80.0
+
+# -- 7. tur eki: destek-poligonu tabanli tehlike tespiti + buyutulmus
+#    refleks (bkz. modul dokstring'i + physics/balance.py) -----------------
+FALL_RISK_ENTER_PX = 45.0   # bkz. dokstring -- 55px'lik ilk tokezlemenin
+FALL_RISK_EXIT_PX = 20.0    # GERCEK aralik-disi mesafesinin (~27px) UZERINDE
+EMERGENCY_GAIN_X = 0.9
+EMERGENCY_MAX_ERR = 220.0
+EMERGENCY_STEP_LEAD_PX = 15.0
+EMERGENCY_SWING_SPEEDUP = 2.5
+
+BIG_PUSH_T = 5.5
+BIG_PUSH_KICK_PX = 220.0  # gercek bir "dusme tehlikesi" -- bkz. dokstring'i.
+# DENENDI AMA VAZGECILDI: govdeye/basa SADECE bir hiz-darbesi (impulse,
+# hip'e DOKUNMADAN) uygulamak -- boylece "kalcanin kendisi kinematik
+# stride_release esigini KAZARA tetiklemesin" istendi. Ama bu SENARYODA
+# (step12) govde/boyun HER KAREDE TORSO_MAX_LEAN_DEG=12 derecelik SERT bir
+# `clamp_direction()` ile kalcaya kenetli -- bu, gövde/başın kalçadan ne
+# kadar uzaklasabilecegini yapisal olarak ~+-25px'le sinirliyor (govde
+# uzunlugu * sin(12derece) mertebesinde), impuls buyuklugu ne olursa olsun
+# (80'den 320px/kareye kadar denendi, PIK hep ~25-28px'de SABIT kaldi --
+# bkz. commit mesaji/README). Yani bu SPESIFIK sahnede (kalca=kinematik
+# pin, govde=sert-kenetli) gercek bir "destek poligonu disi" tehlike SADECE
+# kalcanin kendisini (driver'i) hareket ettiren bir itki ile yaratilabiliyor
+# -- bu da ayni zamanda bacagin KENDI stride_release (18px) esigini de
+# ANINDA tetikliyor (bkz. asagidaki DURUST BULGU). Bu, cozulmemis degil,
+# BILINCLI OLARAK belgelenen bir mimari sinirlama -- bkz. README "7. tur".
 
 
 def build_body() -> tuple[VerletSystem, dict]:
@@ -151,7 +202,9 @@ def leg_support_x(left_leg: FootPlantingLeg, right_leg: FootPlantingLeg) -> floa
 
 
 def draw_frame(body: VerletSystem, idx: dict, legs: list[FootPlantingLeg],
-               camera_offset: float, error: float, bal_x: float) -> np.ndarray:
+               camera_offset: float, error: float, bal_x: float,
+               interval: tuple[float, float] | None = None,
+               in_danger: bool = False, real_error: float = 0.0) -> np.ndarray:
     frame = np.full((H, W, 3), 22, dtype=np.uint8)
     cv2.line(frame, (0, int(GROUND_Y)), (W, int(GROUND_Y)), (85, 85, 85), 2)
 
@@ -189,9 +242,18 @@ def draw_frame(body: VerletSystem, idx: dict, legs: list[FootPlantingLeg],
     base_screen_x = int(com_x - error + camera_offset)
     cv2.line(frame, (base_screen_x, int(GROUND_Y) - 4), (base_screen_x, int(GROUND_Y) + 4), (80, 220, 240), 3)
 
+    # 7. tur eki: gercek destek araligi (yatay cizgi -- eski tek NOKTA
+    # yerine) + tehlike durumu gorsellestirmesi.
+    if interval is not None:
+        lo, hi = interval
+        y_line = int(GROUND_Y) + 14
+        cv2.line(frame, (int(lo + camera_offset), y_line), (int(hi + camera_offset), y_line),
+                 (60, 220, 255) if not in_danger else (60, 60, 255), 3)
+    danger_txt = f"  [TEHLIKE! aralik-disi: {real_error:+.1f}px]" if in_danger else ""
     bar_x, bar_y = 12, 40
-    cv2.putText(frame, f"CoM - destek farki (error): {error:+.1f}px   kol tepkisi: {bal_x:+.1f}px",
-                (12, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.46, (210, 210, 210), 1, cv2.LINE_AA)
+    cv2.putText(frame, f"CoM - destek farki (error): {error:+.1f}px   kol tepkisi: {bal_x:+.1f}px{danger_txt}",
+                (12, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.46,
+                (210, 210, 210) if not in_danger else (110, 110, 255), 1, cv2.LINE_AA)
     cv2.rectangle(frame, (bar_x, bar_y), (bar_x + 160, bar_y + 12), (70, 70, 70), 1)
     mid = bar_x + 80
     cv2.line(frame, (mid, bar_y), (mid, bar_y + 12), (120, 120, 120), 1)
@@ -215,6 +277,9 @@ def main() -> None:
     driver_x = 0.0
     dt = 1.0 / FPS
     kicked = False
+    big_pushed = False
+    risk_monitor = FallRiskMonitor(FALL_RISK_ENTER_PX, FALL_RISK_EXIT_PX)
+    emergency_step_frames = []  # (frame, hangi_bacak) -- tani/rapor icin
 
     out_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                              "outputs", "step12_balance.mp4")
@@ -222,6 +287,8 @@ def main() -> None:
 
     err_log = []
     offset_log = []
+    real_err_log = []
+    danger_log = []
 
     for f in range(N_FRAMES):
         t = f * dt
@@ -229,6 +296,9 @@ def main() -> None:
         if not kicked and t >= STUMBLE_T:
             driver_x += STUMBLE_KICK_PX  # bkz. modul dokstring'i -- ani "tokezleme" itkisi
             kicked = True
+        if not big_pushed and t >= BIG_PUSH_T:
+            driver_x += BIG_PUSH_KICK_PX  # 7. tur eki -- bkz. yukaridaki sabit dokstring'i
+            big_pushed = True
         body.set_pinned_position(idx["driver"], [driver_x, HIP_Y])
 
         com_x = upper_body_com_x(body.points, [idx["hip"], idx["shoulder"], idx["head"]])
@@ -236,7 +306,27 @@ def main() -> None:
         error = com_x - base_x
         err_log.append(error)
 
-        bal_x, bal_y = counter_balance_offset(error, BAL_GAIN_X, BAL_GAIN_Y, BAL_MAX_ERR)
+        # -- 7. tur eki: gercek destek araligi + aralik-disi mesafe + -------
+        #    histerezisli tehlike tespiti (bkz. modul dokstring'i)
+        stance_xs = [leg.planted[0] for leg in (left_leg, right_leg) if leg.state == "stance"]
+        fallback_xs = [left_leg.swing_target[0], right_leg.swing_target[0]]
+        interval = support_interval(stance_xs, fallback_x=fallback_xs)
+        real_error = outside_interval_error(com_x, interval)
+        in_danger = risk_monitor.update(real_error)
+        real_err_log.append(real_error)
+        danger_log.append(in_danger)
+
+        if in_danger:
+            bal_x, bal_y = emergency_counter_balance_offset(real_error, EMERGENCY_GAIN_X, BAL_GAIN_Y, EMERGENCY_MAX_ERR)
+            # dusme reflek'i: o an zeminde duran bacagi kutle merkezinin
+            # dustugu yonde erken/hizli bir "yakalama adimi"na yonlendir.
+            target_x = com_x + np.sign(real_error) * EMERGENCY_STEP_LEAD_PX
+            for name, leg in (("l", left_leg), ("r", right_leg)):
+                if leg.trigger_emergency_step(target_x, speedup=EMERGENCY_SWING_SPEEDUP):
+                    emergency_step_frames.append((f, name))
+                    break
+        else:
+            bal_x, bal_y = counter_balance_offset(error, BAL_GAIN_X, BAL_GAIN_Y, BAL_MAX_ERR)
         offset_log.append(bal_x)
 
         shoulder_pos = body.points[idx["shoulder"]]
@@ -255,7 +345,8 @@ def main() -> None:
         right_leg.update(hip_pos)
 
         camera_offset = W / 2 - hip_pos[0]
-        frame = draw_frame(body, idx, [left_leg, right_leg], camera_offset, error, bal_x)
+        frame = draw_frame(body, idx, [left_leg, right_leg], camera_offset, error, bal_x,
+                            interval=interval, in_danger=in_danger, real_error=real_error)
         writer.write(frame)
 
     writer.release()
@@ -267,8 +358,45 @@ def main() -> None:
     print(f"tokezleme oncesi ort. |error| (dogal yuruyus salinimi): {np.abs(err_log[:kt]).mean():.2f}px")
     peak_i = kt + int(np.abs(err_log[kt:kt + 15]).argmax())
     print(f"tokezleme sonrasi PIK |error|: {abs(err_log[peak_i]):.2f}px @ frame {peak_i} (kol tepkisi: {offset_log[peak_i]:+.2f}px)")
-    corr = float(np.corrcoef(offset_log, -np.clip(err_log, -BAL_MAX_ERR, BAL_MAX_ERR))[0, 1])
-    print(f"kol-ofseti ile -error(clipped) korelasyonu: {corr:.4f} (1.0 = tam orantili tepki)")
+    # NOT (7. tur eki): bu korelasyon METRIGI orijinalinde SADECE normal
+    # yuruyus-salinimi kaynakli, ORANTILI (counter_balance_offset) tepkiyi
+    # olcuyordu. Yeni buyuk-itki (t=5.5s) sahnesi acil-durum penceresinde
+    # (bkz. asagi) BILINCLI OLARAK FARKLI bir formul (emergency_counter_
+    # balance_offset, farkli girdi: real_error) kullaniyor -- bu ikisini
+    # AYNI korelasyonda karistirmak yanlis olur (0.9072 gibi yapay-dusuk
+    # bir sayi cikarir). Bu yuzden ORIJINAL kanarya, orijinal olcum
+    # penceresiyle (buyuk itkiden ONCE, t<BIG_PUSH_T) BIREBIR AYNI sekilde
+    # yeniden hesaplaniyor -- geriye donuk uyumluluk boylece korunuyor.
+    pre_push_n = int(BIG_PUSH_T * FPS)
+    corr = float(np.corrcoef(offset_log[:pre_push_n],
+                              -np.clip(err_log[:pre_push_n], -BAL_MAX_ERR, BAL_MAX_ERR))[0, 1])
+    print(f"kol-ofseti ile -error(clipped) korelasyonu (t<{BIG_PUSH_T}s, ORIJINAL kanarya penceresi): "
+          f"{corr:.4f} (1.0 = tam orantili tepki)")
+
+    # -- 7. tur eki: buyuk itki (t=5.5s) sonrasi tehlike/kurtarma raporu ----
+    real_err_log = np.array(real_err_log)
+    danger_log = np.array(danger_log)
+    bpt = int(BIG_PUSH_T * FPS)
+    peak_real_i = bpt + int(np.abs(real_err_log[bpt:bpt + 30]).argmax())
+    print()
+    print(f"=== 7. tur: buyuk itki ({BIG_PUSH_KICK_PX:.0f}px @ t={BIG_PUSH_T}s) sonrasi ===")
+    print(f"PIK gercek aralik-disi mesafe: {real_err_log[peak_real_i]:+.2f}px @ frame {peak_real_i}")
+    print(f"tehlike durumuna girildi mi: {'EVET' if danger_log[bpt:].any() else 'HAYIR'}")
+    print(f"tetiklenen acil adim(lar): {emergency_step_frames}")
+    if danger_log[bpt:].any():
+        recovered = np.where(~danger_log[bpt:])[0]
+        # bpt'den SONRAKI ilk 'tehlike disi' karesi (bpt+recovered[0] -- ama
+        # danger_log[bpt] zaten True olabilir, ilk KEZ tehlikeye girdikten
+        # SONRAKI ilk cikisi ariyoruz)
+        entered = np.where(danger_log[bpt:])[0]
+        if len(entered) > 0:
+            enter_i = bpt + entered[0]
+            after_enter = np.where(~danger_log[enter_i:])[0]
+            if len(after_enter) > 0:
+                recovery_frame = enter_i + after_enter[0]
+                print(f"tehlikeye giris: frame {enter_i} (t={enter_i/FPS:.2f}s) -> "
+                      f"kurtulma: frame {recovery_frame} (t={recovery_frame/FPS:.2f}s) "
+                      f"[{recovery_frame - enter_i} kare surdu]")
 
 
 if __name__ == "__main__":
