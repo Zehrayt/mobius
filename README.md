@@ -1691,6 +1691,165 @@ bayrağı değil.
 Commit: (bu ekin commit'i README ile birlikte yapılacak).
 
 
+## 9. tur kullanıcı geri bildirimi: Dinamik Swing Time ve Havada Yeniden Hedefleme -- İKİSİ DE REDDEDİLDİ, ortak kök neden bulundu
+
+Kullanıcı bu turda üç madde birden getirdi: (1) swing süresinin kalça
+hızına göre kısalması gerektiği ("Sabit Swing Süresi Fiziğe Aykırıdır"),
+(2) swing halindeki bacağın havadayken bir darbe geldiğinde hedefini
+değiştirememesi ("Havada Körleşme" / Mid-Air Retargeting), (3) destekteki
+bacağın rijit bir çubuk gibi davranmasının kalçanın "sekiyormuş" hissi
+yaratması (compass gait / SLIP-model önerisi), ve açık soru olarak: hangisi
+önce -- Dynamic Swing Time mi, Mid-Air Retargeting mi?
+
+**Metodoloji notu:** bu turun ikisi de "iyi görünen ama izole test edilince
+saklı bir bedeli çıkan" düzeltme kategorisine girdi -- yani bu turda HİÇBİR
+kod değişikliği commit edilmedi (repo 8. turun sonundaki `783b910`
+commit'inde kalıyor). Bunun yerine iki ayrı prototip izole olarak test
+edildi, ikisi de reddedildi, ve reddedilme nedenleri AYNI kök mimari
+sorunu işaret etti -- bu da kullanıcının üçüncü maddesinin (compass gait)
+aslında birinci öncelik olması gerektiğini gösterdi.
+
+### Prototip 1: Dynamic Swing Time (`_active_swing_duration`'ı tetiklenme
+anındaki `hip_vx`'e ters orantılı ölçekleme)
+
+`speed_factor = max(1.0, |hip_vx| / TARGET_VX)`,
+`_active_swing_duration = max(3, swing_duration_frames / speed_factor)`
+ile izole edildi (`/tmp/proto_swing/diag_dynamic_swing.py`, repoya HİÇ
+yazılmadı). Sonuç -- görünüşte iyi: 8. turda belgelenen "3 art arda hızlı
+sağ-bacak adımı" anomalisi (kare 105/116/127/138) tek bir hızlı düzeltme
+adımına (kare 98, süre=9.14 kare) indi, düzenli yürüyüş ritmine daha
+erken (108/119/130) dönüldü.
+
+**Ama saklı bedel:** aynı tokezleme penceresindeki (kare 90-105) tepe
+`hip_vx` **13.86px/kare'den 33.55px/kare'ye (~2.4x)** çıktı. Kök neden --
+iz sürülerek bulundu: `demo/step14`'te destekteki ayağın `anchor` noktası
+HER karede o an destekte olan bacağın `planted` konumuna DOĞRUDAN
+pin'leniyor (`body.set_pinned_position(anchor, [stance_leg.planted[0],
+GROUND_Y])`), ve bu `anchor` ile kalça arasında **rijit (`compliance=0.0`)
+bir Verlet çubuğu** var. `swing_target`, "bacak ~10 kare sürecek"
+varsayımıyla ileri projekte ediliyor; süre kısaltılınca ayak, kalça
+GERÇEKTE o kadar ilerlemeden o UZAK hedefe ulaşıyor, ve rijit çubuk bu
+mesafe farkını handoff anında TEK KAREDE kapatmaya çalışıyor -- işte
+gözlenen hız sıçraması budur. Yani "daha az düzeltme adımı" metriği
+gerçek bir iyileşme değil, DAHA BÜYÜK bir handoff sıçramasıyla satın
+alınmış sahte bir iyileşmeydi.
+
+### Prototip 2: Mid-Air Retargeting (`swing_target`'ı swing sırasında her
+karede capture-point ile yeniden hesaplama)
+
+Önce HAM (filtresiz) versiyon denendi -- `swing_start`/`swing_t` sabit,
+`swing_target` her karede `hip_x + hip_vx/omega0 + swing_lead_margin`
+formülüyle YENİDEN yazıldı (`retarget_lock_t=0.85`'e kadar). Bu, repoya
+GEÇİCİ olarak yazılıp `step14`'ün 12 saniyelik standart demo senaryosuyla
+test edildi (ardından HEMEN geri alındı -- aşağıda neden).
+
+**Sonuç -- felaket:** karakter artık büyük itkiden (t=7.0s) ÖNCE, sadece
+15px'lik tokezlemeden (t=3.0s) hemen sonra, kare 102'de düşüyordu (daha
+önce hiç düşmüyordu). Tepe `hip_vx` **99.6px/kare**'ye fırladı. Kök neden:
+`omega0=0.045` küçük bir sayı olduğu için, `hip_vx/omega0` formülü ham
+(gürültülü, tek kareli) hız sıçramalarını ~22 kat büyütüyor -- örneğin
+tokezleme darbesinin kendisi (bir kareliğine `prev_points`'i doğrudan
+kaydırması) yapay bir tek-kare hız sivrisine yol açıyor, ve bu sivri
+DOĞRUDAN (filtrelenmeden) hedefe yansıtılınca hedef bir karede yüzlerce
+piksel zıplıyor, Bezier eğrisi de o karede aynı zıplamayı ayağa yansıtıyor.
+
+**Düzeltilmiş (damped) versiyon denendi:** hedefe TAM zıplamak yerine
+karede en fazla `MAX_RETARGET_STEP_PX` kadar yaklaşma (`4px/kare` ile
+başlandı). Bu, tokezlemeyi eskisi gibi (`hip_vx` aralığı [1.91, 14.49] --
+8. turdakiyle neredeyse aynı) absorbe etti VE "3 hızlı adım" kademesini
+TEK bir adıma indirdi (kare 105) -- ilk bakışta Prototip 1'in faydasını,
+onun bedeli olmadan sağlıyor gibi görünüyordu.
+
+**Ama duyarlılık taraması ikinci, daha sinsi bir saklı bedel ortaya
+çıkardı.** `MAX_RETARGET_STEP_PX` değeri arttıkça (2 / 4 / 8 / 16px),
+büyük itkiden (t=7.0s, 150px) sonra düşme davranışı değişti:
+
+| cap (px/kare) | büyük itkiden sonra | tepe hip_vx (tokezleme) |
+|---|---|---|
+| 2 | düştü (kare 220) | 14.40 |
+| 4 | düştü (kare 221) | 14.49 |
+| 8 | düştü (kare 224) | 14.49 |
+| 16 | **DÜŞMEDİ** | 14.49 |
+
+`cap=16`'nın "büyük itkiden bile hayatta kaldı" sonucu ilk bakışta en
+etkileyici iyileşme gibi göründü -- ama proje disiplini gereği ("ilk
+bakışta mükemmel görünen sonuca ham haliyle güvenme", bkz. 8. turdaki
+`clamp_direction` bulgusu) kare kare `hip_y` izlendi (`/tmp/proto_swing/
+diag_bigpush_trace.py`). Bulgu: kare 220-221 arasında **`hip_y` TEK
+KAREDE 308.14'ten 162.99'a (145px) zıplıyor**, aynı anda `hip_vx`
++2.61'den **-59.24**'e düşüyor. Bu, "karakter dengesini akıllıca kurtardı"
+DEĞİL -- retargeting'in yeniden hedeflediği uzak nokta ile kalçanın
+GERÇEKTE bulunduğu yer arasındaki farkı, yine o rijit `anchor` çubuğunun
+TEK KAREDE zorla kapatması. `dustu=False` sonucu, düşme eşiğinin bu
+fiziksel-olmayan sıçramayla "tesadüfen" atlatılmasından ibaret -- gerçek
+bir dinamik kurtarma refleksi değil. Yani `cap=16`, bu turun EN tehlikeli
+bulgusuydu: yanlışlıkla "başarı" olarak raporlanabilecek bir maskeleme
+hatasıydı, ve iz sürme yapılmasaydı yanlış bir kazanç olarak
+belgelenebilirdi.
+
+### Ortak kök neden -- ve neden kullanıcının 3. maddesi (compass gait/SLIP)
+aslında ÖNCELİKLİ olmalı
+
+Her iki prototip de AYNI mekanizmaya çarptı: `anchor`-kalça arasındaki
+**rijit (`compliance=0.0`), ANINDA yeniden pinlenen** Verlet çubuğu, "bacak
+swing_duration kadar sürede swing_start'tan swing_target'a düzgünce
+gider" varsayımını ÇİĞNEYEN her durumda (süre kısaltılırsa VEYA hedef
+canlı güncellenirse), o çiğnemeyi TEK KAREDE, fiziksel olmayan bir
+kalça-sıçramasıyla telafi ediyor. Hatta bu mekanizmanın KÜÇÜK bir versiyonu
+zaten mevcut, DEĞİŞTİRİLMEMİŞ koddaki NORMAL (bozulmasız) yürüyüşte bile
+gözlemlenebiliyor -- baseline izolasyonunda kare 11'de `hip_y` 153.72'den
+147.32'ye (6.4px), kare 20-22 arasında 146.03'ten 149.03'e (3px) sıçrıyor;
+işte kullanıcının 3. maddesinde sözünü ettiği "kalçanın kilitlenmiş gibi
+yukarı sekiyormuş hissiyatı" TAM OLARAK budur, ve bunun BÜYÜK/felaket
+versiyonu, dinamik swing süresi veya havada yeniden hedefleme
+denendiğinde ortaya çıkıyor.
+
+**Sonuç:** Dynamic Swing Time ve Mid-Air Retargeting, kullanıcının
+sorduğu gibi "önce hangisi" sorusunun cevabı DEĞİL -- ikisi de aynı
+duvara (rijit, anlık handoff) çarpıyor. Kullanıcının 3. madde olarak
+listelediği compass-gait/SLIP eleştirisi ("dizden esneyerek amortisör
+gibi") aslında bu ikisinin ÖN KOŞULU: `anchor`-kalça çubuğuna bir miktar
+uyumluluk (compliance > 0, ya da handoff'un birkaç kareye yayılan yumuşak
+bir geçişle yapılması) eklenmeden, ne swing süresi ne de swing hedefi
+güvenle dinamikleştirilebilir -- ikisi de aynı sert duvara çarpıp ya
+açıkça düşüyor (cap<16, süre kısaltma) ya da GÖRÜNMEYEN bir sıçramayla
+maskeleniyor (cap=16).
+
+### Doğrulama
+
+- Her iki prototip de İZOLE test edildi (`/tmp/proto_swing/`), REPOYA
+  KOMİT EDİLMEDİ. Ham Mid-Air Retargeting versiyonu kısaca repoya
+  yazılıp `step14`'ün 12 saniyelik demo senaryosuyla koşturuldu, felaket
+  sonuç (kare 102'de erken düşme) görülür görülmez `git diff --stat`
+  ile doğrulanarak backup'tan geri alındı -- repo bu turun SONUNDA da
+  `783b910` ile bit-bit aynı (`git status --short` boş).
+- step1-13 kanaryaları bu turda hiç risk altında değildi: hem Dynamic
+  Swing Time hem Mid-Air Retargeting SADECE `physics/active_gait.py`
+  içinde (yani sadece `step14`'ün kullandığı sınıfta) denendi;
+  `grep -rl "active_gait\|ActiveFootPlantingLeg"` bunun repoda SADECE
+  `active_gait.py` ve `step14_active_biped.py` tarafından kullanıldığını
+  doğruluyor.
+
+### Dürüst v1 sınırları (bu tur, hiçbir kod değişikliği yapılmadan)
+
+- Motor hâlâ 8. turun sonundaki halinde: swing süresi sabit, swing
+  hedefi sadece tetiklenme anında bir kez hesaplanıyor.
+- Kullanıcının orijinal sorusuna ("önce hangisi?") doğrudan cevap
+  VERİLEMEDİ -- bunun yerine ikisinin de şu anki mimaride güvenle
+  uygulanamayacağı, ve compass-gait/SLUMP esnekliğinin önce gelmesi
+  gerektiği sayısal olarak gösterildi.
+- `cap=16`'nın "büyük itkiyi absorbe etti" sonucu KASITLI OLARAK
+  reddedildi ve bir kazanç olarak raporlanmadı -- yukarıdaki tabloya
+  sadece karşılaştırma için dahil edildi.
+- Bir sonraki adım için öneri (uygulanmadı, sadece belgelendi): `anchor`
+  çubuğuna küçük bir compliance (>0) eklemek ya da handoff'u birkaç
+  kareye yayılan yumuşak bir interpolasyona çevirmek -- bu, kullanıcının
+  SLIP-modeli önerisiyle doğrudan örtüşüyor ve muhtemelen hem Dynamic
+  Swing Time'ı hem Mid-Air Retargeting'i GÜVENLE mümkün kılacak.
+
+Commit: (bu ekin commit'i README ile birlikte yapılacak; bu turda
+`physics/`, `demo/` altında HİÇBİR dosya değişmedi -- sadece bu belge).
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
