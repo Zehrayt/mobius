@@ -1426,6 +1426,271 @@ sağlam.
 Commit: (bu ekin commit'i README ile birlikte yapılacak).
 
 
+## 8. tur kullanıcı geri bildirimi: "Kinematik-Pin Kalça" eleştirisi ve Active Ragdoll (`step14`)
+
+7. tur ekinin commit'inden sonra kullanıcı, motorun en temel mimari
+zaafına işaret eden bir eleştiriyle geri döndü: kalça (`hip`), uzayda
+**kinematik bir pin gibi** davranıyordu. `step9`/`step12`/`step13`'ün
+hepsinde kalçanın gerçek konumu, bir `driver` adlı **pinned** Verlet
+noktası tarafından `WALK_SPEED` ile sahnelenmiş bir hızda X ekseninde
+sürükleniyor, `hip` ise bu `driver`'a `add_stick(driver, hip, length=3.0)`
+ile neredeyse-rijit (3px) bir çubukla bağlanıyordu. Kullanıcının
+eleştirisi: eğer kalça, gelen kuvvetlerden bağımsız olarak neredeyse
+sabit bir yörüngeye zorlanıyorsa, "destek poligonu dışına çıkma"
+temelli düşme-riski sistemi anlamsız bir **görsel yanılsama**dan
+ibarettir — karakterin kütle merkezi gerçek bir itki veya darbe
+karşısında asla doğal biçimde kayamaz.
+
+### Ön-tanı: iddia sayısal olarak doğrulandı
+
+Uygulamaya geçmeden önce proje disiplini gereği iddia izole olarak
+sayısal biçimde test edildi (`/tmp/diag_kinematic_hip.py`, commit
+edilmedi): `hip`'e doğrudan 220px'lik bir itki (`prev_points` üzerinden)
+uygulandığında, kalçanın `driver`'dan maksimum sapması **tam olarak
+3.0000px** ile sınırlı kaldı — `FALL_RISK_ENTER_PX=45px` eşiğinin
+**onda birinden bile azı**. Aynı 220px, mevcut yöntemle (`driver_x`'e
+eklenerek) uygulandığında kalça beklendiği gibi ~220px hareket etti.
+Bu, kullanıcının "3px'lik çubuk her şeyi yutuyor" iddiasının birebir
+sayısal kanıtıydı.
+
+### Kapsam kararı ve mimari yön
+
+Kullanıcıya üç seçenek sunuldu (her yere yaymak / sadece yeni Active
+Ragdoll çalışmasına sınırlamak / önce izole prototipte denemek);
+kullanıcı **önce izole prototip** seçeneğini seçti. İzole tek-bacaklı
+ters-sarkaç prototipi (`/tmp/proto_active_hip.py`, gerçek
+`physics.verlet.VerletSystem` sınıfı kullanılarak, repo'ya hiçbir
+dokunuş yapılmadan) dört testle hipotezi doğruladı: (A) itkisiz sarkaç
+düşüyor (net -7.98px/30 kare) — yani "itki olmadan yürünemez" matematiksel
+olarak kanıtlandı; (B) itkiyle net +70.66px ilerleme; (C) 20/60/150px'lik
+yanal darbelere **orantılı, gerçek** tepkiler (19.4/29.0/14.9px) — eski
+3px'lik sahte tavana kıyasla; (D) 300-1200px'lik aşırı darbelerde bile
+NaN yok, bacak-uzunluğu kısıtı tam korunuyor.
+
+Kullanıcı bu sonuçları onayladıktan sonra ("düşmek artık sadece bir
+`bool` değişkeni değil") açık ve ayrıntılı bir mimari direktif verdi:
+
+1. Değişiklik **sadece** yeni Active Ragdoll çalışmasına (`step14`)
+   sınırlanmalı — `step1`-`step11`'in kinematik kanaryaları korunmalı.
+2. **Polimorfizm** kullanılmalı: `gait.py`'ye dokunulmamalı, `if
+   active_hip:` gibi dallanma eklenmemeli — bunun yerine `gait.py`'nin
+   `FootPlantingLeg` sınıfından kalıtım alan yeni bir `ActiveFootPlanting
+   Leg` sınıfı, yeni bir `active_gait.py` modülünde tanımlanmalı.
+3. Yeni dinamik bacak sınıfının `stride_release`'i artık sabit bir piksel
+   eşiği olamaz — **Düşme Süresi (Time-to-Fall)** veya **Kütle Merkezi
+   İzdüşümü (Capture Point)** üzerinden hesaplanmalı: kalça ne kadar
+   hızlıysa ayak o kadar erken ve o kadar ileriye atılmalı.
+4. Sonuç: yeni bir `step14_active_biped.py` ile iki bacaklı, değişken
+   hızlı, dinamik kalça transferi (push-off + swing) kodlanmalı.
+
+### Uygulama: `physics/active_gait.py` ve `demo/step14_active_biped.py`
+
+`gait.py` **hiç değiştirilmedi** (grep ile doğrulandı — dosya bu turda
+sıfır satır değişiklik gördü). Yeni `ActiveFootPlantingLeg(FootPlanting
+Leg)` sınıfı, `update()`'i override ederek klasik Linear Inverted
+Pendulum / Capture Point modelini (Pratt ve ark., 2006) uyguluyor:
+
+```python
+xcp = hip_pos[0] + capture_gain * hip_vx / omega0
+if xcp - self.planted[0] > support_margin:
+    # adımı ONCEDEN ve daha ILERIYE at
+    ...
+```
+
+`step14_active_biped.py`'de `driver` noktası **yok** — `hip`, `mass=1.0`
+ile tamamen serbest bir Verlet noktası; ayrıca o an zeminde duran bacağın
+`planted` konumuna her karede taşınan pinned bir `anchor` noktası var ve
+ikisi arasında bacakların toplam uzunluğu kadar (184px) rijit bir çubuk
+bulunuyor — kalçayı "o an destekte olan ayağın üzerinde dönen bir ters
+sarkaç" gibi davranmaya zorluyor (robotikte **compass gait** olarak
+bilinen, dizin görsel FABRIK çözümünü etkilemeyen ama alttaki fiziği
+basitleştiren standart bir yaklaşım — bkz. aşağıdaki "dürüst sınırlar").
+
+Push-off, hedef hız ile mevcut hız arasındaki farka orantılı bir
+P-kontrolcü ile modellendi (`thrust = THRUST_GAIN * (TARGET_VX -
+hip_vx)`, `±THRUST_CAP` ile sınırlı).
+
+### Ayar sürecinde bulunan ve düzeltilen üç bağımsız kararsızlık
+
+Nihai demo'ya geçmeden önce, izole bir ayar düzeneğinde (`/tmp/proto14/`,
+commit edilmedi) sırayla üç farklı kararsızlık bulundu ve düzeltildi:
+
+1. **Koşulsuz itki → sınırsız hızlanma.** İlk denemede itki sabit/
+   koşulsuzdu; sonuç, hiçbir zaman durağanlaşmayan, sürekli hızlanan bir
+   karakterdi (300 karede final hız 6-12px/kare'ye çıkıyor, hâlâ
+   artıyordu). **Düzeltme:** hedef-hıza orantılı (P-kontrolcü) itkiye
+   geçildi — sistem kendiliğinden kararlı, yakınsayan bir yürüyüşe geçti.
+2. **Çift-havada (double-swing) kararsızlığı.** Bacakların bağımsız,
+   birbirinden habersiz adım kararları bazen HER İKİSİNİ aynı anda
+   havaya kaldırıyordu — kalça anlık olarak sıfır fiziksel destekle
+   serbest düşüşe geçiyor, sonra inişte şiddetli bir düzeltme darbesi
+   (bir konfigürasyonda hız 3195px/kare'ye fırlıyor) oluşuyordu.
+   **Düzeltme:** `ActiveFootPlantingLeg.update()`'e `other_leg_swinging`
+   parametresi eklendi; çağıran kod her karede diğer bacağın durumunu
+   kontrol edip iletiyor, böylece tek-destek (single-support) kuralı
+   kesin olarak korunuyor.
+3. **Teorik `omega0` bu motorda kararsız.** LIP modelinin teorik
+   `omega0 = sqrt(g/L) ≈ 0.0188` değeri demoda kararsızdı (ortalama
+   hız 3.664'e taşıyor, anlık tepe 25.47px/kare) — izole ayar
+   düzeneğindeki taramalarda 0.045 ile çalışıyor olmasına rağmen.
+   **Kök neden:** bu motor Verlet entegrasyonunda HER ZAMAN `dt=1.0`
+   kullanıyor (gerçek saniye hiç kullanılmıyor — bu, projenin önceki
+   "Mimari refactor" bölümünde zaten belgelenmiş bir tasarım kısıtı);
+   bu yüzden sürekli-zaman LIP formülünün doğrudan ikamesi bu motorda
+   geçerli değil. **Düzeltme değil, dürüst bir uzlaşma:** ampirik olarak
+   doğrulanmış `OMEGA0 = 0.045` sabit değeri kullanıldı, kod içinde bu
+   teorik/ampirik uyuşmazlık açıkça yorumlandı.
+
+### Dördüncü bulgu: `clamp_direction()`'ın varsayılanı, inşa edilen özelliğin TAMAMINI maskeliyordu
+
+Gövde/kafa eklenip demo tamamlandığında, sonuç ilk bakışta "mükemmel"
+görünüyordu: 400px'e kadar hiçbir itki karakteri düşürmüyordu. Proje
+disiplini ("inanılmayacak kadar iyi bir sonuca ham haliyle güvenme")
+gereği bu şüpheyle karşılandı ve üç-yönlü bir izolasyon testi yapıldı
+(gövdesiz / gövde+varsayılan-`clamp_direction` / gövde+`clamp_direction`
+YOK). Sonuç: gövdesiz haliyle 60px+ itkiler gerçekten düşürüyordu;
+gövde eklenip **varsayılan** (`preserve_momentum=False`) `clamp_direction`
+çağrıları kullanıldığında karakter 400px'e kadar TAMAMEN düşmeye bağışık
+hale geliyordu; `clamp_direction` çıkarılınca eşik ~150px'e geri
+dönüyordu. **Kök neden:** `clamp_direction`'ın varsayılan davranışı,
+gövde/boyun açı-kelepçesini uygularken `prev_points`'i doğrudan üzerine
+yazıyor — bu, kalçanın KENDİ gerçek hızını da gövde üzerinden dolaylı
+olarak sessizce sıfırlıyordu (5. turda AYNI sınıf sorunun torso-lean
+için zaten keşfedilip düzeltildiği desenin, burada farklı bir bağlamda
+yeniden ortaya çıkması). **Düzeltme:** her iki `clamp_direction` çağrısına
+da `preserve_momentum=True` verildi. Sonuç: düşme eşiği, gövdenin
+GERÇEK ek eylemsizliğini yansıtan daha fizik-tutarlı bir aralığa
+(~100px) döndü (100/150/220/300px düşüyor, 30/60px hayatta kalıyor).
+
+### Beşinci bulgu: düzeltme kendi ardından yeni, daha ince bir kararsızlık açığa çıkardı
+
+`preserve_momentum=True` düzeltmesi UYGULANDIKTAN SONRA, önceden
+(maskelenmişken) "güvenli" kabul edilen `STUMBLE_KICK_PX=30`
+tokezleme darbesi artık **gecikmeli bir düşmeye** yol açtığı görüldü —
+frame 141'de (tokezlemeden ~50 kare sonra) düşme. İzolasyonla
+doğrulandı: SADECE tokezleme (başka hiçbir darbe yokken) tek başına
+frame 141'de düşürüyordu. Küçük darbe taraması yapıldı:
+
+| Tokezleme | Sonuç |
+|---|---|
+| 5px | hayatta kaldı |
+| 10px | hayatta kaldı |
+| 15px | hayatta kaldı |
+| 20px | frame 163'te düştü |
+| 25px | frame 171'de düştü |
+
+Gerçek absorbe/düşme sınırı **15px-20px arasında**. `STUMBLE_KICK_PX`
+bu yüzden **15.0px**'e çekildi — taramada doğrulanmış en büyük
+"hayatta kalan" değer. Eski 30px değeri, düzeltilmiş fizikte artık
+"küçük bir tokezlemenin gerçekten absorbe edilmesi"ni değil, neredeyse
+bir düşme sınırını temsil ediyordu; bu adımın göstermek istediği şeyi
+(gerçek absorbsiyon) yanlış temsil ediyordu.
+
+Bu arada raporlama kodundaki bir mantık hatası da düzeltildi: eski
+"absorbe edildi mi?" kontrolü, düşme karesi tokezlemeden **20 kareden
+fazla** sonraysa doğrudan "EVET" diyordu — ama bu, düşmenin asıl
+sebebinin (o zamanki 30px'lik tokezleme) yanlışlıkla "hayır, aslında
+sonraki büyük itkiden kaynaklandı" gibi raporlanmasına yol açıyordu
+(oysa büyük itki t=7.0s/frame 210'da, düşme ise frame 141'de --yani
+düşme büyük itkiden ÖNCE gerçekleşiyordu, ama eski kontrol büyük
+itkinin karesini hiç dikkate almıyordu). Düzeltilmiş mantık artık
+düşme karesini büyük-itki karesiyle (`bp`) karşılaştırıyor: düşme
+`bp`'den ÖNCEYSE, sebep tokezlemenin kendisidir.
+
+### Reddedilen bir "düzeltme": bacak-koordinasyon döngüsünün simetrikleştirilmesi
+
+`STUMBLE_KICK_PX=15` ile yeniden çalıştırıldığında, tokezlemeden hemen
+sonra (frame 105-127 arası) sağ bacağın üst üste **üç kez** hızlıca
+adım attığı, sol bacağın ise aynı pencerede hiç adım atmadığı ve
+kalça hızının geçici olarak 26px/kare'ye kadar salındığı gözlendi. İlk
+bakışta bu, ana döngünün SIRALI (`for leg in (left_leg, right_leg)`)
+çalışmasından kaynaklanan bir "asimetrik değerlendirme" hatası gibi
+göründü ve döngü, her iki bacağın da AYNI güncelleme-öncesi anlık
+görüntüyü kullanacağı şekilde "simetrik" hale getirildi. **Bu düzeltme
+YANLIŞTI ve geri alındı:** simetrik hale getirilmiş döngü, iki bacağın
+da aynı karede "diğeri henüz havada değil" görüp AYNI ANDA swing'e
+geçmesine izin vererek tam olarak daha önce çözülmüş çift-havada
+sorununu geri getirdi — doğrulama testinde frame 72'de (büyük itkiden,
+frame 210'dan, ÇOK önce) ani bir düşmeye yol açtı. Kod, sıralı
+değerlendirmeye geri döndürüldü (bkz. `demo/step14_active_biped.py`
+içindeki yorum). Ayrıntılı log analizi, gözlenen "sağ bacağın üç kez
+sekmesi" olayının aslında bir koordinasyon hatası DEĞİL, tokezlemenin
+sol bacağın iniş hedefini (capture-point hesabıyla) beklenenden çok
+daha ileriye (372.2px) fırlatmasının doğal bir sonucu olduğunu
+gösterdi: kalça bu ileri-fırlatılmış destek noktasının altından/ötesine
+geçerken ters-sarkaç dinamiği geçici olarak şiddetleniyor, sağ bacak
+bunu birkaç hızlı adımda telafi edip normal ritme (frame ~138'den
+itibaren, tekrar 10-11 karelik düzenli alternans) geri dönüyor. **Bu,
+projenin "gerçekmiş gibi görünen ama yanlış olan bir tanı"yı, düzeltmeyi
+uygulayıp doğrulamadan commit etmemenin önemini gösteren somut bir
+örneği** — düzeltme geri alınmadan önce fark edilmeseydi, çift-destek
+güvencesi sessizce kırılmış olacaktı.
+
+### Nihai sonuçlar (12 saniyelik demo, `outputs/step14_active_biped.mp4`)
+
+- 21 adım, düzenli ~10-11 kare periyotla alternan sol/sağ.
+- Tokezleme (t=3.0s, 15px): hip_vx aralığı [1.90, 13.86] — **absorbe
+  edildi** (düşme yok, büyük itkiden önce).
+- Büyük itki (t=7.0s, 150px): **gerçek bir düşmeye** yol açtı (frame
+  220, t=7.33s) — görsel QA'da kare 225'te gövde/kafanın (kırmızıya
+  dönen) yere doğru devrildiği, "DUSTU" durumuna geçildiği doğrulandı.
+- Büyük itkiden önceki kararlı yürüyüşte ortalama hız: 2.310px/kare
+  (hedef: 2.0px/kare).
+
+### 60+ saniyelik kararlılık testi (proje kuralı)
+
+Büyük itki devre dışı bırakılıp (t=9999s'e ertelenerek) sadece sürekli
+yürüyüş + t=3.0s'deki 15px'lik tokezleme ile **65 saniyelik** (1950
+kare) bir koşu yapıldı:
+
+- **185 adım**, tamamı düzenli alternan (sol/sağ), NaN/patlama yok.
+- Tokezleme yine absorbe edildi; ondan sonraki tüm 1850 karede tek bir
+  ek düzensizlik yaşanmadı (frame 105-127 arasındaki geçici "hızlı
+  telafi" olayı bir daha tekrarlanmadı — tek seferlik bir tokezleme-
+  toparlama tepkisi olduğu teyit edildi).
+- Ortalama hız (tüm koşu boyunca): 1.955px/kare (hedef 2.0).
+- Son kalça-y konumu: 147.55 (zemin: 330, düşme eşiği: 320 — güvenli
+  aralıkta).
+
+### Görsel QA
+
+12 saniyelik demo videosundan 60/100/130/215/225/250/359. kareler
+çıkarılıp incelendi: normal yürüyüş kareleri (60, 100, 130) tutarlı bir
+"yuruyor" durumu ve hedefe yakın `hip_vx` gösteriyor; büyük itkiden
+hemen sonraki kare (215, hip_vx=+18.55px/kare) henüz düşmemiş ama
+belirgin biçimde hızlanmış bir gövde gösteriyor; düşmenin kaydedildiği
+kareden hemen sonrası (225) durumun kırmızı "DUSTU" etiketine döndüğünü
+ve gövde/kafa dairesinin gerçekten yere doğru devrildiğini gösteriyor;
+sonraki kareler (250, 359) karakterin devrilmiş halde zemin boyunca
+sürüklendiğini (kamera kalçayı takip ettiği için sahnede kalıyor)
+doğruluyor — yani "düşme" gerçek bir geometrik çöküş, salt bir `bool`
+bayrağı değil.
+
+### Dürüst v1 sınırları (bilerek çözülmedi, açıkça belgelendi)
+
+- **Compass gait basitleştirmesi:** o an destekte olan bacak, fizik
+  açısından her zaman `arm_length` (184px) kadar tam uzatılmış kabul
+  ediliyor — FABRIK, dizin GÖRSEL bükülmesini bu sabit uzunluğa karşı
+  hâlâ çözüyor, ama alttaki ters-sarkaç fiziği dizin gerçek bükülü
+  geometrisini hesaba katmıyor. Bu, robotik literatüründe standart bir
+  v1 basitleştirmesidir.
+- **Tek-destek koordinasyonu dış müdahaleyle sağlanıyor:**
+  `ActiveFootPlantingLeg` kendi başına iki bacaklı farkında değil —
+  çift-havada durumunu önlemek tamamen çağıran kodun her karede
+  `other_leg_swinging` bayrağını doğru iletmesine bağlı (yukarıdaki
+  "reddedilen düzeltme" bölümü, bunun ne kadar kırılgan olabileceğini
+  gösteriyor).
+- **`swing_duration_frames` hâlâ sabit**, kalça hızına göre
+  ölçeklenmiyor — kullanıcının orijinal direktifinin "adım ne kadar
+  ileriye atılacağı" kısmı (capture-point ile) uygulandı, ama "adımın
+  ne kadar SÜRECEĞİ" hâlâ sabit bırakıldı.
+- **`OMEGA0=0.045` ampirik, teorik `sqrt(g/L)=0.0188` değil** — bu
+  motorun `dt=1.0` entegrasyon kısıtı, sürekli-zaman LIP formülünün
+  doğrudan taşınmasını engelliyor (yukarıda ayrıntılı).
+
+Commit: (bu ekin commit'i README ile birlikte yapılacak).
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
