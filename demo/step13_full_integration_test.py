@@ -364,6 +364,11 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
     for f in range(n_frames):
         t = f * dt
         blend = ragdoll_blend_at(t)
+        # 7. tur eki: `in_danger` her karede tanimli olmali (asagidaki
+        # `blend > 0.99` bloğunun disinda da `leg.update(..., hold_release=
+        # in_danger)` cagrisinda okunuyor) -- blend tam aktif degilken
+        # (gecis/pasif) tehlike tespiti zaten anlamsiz, varsayilan False.
+        in_danger = False
 
         if blend > 0.0:
             driver_x += WALK_SPEED * dt * blend
@@ -549,8 +554,11 @@ def run_scene(fps: int, duration_s: float, writer=None) -> dict:
         for side in ("l", "r"):
             passive[f"{side}_knee"] = body.points[idx[f"{side}_knee"]].copy()
             passive[f"{side}_foot"] = body.points[idx[f"{side}_foot"]].copy()
-        left_leg.update(hip_pos)
-        right_leg.update(hip_pos)
+        # 7. tur eki (kullanici geri bildirimi -- "ortusen tetikleyiciler"):
+        # tehlike surdukce normal kinematik stride_release TAMAMEN devre
+        # disi -- bkz. FootPlantingLeg.update() dokstring'i.
+        left_leg.update(hip_pos, hold_release=in_danger)
+        right_leg.update(hip_pos, hold_release=in_danger)
 
         # DUZELTME (kullanici geri bildirimi -- "kemik esnemesi / kutle
         # merkezi baglantisizligi"): bkz. step9_ragdoll_blend.py'deki ayni

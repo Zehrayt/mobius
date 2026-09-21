@@ -130,10 +130,48 @@ class FootPlantingLeg:
         self.emergency_step_active = True
         return True
 
-    def update(self, hip_pos: np.ndarray) -> np.ndarray:
+    def update(self, hip_pos: np.ndarray, hold_release: bool = False) -> np.ndarray:
+        """EKLEME (7. tur eki -- kullanicinin "ortusen tetikleyiciler"
+        (overlapping triggers) elestirisi): `hold_release=True` iken bu
+        bacak STANCE durumundaysa, asagidaki NORMAL kinematik
+        `stride_release` kontrolu TAMAMEN atlanir (ayak yerinde kalir) --
+        `hold_release` VARSAYILAN OLARAK False, yani hicbir mevcut cagiran
+        kod (step1-step11, step12/13'un TEHLIKE DISI kareleri) ETKILENMEZ.
+
+        GEREKCE: eskiden gait.py'nin "normal adim at" karari (salt kalca-
+        kayma mesafesine bakan `stride_release` esigi) ile balance.py'nin
+        "acil adim at" karari (`trigger_emergency_step()`) birbirinden
+        TAMAMEN HABERSIZDI -- ikisi de ayni bacagi, ayni kalca-kaymasi
+        sinyaline gore, birbirinden bagimsiz olarak hareket ettirmeye
+        calisabiliyordu. Kullanicinin somut onerisi: kutle merkezi destek
+        poligonunun DISINDAYKEN (`FallRiskMonitor.in_danger`), normal
+        yuruyus donguisu GECICI OLARAK durdurulmali (override) ve kontrol
+        TAMAMEN `trigger_emergency_step()`'e birakilmali. `hold_release`
+        cagiran kodun (bkz. `demo/step12_balance.py`/`step13_full_
+        integration_test.py`) her karede `in_danger` bayragini buraya
+        gecirmesini saglayan mekanizma -- boylece tehlike surdukce, bir
+        STANCE bacagin swing'e gecmesinin TEK yolu `trigger_emergency_
+        step()` cagrisi olur, kendi kinematik esigi degil.
+
+        DURUST SINIR (bkz. README "7. tur eki" -- sayisal tanı ile
+        dogrulandi): bu, HER senaryoda gozle-gorulur bir zamanlama
+        degisikligi YARATMAZ -- cunku "acil adim" kontrolu zaten HER
+        karede `update()`'ten ONCE calisiyor (bkz. demo dosyalari), yani
+        bir bacak STANCE'a gectigi anda (`in_danger` hala True ise) zaten
+        ayni karede/bir sonraki karede emergency tarafindan yakalaniyor --
+        `hold_release` bu spesifik yarisi zaten kazanilmis yariste GORUNUR
+        bir fark yaratmaz. Asil kapattigi somut, gercek durum ise: AYNI
+        karede HER IKI bacak da STANCE ve `in_danger=True` oldugunda,
+        cagiran kod (bkz. `for ... break` mantigi) sadece BIRINI acil
+        secebiliyor -- `hold_release` OLMADAN, secilmeyen (kaybeden)
+        bacak kendi kinematik esigini bagimsiz asip NORMAL (kontrolsuz,
+        acil parametrelerinden habersiz) bir adim atabilirdi; `hold_
+        release=True` ile bu artik imkansiz -- o bacak bir sonraki karede
+        (sirasi geldiginde) yine `trigger_emergency_step()` uzerinden
+        hareket eder."""
         if self.state == "stance":
             foot = self.planted
-            if hip_pos[0] - self.planted[0] > self.stride_release:
+            if not hold_release and hip_pos[0] - self.planted[0] > self.stride_release:
                 self.state = "swing"
                 self.swing_start = self.planted.copy()
                 self.swing_target = np.array([hip_pos[0] + self.stride_ahead, self.ground_y])

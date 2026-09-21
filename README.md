@@ -1319,6 +1319,113 @@ eklendi; bu itkide `FallRiskMonitor` tehlikeye giriyor, kollar
 Commit: (bu turun commit'i README ile birlikte yapılacak).
 
 
+## 7. tur eki: örtüşen tetikleyicilerin ayrıştırılması (`hold_release`)
+
+7. turun commit'inden hemen sonra kullanıcı, "ekstra adım" refleksinin bu
+demolarda ayrı ölçülebilir bir fayda göstermediği bulgusuna somut bir
+mimari eleştiriyle geri döndü: `gait.py`'nin normal adım-atma kararı
+(`stride_release` -- sadece kalça-kayma mesafesine bakan kinematik bir
+eşik) ile `balance.py`'nin acil-durum kararı (`trigger_emergency_step`)
+birbirinden TAMAMEN HABERSİZ çalışıyor; ikisi de aynı bacağı, aynı
+kalça-kayması sinyaline göre bağımsız olarak hareket ettirmeye
+çalışabiliyor ("örtüşen tetikleyiciler"). Kullanıcının önerisi: kütle
+merkezi destek poligonunun DIŞINDAYKEN normal yürüyüş döngüsü GEÇİCİ
+OLARAK durdurulmalı (override) ve kontrol TAMAMEN `trigger_emergency_
+step()`'e bırakılmalı.
+
+**Diagnostik-A (fix'ten ÖNCE, iddiayı doğrula/netleştir):** `FootPlanting
+Leg.update()` monkeypatch'lenip her stance→swing geçişi (NORMAL kinematik
+mi, EMERGENCY mi -- `emergency_step_active` bayrağına bakarak) loglandı.
+step12'nin TEK 220px'lik itki senaryosunda bu geçiş TAM OLARAK
+kullanıcının tarif ettiği şekilde (aynı karede, aynı anda) gerçekleşmiyordu
+-- sayısal olarak SIFIR "ihlal" (`in_danger=True` İKEN gerçekleşen NORMAL
+geçiş) bulundu. Ama gerçek mekanizma daha ince bir zamanlama sorunuydu:
+push'tan HEMEN önce (frame 160/161, `in_danger` henüz False iken), sıradan
+yürüyüş ritmi zaten HER İKİ bacağı da normal `stride_release` ile
+swing'e sokmuştu (push'la tamamen tesadüfi bir çakışma) -- push'un
+kendisi (frame 165) `in_danger`'ı frame 166'da tetiklediğinde HER İKİ
+bacak da zaten havadaydı, dolayısıyla `trigger_emergency_step()` ilk
+birkaç karede hiçbir bacağı "ele geçiremedi" (ikisi de "stance" değildi).
+Bacaklar inip STANCE'a döndüğü anda (frame ~170-171) acil sistem onları
+HEMEN yakaladı (frame 172/173) -- çünkü "acil dene" kontrolü HER karede
+`update()`'ten ÖNCE çalışıyor, yani bir bacak müsait olur olmaz acil
+sistem yarışı zaten kazanıyor. **Bu, kullanıcının tarif ettiği mekanizmanın
+BİREBİR AYNISI değil ama AYNI kökten (iki sistemin habersizliği) kaynaklanan
+kardeş bir bulgu: örtüşme "aynı anda çift tetikleme" şeklinde değil, "önceden
+başlamış, alakasız bir normal salınımın acil sistemin ilk tepki penceresini
+işgal etmesi" şeklinde gerçekleşiyor.**
+
+Bu yüzden TEK itkilik step12 senaryosu, iddiayı sınamak için YETERSİZ bir
+test ortamı çıktı -- daha önce round-5'te öğrenilen derse ("kısa süreli
+doğrulama yetersiz olabilir") paralel yeni bir ders: **tek bir senaryo,
+belirli bir mimari sorunu göstermeye YETMEYEBİLİR, farklı gait-fazlarında
+birden çok deneme gerekir.** 60 saniyelik tekrarlı-itki testinde (7×220px,
+adım D'nin sahnesi) durum FARKLI çıktı: 4 başarılı tehlike tetiklemesinin
+**3'ünde** (`frame 408/'r'`, `888/'r'`, `1368/'r'`), `in_danger=True` İKEN
+bir bacak KENDİ kinematik `stride_release` eşiğini bağımsız aşıp NORMAL
+(acil parametrelerinden habersiz) bir adım atıyordu -- kullanıcının
+tarif ettiği örtüşmenin somut, sayısal kanıtı.
+
+**Düzeltme:** `FootPlantingLeg.update()`'e yeni bir `hold_release: bool =
+False` parametresi eklendi (varsayılan `False`, TÜM mevcut çağıran kod
+-- step1-step11, step12/13'ün tehlike-dışı kareleri -- ETKİLENMEDİ).
+`hold_release=True` iken, bacak STANCE durumundaysa normal kinematik
+`stride_release` kontrolü TAMAMEN atlanır (ayak yerinde kalır) -- bacağın
+swing'e geçmesinin TEK yolu `trigger_emergency_step()` çağrısı olur.
+`demo/step12_balance.py` ve `demo/step13_full_integration_test.py` her
+karede `left_leg.update(hip_pos, hold_release=in_danger)` /
+`right_leg.update(hip_pos, hold_release=in_danger)` çağırıyor (step13'te
+`in_danger`, `blend <= 0.99` iken varsayılan `False` -- denge mantığı
+zaten sadece tam aktif modda anlamlı).
+
+**Doğrulama (aynı 60s senaryosu, fix sonrası, `git show HEAD:...` ile
+okunan ESKİ koda karşı `importlib` tabanlı A/B -- `git stash` bu ortamda
+[bağlı klasörde silme izni yok] kendi iç içe `index.lock` döngüsüyle
+deterministik olarak kilitlendiği için KULLANILMADI, salt-okunur `git
+show` tercih edildi):**
+- İhlal sayısı: **3 → 0**. Fix sonrası 60s testinde `in_danger=True` iken
+  gerçekleşen HİÇBİR normal geçiş yok; NORMAL geçiş sayısı ikisinde de
+  aynı (158) ama EMERGENCY geçiş sayısı **4 → 7** çıktı (önceden sadece
+  1 bacak "resmi" acil adım alıyordu, üç itkide diğer bacak kontrolsüz
+  kendi başına gidiyordu; artık her iki bacak da acil sistem üzerinden
+  hareket ediyor).
+- **Dürüst maliyet (bedelsiz değil):** aynı 3 itkinin kurtulma süresi
+  3 kareden 4 kareye çıktı (giriş/çıkış çiftleri: `frame 406→409` (3 kare)
+  → `406→410` (4 kare), aynı şekilde 886/1366 için de). Yani örtüşmeyi
+  kapatmak, o üç örnekte kontrolsüz-ama-tesadüfen-hızlı bir tepkiyi,
+  kontrollü-ama-1-kare-daha-yavaş bir tepkiyle değiştirdi -- ~33ms'lik
+  (60 FPS'te değil, bu sahne 30 FPS, yani 1 kare = 33ms) gözle
+  ayırt edilmesi neredeyse imkansız bir fark, ama SIFIR değil, bu yüzden
+  "bedelsiz düzeltme" diye sunulmuyor.
+- İlk itki (frame 167, step12'nin de test ettiği push) hiç etkilenmedi
+  (8 kare, değişmedi) -- zaten ihlal içermiyordu.
+- Regresyon: step7 (0.794/0.985/0.941), step12 (8.65/38.80px, korelasyon
+  1.0000, 7. tur bloğu: PIK +189.73px, giriş 166→kurtulma 174, 8 kare) ve
+  step13'ün 24/30/60 FPS `hip_x` değerleri (478.38/562.89/364.54)
+  **BİREBİR AYNI** kaldı -- bu iki senaryonun kendisi zaten ihlal
+  içermediği için (yukarıdaki diagnostik-A bulgusu) beklenen bir sonuç.
+- 60 saniyelik uzatılmış kararlılık testi tekrarlandı: NaN/patlama yok,
+  max hip Y sapması 6.24px (önceki 5.36px ile aynı mertebede, benign),
+  4 temiz giriş/çıkış çifti (çırpınma yok).
+- Görsel QA: `t=13.6s` (2. itkinin tam ihlal anı) karşılaştırıldı --
+  eski koddaki kare bacağın hâlâ havada (kontrolsüz normal swing ortası)
+  olduğunu, yeni koddaki AYNI kare bacağın zaten yere değmiş/yakalanmış
+  olduğunu gösteriyor -- sayısal bulguyla tutarlı, görünür bir fark var.
+
+**Dürüst sonuç:** kullanıcının mimari eleştirisi doğruydu ve düzeltme
+gerçek, ölçülebilir bir sorunu kapattı (60s testinde 3/4 gerçek tehlike
+olayında) -- ama etkisi committed 7. tur'un kendi TEK-itkilik demo
+sahnelerinde (step12/step13) GÖRÜNMÜYOR, çünkü o iki spesifik sahne
+tesadüfen ihlal içermiyordu. Bu, önceki "ekstra adım refleksi bu demolarda
+ayrı ölçülebilir fayda göstermiyor" bulgusunu YANLIŞLAMIYOR ama
+NÜANSLIYOR: refleksin kendisi hâlâ bu iki sahnede öne çıkan bir fark
+yaratmıyor, ama altındaki mimari (artık gerçekten ayrıştırılmış iki karar
+mekanizması) daha genel senaryolarda (60s testi gibi) somut biçimde daha
+sağlam.
+
+Commit: (bu ekin commit'i README ile birlikte yapılacak).
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

@@ -1,3 +1,4 @@
 outputs/*.mp4
 __pycache__/
 *.mp4
+.verify_tmp/

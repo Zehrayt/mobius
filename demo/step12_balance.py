@@ -341,8 +341,11 @@ def main() -> None:
         clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, NECK_MAX_TILT_DEG)
 
         hip_pos = body.points[idx["hip"]]
-        left_leg.update(hip_pos)
-        right_leg.update(hip_pos)
+        # 7. tur eki (kullanici geri bildirimi -- "ortusen tetikleyiciler"):
+        # tehlike surdukce normal kinematik stride_release TAMAMEN devre
+        # disi -- bkz. FootPlantingLeg.update() dokstring'i.
+        left_leg.update(hip_pos, hold_release=in_danger)
+        right_leg.update(hip_pos, hold_release=in_danger)
 
         camera_offset = W / 2 - hip_pos[0]
         frame = draw_frame(body, idx, [left_leg, right_leg], camera_offset, error, bal_x,
