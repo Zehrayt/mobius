@@ -126,7 +126,7 @@ def build_body() -> tuple[VerletSystem, dict]:
     # davranmaya zorluyor (bkz. modul dokstring'i).
     idx["hip"] = sys_.add_point([0.0, HIP_Y], mass=1.0)
     idx["anchor"] = sys_.add_point([0.0, GROUND_Y], pinned=True)
-    sys_.add_stick(idx["anchor"], idx["hip"], length=ARM_LENGTH, compliance=0.0)
+    sys_.add_stick(idx["anchor"], idx["hip"], length=ARM_LENGTH, compliance=0.85)
 
     idx["shoulder"] = sys_.add_point([0.0, HIP_Y - TORSO_LEN])
     sys_.add_stick(idx["hip"], idx["shoulder"], length=TORSO_LEN)

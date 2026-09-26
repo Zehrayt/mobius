@@ -1850,6 +1850,180 @@ maskeleniyor (cap=16).
 Commit: (bu ekin commit'i README ile birlikte yapılacak; bu turda
 `physics/`, `demo/` altında HİÇBİR dosya değişmedi -- sadece bu belge).
 
+## 10. tur: Anchor-Kalça Çubuğuna Esneklik (Compliance) -- Kısmi ama Doğrulanmış İyileştirme
+
+Bu tur, kullanıcının 9. turdaki bulguları değerlendiren ve doğrulayan bir
+üçüncü taraf incelemesine cevaben yapıldı. İnceleme motoru üç eksende
+puanladı: Mimari Kararlılık ve İzolasyon 95/100, Fiziksel Çözümleyici
+85/100, Dinamik Refleksler ve Biyomekanik 70/100. İnceleme şunları
+açıkça teyit etti:
+
+- Mid-Air Retargeting'in 145px'lik "teleport" sonucunu bir başarı gibi
+  raporlamak yerine reddedip geri almam, "kıdemli bir mühendisin yapacağı
+  türden bir kalite kontrolü" olarak değerlendirildi.
+- 9. turdaki kök-neden teşhisi ("rijit anchor-kalça çubuğu, iki
+  özelliğin de önünü kesen ortak duvar") "%100 doğru" bulundu.
+- Önerilen sıradaki adım -- `anchor` çubuğuna `compliance > 0` eklemek,
+  yani çubuğu bir "şok emiciye" dönüştürmek -- doğrudan onaylandı.
+
+Bu tur, tam olarak bu onaylanmış adımı uyguladı, sıkı biçimde ölçtü, ve
+sonucu -- hem kazanımları hem sınırlarını -- dürüstçe raporluyor.
+
+### Mekanizma: `physics/verlet.py` içinde zaten var olan compliance desteği
+
+Yeni motor kodu YAZILMADI -- `add_stick()` ve `_satisfy_sticks()` içinde
+zaten (önceki bir turda squash & stretch için eklenmiş) bir `compliance`
+parametresi mevcuttu:
+
+```python
+def add_stick(self, i, j, length=None, compliance=0.0): ...
+
+def _satisfy_sticks(self):
+    ...
+    diff = (dist - rest_length) / dist
+    if compliance:
+        diff *= max(1.0 - compliance, 0.0)
+    ...
+```
+
+`compliance=0.0` iken çubuk her `step()` çağrısında (8 gevşetme
+iterasyonu ile) tam mesafeyi ANINDA dayatıyor. `compliance > 0.0`
+verildiğinde, her iterasyonda düzeltmenin sadece bir kısmı uygulanıyor;
+kalan sapma sonraki karelere taşınıyor -- yani `anchor` her yeni
+temas noktasına yeniden pinlendiğinde, kalça oraya TELEPORT etmek
+yerine birkaç kareye yayılan yaylı bir geçişle "akıyor". Bu, kullanıcının
+SLIP-modeli önerisindeki "diz üzerinden yaylı bağlantı" fikrinin motor
+seviyesinde karşılığı. Değişiklik, tek bir çağrı noktasında:
+
+`demo/step14_active_biped.py`, satır 129:
+`sys_.add_stick(idx["anchor"], idx["hip"], length=ARM_LENGTH, compliance=0.0)`
+→ `compliance=0.85`
+
+### Doğrulama: değer seçimi (izole, repo'ya dokunmadan)
+
+Doğru değeri bulmak için `compliance` bir dizi seviyede, `build_body()`
+monkeypatch'lenerek (repoya hiçbir dosya değişmeden) tarandı.
+
+**1) Taban tarama (12s standart senaryo, tek tokezleme + büyük itki):**
+
+| compliance | adım sayısı | tokezleme hip_vx aralığı | büyük itki sonrası | ort. hip_vx |
+|---|---|---|---|---|
+| 0.00 | 21 | [1.90, 13.86] | düştü @220 | 2.310 |
+| 0.30 | 21 | [1.90, 13.92] | düştü @221 | 2.355 |
+| 0.50 | **27 (anomali)** | [1.90, 13.97] | düştü @233 | 2.355 |
+| 0.70 | 21 | [1.91, 14.13] | düştü @222 | 2.204 |
+| 0.85 | 21 | [1.74, 14.53] | düştü @224 | 2.080 |
+| 0.92 | **26 (anomali)** | [1.70, 14.69] | düştü @246 | 2.068 |
+
+Önemli bulgu: compliance ile adım sayısı/kararlılık İLİŞKİSİ monoton
+DEĞİL -- 0.50 ve 0.92 anormal adım sayıları üretti (27, 26), 0.30/0.70/
+0.85 ise temiz kaldı. Bu, projede tekrar tekrar görülen dersi doğruluyor:
+kararlılık eşikleri formülle değil, doğrudan ölçümle bulunmalı.
+
+**2) 9. turun reddedilen "cap=16 Mid-Air Retargeting" stres senaryosu
+yeniden test edildi (sadece karşılaştırma amaçlı -- bu özellik hâlâ
+repoya alınmadı):**
+
+| compliance | max hip_y sıçraması | adım sayısı | gait alternation |
+|---|---|---|---|
+| 0.00 | 145.15px @f221 | 33 | görünüşte tamam (9. turda reddedilen sahte "başarı") |
+| 0.70 | 114.86px @f221 | 34 | mükemmel alternation |
+| 0.85 | 78.41px @f221 | 33 | mükemmel alternation |
+
+**3) Daha yüksek compliance denendi (0.90-0.99), aynı stres
+senaryosunda -- sıçrama küçülmeye devam ediyor ama YENİ bir bozulma
+ortaya çıkıyor:**
+
+| compliance | max hip_y sıçraması | adım sayısı | gait alternation |
+|---|---|---|---|
+| 0.90 | 57.72px @f222 | 32 | **bozuk** (aynı bacağın art arda sallanması) |
+| 0.93 | 47.49px @f222 | 28 | **bozuk** |
+| 0.95 | 34.58px @f222 | 26 | **bozuk** |
+| 0.97 | 25.65px @f223 | 32 | **bozuk** |
+| 0.99 | 22.91px @f211 | 33 | **bozuk** |
+
+NaN hiçbir seviyede görülmedi. Ama sıçrama ASLA ihmal edilebilir bir
+değere inmiyor (0.99'da bile hâlâ 22.91px), ve 0.90 üstü değerler
+sıçramayı daha çok bastırmaya çalışırken sol/sağ adım alternation'ını
+bozan YENİ bir kararsızlık modu getiriyor. **Sonuç: compliance TEK
+BAŞINA Mid-Air Retargeting/Dynamic Swing Time'ı tam güvenli hale
+getirmiyor -- sadece hasarı azaltıyor.**
+
+**4) 65 saniyelik uzun-koşu kararlılık testi** (`BIG_PUSH_T=9999`,
+sadece kararlı yürüyüş + t=3.0s'deki tek tokezleme), compliance=0.0 ile
+0.85 karşılaştırıldı: HER İKİSİ de tam 185 adım, kusursuz sol/sağ
+alternation, hiç NaN yok, neredeyse özdeş son `hip_y` (147.55 / 147.34)
+ve ortalama `hip_vx` (1.955 / 1.929, hedef 2.0'a yakın). Bu,
+compliance=0.85'in taban (retargeting'siz) senaryoda güvenli ve
+gerileme yaratmadığını güçlü biçimde doğruluyor.
+
+**5) Günlük "kalça sekmesi" karşılaştırması** (kare 8-35, normal
+yürüyüş): compliance=0.0'da `hip_y` bir handoff anında TEK KAREDE
+153.72 → 147.32 (6.4px) sıçrıyor. compliance=0.85'te AYNI geçiş
+152.25 → 150.94 → 149.2 → 147.63 → 146.56 şeklinde BİRKAÇ kareye
+yayılıyor -- niyet edilen "şok emici" etkisi tam olarak bu. Kare 9-199
+aralığında maksimum kare-başı `|Δhip_y|` 23.077px'ten 7.053px'e düştü
+(~3.3x azalma), ortalama ise neredeyse aynı kaldı, hatta çok hafif arttı
+(0.800px → 0.846px) -- çünkü esnek bir çubuk hiçbir zaman tam
+"dinlenme"de değil, her karede küçük bir düzeltme yapmaya devam ediyor.
+Bu takas (çok daha düşük en-kötü-durum sıçraması, ihmal edilebilir
+düzeyde daha yüksek ortalama titreşim) net bir kazanç olarak
+değerlendirildi: göze çarpan "sekme hissi" tekil büyük sıçramalardan
+kaynaklanıyordu, 0.8px'lik alt-piksel düzeyindeki sürekli titreşim
+görsel olarak fark edilmiyor.
+
+**Karar: `compliance=0.85` benimsendi** -- taban senaryoda doğrulanmış
+güvenli/gerilemesiz davranış, günlük kalça-sekmesinde ölçülebilir
+iyileşme, ve reddedilen Mid-Air Retargeting stres testinde (sadece
+karşılaştırma amaçlı) gait alternation'ı bozmadan sıçramayı ciddi
+oranda azaltması nedeniyle.
+
+### Gerçek koda uygulama ve tam doğrulama
+
+Bu turda -- önceki turların aksine -- değişiklik GERÇEKTEN repoya
+yazıldı: `demo/step14_active_biped.py` satır 129, `compliance=0.0` →
+`compliance=0.85`. Ardından TÜM doğrulama takımı, izole monkeypatch
+değil, bu gerçek dosya üzerinde yeniden koşturuldu:
+
+- **12s standart demo:** 21 adım, tokezleme hip_vx aralığı
+  [1.74, 14.53] (absorbe edildi), büyük itki sonrası düştü @224,
+  ortalama hip_vx 2.080px/kare -- izole taramadaki tahminle BİREBİR
+  eşleşiyor.
+- **65s kararlılık testi:** 185 adım, kusursuz alternation, NaN yok,
+  son hip_y 147.34, ortalama hip_vx 1.929px/kare -- yine izole
+  taramayla birebir eşleşiyor.
+- **Görsel QA:** büyük itki sonrası düşme anının (kare 220-225)
+  kareleri ffmpeg ile çıkarıldı ve incelendi -- karakter beklenen
+  şekilde çöküyor (büyük itki testi zaten kasıtlı olarak
+  absorbe-edilemeyecek kadar güçlü), iskelet çiziminde hiçbir
+  bozulma/artefakt yok, renkler ve etiketler önceki turlarla tutarlı.
+- step1-13 kanaryaları risk altında değildi: değişiklik SADECE
+  `step14_active_biped.py` içindeki tek bir `add_stick` çağrısında.
+
+### Dürüst v1 sınırları
+
+- Bu, kullanıcının orijinal "önce hangisini çözelim?" sorusuna HÂLÂ
+  doğrudan "ikisi de artık güvenli" cevabını VERMİYOR. Compliance=0.85,
+  Dynamic Swing Time ve Mid-Air Retargeting'i güvenli hale getirmek için
+  gereken ÖN KOŞULU iyileştirdi, ama TEK BAŞINA yeterli değil: aynı
+  cap=16 stres senaryosunda sıçrama 145px'ten 78px'e indi, ama SIFIRA
+  inmedi. Bu iki özellik henüz yeniden denenmedi/repoya alınmadı.
+- Sıçramayı compliance'ı daha da yükselterek (≥0.90) azaltmaya çalışmak
+  YENİ bir bozulma getiriyor (gait alternation kırılması) -- yani
+  "daha fazla compliance = daha iyi" formülü YANLIŞ; 0.85 empirik
+  olarak bulunmuş bir denge noktası, teorik bir optimum değil.
+  Sıçramanın geriye kalan kısmı muhtemelen `anchor`'ın kendisinin
+  yeniden-pinleme ANI'nın da yumuşatılmasını (sadece çubuğun
+  sertliğini değil) gerektiriyor -- bu henüz denenmedi.
+  Squash & stretch amaçlı diğer compliance kullanımları bu turda
+  DEĞİŞTİRİLMEDİ; sadece anchor-kalça çubuğu güncellendi.
+- Günlük yürüyüşte ortalama kare-başı titreşim çok hafif arttı
+  (0.800px → 0.846px) -- ihmal edilebilir görüldü, ama not edilmeye
+  değer bir takas.
+
+Commit: bu README güncellemesiyle birlikte, `demo/step14_active_biped.py`
+satır 129 değişikliğini içeren commit.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
