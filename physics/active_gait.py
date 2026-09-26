@@ -56,14 +56,105 @@ yukseklik dinamigi acisindan) TAM ACIK/rijit bir kol (`chain.arm_length`)
 varsayiliyor -- diz FABRIK/gorsel amacli hafif bukulebilir ama bu, kalca-
 yukseklik fizigini ETKILEMIYOR (bkz. demo/step14'teki ayri "anchor"
 noktasi + rijit cubuk) -- bu, robotikte "compass gait" olarak bilinen,
-standart bir basitlestirme; (3) `swing_duration_frames` SABIT kaliyor
-(hizla olceklenmiyor) -- ilk surum.
+standart bir basitlestirme; (3) [12. TURDE KISMEN COZULDU -- asagiya
+bkz.] `swing_duration_frames` v1'de SABIT kaliyordu (hizla
+olceklenmiyordu).
+
+12. TUR -- DINAMIK SALINIM SURESI v2 + HAVADA YENIDEN HEDEFLEME v2
+(9. turda REDDEDILEN ilk versiyonlarin defterini kapatan, 10. turun
+compliance=0.85 yumusatmasi UZERINE yeniden test edilmis hali):
+
+9. turda, salinim suresini VE hedefini TEK SEFERDE (kalkis anindaki xcp'ye
+gore) sabitleyip sonra ANI bir sicramayla degistirmek (rijit "teleport"),
+kalcanin hizinde 2.4 kat'lik (13.86 -> 33.55) kontrolsuz bir sicramaya yol
+acmis ve REDDEDILMISTI. Kok neden ayni zamanda 10. turdaki anchor-kalca
+rijitligiyle de ORTAKTI: HER IKI ozellik de "ani, kesikli" bir geometrik
+degisikligi rijit bir cubuga anlik olarak dayatiyordu.
+
+Bu turda, AYNI iki ozellik, SUREKLI/YUMUSATILMIS bir bicimde yeniden
+uygulandi:
+
+  * Dinamik Salinim Suresi v2: suresi TEK SEFERDE degil, HER KAREDE
+    o anki `hip_vx`'e gore yeniden hedeflenir (DST_BASE_VX=2.0 referans
+    hiza gore ters orantili), sonra `_active_swing_duration` bu hedefe
+    dogru birinci-derece bir gecikmeyle (DST_SMOOTH_RATE) yumusatilir --
+    yani sure ASLA bir kareden digerine sicramaz, sadece yavasca surer.
+    DST_MIN_DURATION/DST_MAX_DURATION sinirlari patolojik (asiri kisa/
+    uzun) degerleri once keser.
+
+  * Havada Yeniden Hedefleme v2: swing sirasinda yeni bir darbe gelirse
+    (xcp degisirse), `swing_target` ANLIK ISINLANMA ile degil, kare
+    basina en fazla MAR_MAX_STEP_PX kadar kayan SONUMLU (damped) bir
+    vektorle yeni hedefe dogru itilir. `MAR_LOCK_IN_T`, salinimin son
+    yarisinda (swing_t >= 0.5) hedefi DONDURUR -- inisin hemen oncesinde
+    ayagin planlayabilecegi kararli/"taahhut edilmis" bir hedef birakmak
+    icin (aksi halde inis anina cok yakin bir yeniden hedefleme, inis
+    kinematigini bozardi).
+
+DOGRULAMA (izole `_proto12/`, gercek repo dosyalarindan TURETILEN kopyalar
+uzerinde, ust uste 3 farkli senaryo ile):
+  - Normal yuruyus + buyuk itki (150px, t=7.0s): tepe hip_vx 14.58-17.51
+    araliginda kaldi (9. turun reddedilen 33.55'ine KIYASLA saglikli);
+    65s uzun-sure kararlilik testinde NaN yok, 185 adim (v1 ile BIREBIR
+    ayni), max ardisik ayni-bacak adimi=1 (v1 ile ayni).
+  - Tokezleme (15px, t=3.0s, DARBE HER ZAMAN destek/stance fazinda
+    gerceklesiyor): MAR'in etkisi burada OLCULEMEYECEK kadar kucuk
+    (tokez_peak 14.53 -> 14.69) -- cunku darbe zaten YERDEYKEN geliyor,
+    henuz baslamamis bir salinimin hedefini "yeniden" hedefleyecek bir
+    sey yok. Bu senaryo MAR'i test etmek icin YANLIS senaryo oldugu
+    ANLASILDI (bkz. asagidaki "Havada-iken darbe" testi, dogru senaryo).
+  - Havada-iken darbe (YENI, ADI-USTUNDE-DOGRU test: darbe, bir bacak
+    fiilen swing_t=0.5'te HAVADAYKEN veriliyor): burada MAR'in gercek,
+    olculebilir faydasi ortaya cikti --
+      * Inis dogrulugu: v1 (MAR'siz) inis noktasi darbeden TAMAMEN
+        etkilenmiyor (153.87px, darbe havadayken geldigi icin hedef
+        zaten kalkista donmustu ve DEGISMIYOR) -- yani v1, ayaktayken
+        gelen darbeye adapte olamiyor. MAR (cap=8, lockin=0.5) inis
+        noktasini gercek yakalama noktasina dogru kaydiriyor
+        (153.87 -> 167.22px).
+      * Tokezleme-sonrasi ayni-bacak ardisik adimi (kelebek etkisiyle
+        "sekme/topallama" riski, bkz. 11. tur'un REDDEDILME gerekcesi):
+        MAR bunu KOTULESTIRMIYOR, TERSINE IYILESTIRIYOR -- max ardisik
+        2-4 (v1, MAR'siz) -> 1-2 (MAR ile), cunku ayak gercege daha
+        yakin bir yere basinca duzeltici bir ekstra adima daha az
+        ihtiyac kaliyor.
+      * Bedeli: darbe anindaki tepe hip_vx hafifce artiyor (14.68 ->
+        14.85, ~%1; 40px'lik daha sert bir darbede 39.81 -> 43.92,
+        ~%10) -- swing_target'i kaydirmak, FABRIK/IK zinciri uzerinden
+        govdeye kucuk bir ek tepki besliyor. cap=16 bu bedeli daha da
+        buyutuyor (tepe hip_vx 47.39) inis-dogrulugu kazanci cok az
+        artarken (167 -> 175px) -- bu yuzden cap=8 secildi (cap=16
+        DEGIL): 9./10./11. turlarin ogrettigi "daha fazla asiri-
+        agresif parametre = gizli/gecikmis cokus" deseniyle tutarli.
+      * 65s uzun-sure kararlilik: MAR (cap=4/8, tek basina VEYA DST ile
+        birlikte) NaN uretmiyor, adim sayisi v1 ile BIREBIR ayni (185)
+        -- rahatsizlik olmadan yuruyen normal kararli yuruyuste xcp
+        zaten swing_target'a yakin oldugundan MAR'in etkisi dogal
+        olarak sifira yakin kaliyor (atil degil, sadece GEREKMIYOR).
+
+KARAR: Her iki ozellik de kabul edildi. DST v2, katiksiz bir kazanc
+(hicbir olcumde v1'den kotu degil). MAR v2'nin faydasi SENARYOYA BAGLI
+(sadece GERCEKTEN havadayken gelen darbelerde olculebilir) ama gercek ve
+dogrulanmis; bedeli kucuk ve iyi karakterize edilmis (tepe hiz artisi),
+11. turda reddedilen Rest Length Lerping'in aksine (o, ana metrigi
+KOTULESTIRIYORDU -- burada ana metrik/ardisik-adim IYILESIYOR).
 """
 from __future__ import annotations
 
 import numpy as np
 
 from physics.gait import FootPlantingLeg
+
+# 12. tur -- Dinamik Salinim Suresi v2 parametreleri.
+DST_BASE_VX = 2.0       # referans hiz (demo/step14'teki TARGET_VX ile ayni)
+DST_MIN_VX = 0.5        # sifira bolmeyi onlemek icin taban hiz
+DST_MIN_DURATION = 4.0  # kare -- asiri kisa/sert salinimi kes
+DST_MAX_DURATION = 20.0 # kare -- asiri uzun/suruklenen salinimi kes
+DST_SMOOTH_RATE = 0.15  # birinci-derece gecikme orani (0-1, kucuk=yumusak)
+
+# 12. tur -- Havada Yeniden Hedefleme v2 parametreleri.
+MAR_MAX_STEP_PX = 8.0   # kare basina swing_target'in kayabilecegi azami piksel
+MAR_LOCK_IN_T = 0.5     # bu swing_t'den sonra hedef DONAR (inis kararliligi icin)
 
 
 class ActiveFootPlantingLeg(FootPlantingLeg):
@@ -108,6 +199,32 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
                 self.swing_t = 0.0
                 self._active_swing_duration = float(self.swing_duration_frames)
                 self.emergency_step_active = False
+        elif self.state == "swing" and not self.emergency_step_active:
+            # 12. tur -- Dinamik Salinim Suresi v2: HER KAREDE o anki
+            # hip_vx'e gore bir hedef sure hesapla, sonra suresi ANI
+            # DEGIL, birinci-derece bir gecikmeyle bu hedefe dogru surukle
+            # (bkz. modul dokstring'i -- 9. turun ani/sert versiyonunun
+            # reddedilme gerekcesi).
+            target_duration = self.swing_duration_frames * (
+                DST_BASE_VX / max(abs(hip_vx), DST_MIN_VX)
+            )
+            target_duration = min(DST_MAX_DURATION, max(DST_MIN_DURATION, target_duration))
+            self._active_swing_duration += (
+                target_duration - self._active_swing_duration
+            ) * DST_SMOOTH_RATE
+            self._active_swing_duration = max(self._active_swing_duration, DST_MIN_DURATION)
+
+            # 12. tur -- Havada Yeniden Hedefleme v2: salinimin sadece ILK
+            # yarisinda (MAR_LOCK_IN_T), yeni bir darbe xcp'yi degistirdiyse
+            # swing_target'i kare basina en fazla MAR_MAX_STEP_PX kayan
+            # sonumlu bir vektorle yeni hedefe dogru it (ANLIK ISINLANMA
+            # DEGIL -- bkz. 9. turun reddedilen "teleport" versiyonu).
+            if self.swing_t < MAR_LOCK_IN_T:
+                xcp = hip_pos[0] + self.capture_gain * hip_vx / self.omega0
+                desired_target_x = xcp + self.swing_lead_margin
+                delta = desired_target_x - self.swing_target[0]
+                step = max(-MAR_MAX_STEP_PX, min(MAR_MAX_STEP_PX, delta))
+                self.swing_target[0] += step
         # hold_release=True HER ZAMAN gecirilir ki ebeveynin KENDI (sabit
         # esikli) stride_release kontrolu bu sinif icin ASLA devreye
         # girmesin -- release karari SADECE yukarida, capture-point'e gore.

@@ -2115,6 +2115,121 @@ gerektirecek.
 
 Commit: bu README güncellemesiyle birlikte (kod değişikliği yok).
 
+## 12. tur: Dinamik Salınım Süresi v2 + Havada Yeniden Hedefleme v2 -- defter kapandı (İKİSİ DE KABUL EDİLDİ)
+
+**Kullanıcının önerisi:** 9. turda reddedilen iki özelliği (Dinamik Salınım
+Süresi, Havada Yeniden Hedefleme), 10. turun `compliance=0.85` yumuşatma
+dersini uygulayarak, ANİ/tek-seferlik değil SÜREKLİ/yumuşatılmış biçimde
+yeniden dene: salınım süresi her karede `hip_vx`'e göre yeniden hesaplanıp
+sürekli sürüklensin; havadaki hedef kaymaları anlık ışınlanma değil, kare
+başına sınırlı hızda kayan sönümlü (damped) bir vektörle yapılsın.
+
+**Mekanizma (bkz. `physics/active_gait.py` -- tam kod ve gerekçe orada):**
+
+- **Dinamik Salınım Süresi (DST) v2:** `_active_swing_duration`, her karede
+  o anki `hip_vx`'ten hesaplanan bir hedef değere doğru birinci-derece bir
+  gecikmeyle (`DST_SMOOTH_RATE=0.15`) sürüklenir -- asla bir kareden
+  diğerine sıçramaz. `DST_MIN_DURATION=4`/`DST_MAX_DURATION=20` kare
+  sınırları patolojik uçları keser.
+- **Havada Yeniden Hedefleme (MAR) v2:** salınımın sadece ilk yarısında
+  (`MAR_LOCK_IN_T=0.5`), yeni bir darbe capture-point'i (`xcp`) değiştirmişse
+  `swing_target`, kare başına en fazla `MAR_MAX_STEP_PX=8` piksel kayan
+  sönümlü bir vektörle yeni hedefe doğru itilir. Salınımın ikinci yarısında
+  hedef DONAR -- inişin hemen öncesinde ayağın planlayabileceği kararlı bir
+  hedef bırakmak için.
+
+**Doğrulama, 3 ayrı senaryo (izole `_proto12/`, gerçek dosyalardan türetilen
+kopyalar üzerinde):**
+
+1. *Normal yürüyüş + büyük itki (150px, t=7.0s):* DST tek başına tepe
+   hip_vx'i 14.58-17.51 aralığında tuttu (9. turun reddedilen ANİ
+   versiyonunun 13.86→33.55 sıçramasına kıyasla sağlıklı). 65s uzun-süre
+   kararlılık: NaN yok, 185 adım (özellik-siz haliyle BİREBİR aynı), max
+   ardışık aynı-bacak adımı=1.
+
+2. *Tokezleme (15px, t=3.0s) -- darbe HER ZAMAN destek/stance fazında:*
+   MAR'ın etkisi ölçülemeyecek kadar küçük (tokez_peak 14.53→14.69).
+   Sebebi basit: darbe zaten YERDEYKEN geliyor, henüz başlamamış bir
+   salınımın hedefini "yeniden" hedefleyecek bir şey yok. **Bu senaryonun
+   MAR'ı test etmek için yanlış senaryo olduğu anlaşıldı** -- adından da
+   belli olduğu gibi "Havada Yeniden Hedefleme", darbe fiilen bir ayak
+   havadayken gelmeli.
+
+3. *Havada-iken darbe (yeni, doğru senaryo -- darbe bir bacak fiilen
+   swing_t=0.5'te havadayken veriliyor):* burada MAR'ın gerçek, ölçülebilir
+   faydası ortaya çıktı:
+
+   | Ölçüm (15px darbe, havadayken) | v1 (MAR'sız) | MAR cap=8, lockin=0.5 |
+   |---|---|---|
+   | İniş noktası (px) | 153.87 (darbeden ETKİLENMİYOR) | 167.22 (gerçek yakalama noktasına kayıyor) |
+   | Tepe \|hip_vx\| | 14.68 | 14.85 (~%1 artış) |
+   | Tokezleme-sonrası max ardışık aynı-bacak adımı | 2-4 | **1-2 (İYİLEŞME)** |
+
+   40px'lik daha sert bir darbede aynı desen büyüyerek tekrarlandı (iniş
+   153.87→175px, tepe hip_vx 39.81→43.92, ~%10 artış). `cap=16` denendiğinde
+   bedel (tepe hip_vx 47.39) orantısız büyüdü, iniş-doğruluğu kazancı ise
+   çok az arttı (167→175px) -- 9./10./11. turların öğrettiği "daha agresif
+   parametre = gizli bedel" deseniyle tutarlı, bu yüzden `cap=8` seçildi.
+
+   65s uzun-süre kararlılık (MAR tek başına ve DST+MAR birlikte): NaN yok,
+   adım sayısı v1 ile birebir aynı (185) -- rahatsızlık olmadan yürüyen
+   kararlı yürüyüşte MAR'ın etkisi doğal olarak sıfıra yakın kalıyor (atıl
+   değil, sadece gerekmiyor).
+
+**Önceki (yanlış) test senaryosundaki adım-sayısı anomalisi açıklandı:**
+Tokezleme testinde DST+MAR kombinasyonu toplam adım sayasında bir sıçrama
+gösteriyordu (26 vs 21). Bu, gerçek bir etkileşim hatası DEĞİL: adım sayacı
+360 karelik TÜM simülasyonu (150px'lik büyük itkiden SONRAKİ çöküş/ragdoll
+fazı dahil) sayıyor, ve DST+MAR kombosu büyük itkiden sonra ~14 kare daha
+uzun "debelenip" 6 fazla adım attıktan sonra aynı şekilde düşüyor (150px
+zaten hayatta kalma eşiğinin üstünde, kaçınılmaz). İtkiden ÖNCEKİ pencereye
+bakıldığında (asıl anlamlı pencere) tüm konfigürasyonlar 18-20 adımda
+neredeyse özdeş.
+
+**Karar: her iki özellik de kabul edildi.** DST v2 katıksız bir kazanç
+(hiçbir ölcümde v1'den kötü değil). MAR v2'nin faydası senaryoya bağlı
+(sadece gerçekten havadayken gelen darbelerde ölçülebilir) ama gerçek ve
+doğrulanmış; bedeli küçük ve iyi karakterize edilmiş (tepe hız artışı). Bu,
+11. turda reddedilen Rest Length Lerping'in TAM TERSİ: o, ana metriği
+(ardışık-adım kararlılığı) KÖTÜLEŞTİRİYORDU -- burada ana metrik İYİLEŞİYOR.
+
+**Gerçek dosyaya uygulama ve tam doğrulama:** `physics/active_gait.py`
+(`ActiveFootPlantingLeg.update()`) DST v2 + MAR v2 ile güncellendi (bkz.
+dosyanın kendi docstring'i -- tam mekanizma ve ölçümler orada da
+tekrarlanıyor). `demo/step14_active_biped.py` değişmedi (arayüz/`update()`
+imzası aynı kaldı). 12s demo, 65s kararlılık ve görsel QA gerçek dosya
+üzerinde tekrarlandı ve `_proto12/` sonuçlarıyla birebir eşleşti (65s:
+ort_hip_vx=1.904, son_hip_y=148.66 -- prototip ile aynı basamağa kadar
+ayıni).
+
+**Doğrulama:** prototip TAMAMEN `_proto12/` altında izole çalıştı, tur
+sonunda `rm -rf _proto12` ile silindi -- `git status --short` bu turun
+başında da sonunda da temiz.
+
+## 12. tur eki: Sıradaki "Mükemmel" statü özellikleri (PLANLANDI, henüz uygulanmadı)
+
+Kullanıcının Dinamik Salınım Süresi/Havada Yeniden Hedefleme defterini
+kapattıktan SONRA eklenmesini istediği dört yeni özellik, roadmap'e
+KAYDEDİLDİ ama bu turda UYGULANMADI:
+
+1. **Yerden Kalkma (Active Ragdoll Stand-Up):** karakter tamamen devrilip
+   tam ragdoll haline gelirse, eklemlere içsel tork (motor-spring)
+   uygulayarak kollarından destek alıp ayağa kalkan prosedürel bir "get-up"
+   dizisi.
+2. **Topuk-Burun Teması (Heel-to-Toe Roll):** ayağı tek nokta temasından
+   bir segmente/kapsüle çevirip topuk-çarpma → taban-yükleme → parmak-ucu
+   itiş (toe-off) fazlarını modellemek.
+3. **Prosedürel Kol Salınımı (Angular Momentum Cancellation):** kolların
+   sadece acil denge durumunda değil, NORMAL yürüyüşte de bacakların
+   açısal momentumunu sıfırlamak için ters-asimetrik salınması.
+4. **Kinetik Sürtünme Sınırı (Slipping):** itki (thrust) kuvveti zeminin
+   statik sürtünme sınırını aşarsa (örn. buzlu zemin), ayağın geriye doğru
+   kaymaya başlaması.
+
+Bu dört özellik motoru "Mükemmel" statüsüne taşıyacak; her biri kendi
+izole prototip/doğrulama turunda ele alınacak.
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
