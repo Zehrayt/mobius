@@ -2024,6 +2024,97 @@ değil, bu gerçek dosya üzerinde yeniden koşturuldu:
 Commit: bu README güncellemesiyle birlikte, `demo/step14_active_biped.py`
 satır 129 değişikliğini içeren commit.
 
+## 11. tur: Rest Length Lerping denemesi -- REDDEDİLDİ (kelebek etkisi: Capture Point zamanlamasını bozuyor)
+
+10. turdan sonra kullanıcı, geriye kalan ~7px'lik günlük kalça sekmesini
+gidermek için iki somut mimari öneri getirdi: (1) Çift Destek Fazı ile
+Ağırlık Aktarımı (iki bacağa aynı anda anchor + zıt yönde compliance
+rampası), (2) Rest Length Lerping (`anchor`-kalça çubuğunun `length`
+parametresini handoff anındaki gerçek mesafeden `ARM_LENGTH`'e birkaç
+karede yumuşakça çekmek). Analiz istendi: hangisi mevcut mimariye daha
+kolay/az riskli entegre edilir? DURUM: **Rest Length Lerping izole olarak
+prototiplendi, ölçüldü, ve kullanıcıyla birlikte REDDEDİLDİ -- bu turda
+`physics/` veya `demo/` altında HİÇBİR kalıcı kod değişikliği yok.**
+
+**Neden önce Rest Length Lerping seçildi:** kodun gerçek okunmasıyla
+(`demo/step14_active_biped.py` satır 236: `body.set_pinned_position(anchor,
+[stance_leg.planted[0], GROUND_Y])` + `physics/gait.py` satır 194:
+`self.planted = self.swing_target.copy()`) sıçramanın TAM kaynağı
+doğrulandı: `leg.planted`, bacak havadayken sabit kalıp SADECE dokunma
+anında TEK KAREDE yeni değere atlıyor, `anchor` da bunu birebir izlediği
+için `hip`-`anchor` mesafesi o karede aniden bozuluyor. Weight Blending
+(çift destek), `gait.py`/`active_gait.py`'nin `other_leg_swinging`
+tek-destek garantisine (8. turda "simetrik hale getirme" denemesiyle bir
+kere ANLIK ÇİFT-HAVADA düşmeye yol açmıştı) dokunma riski taşıyordu; Rest
+Length Lerping ise `sys_.sticks` listesindeki tek bir tuple'ı (zaten 10.
+turda aynı yöntemle mutasyona uğratılmıştı) değiştirmekle sınırlı, hiçbir
+yeni nokta/state-machine değişikliği gerektirmiyordu -- bu yüzden daha
+düşük riskli görünüyordu.
+
+**Prototip ve ölçüm (`_proto11/`, repo'ya hiç yazılmadan, `git status`
+bu turun sonunda temiz):** `HANDOFF_LERP_FRAMES` 0'dan 15'e tarandı.
+Birincil hedefte (günlük kalça sekmesi, kare 9-199 `|Δhip_y|`) gerçek bir
+iyileşme ÖLÇÜLDÜ:
+
+| lerp (kare) | ort. \|Δhip_y\| | maks. \|Δhip_y\| |
+|---|---|---|
+| 0 (10. tur, mevcut) | 0.848 | 7.053 |
+| 6 | 0.722 | 5.961 |
+| 7 | 0.473 | 4.265 |
+| 8-9 | ~0.40 | ~3.0 |
+
+Ama tam olay-listesi (`step_events`) incelendiğinde İKİNCİ, gizli bir
+maliyet ortaya çıktı: tokezleme (t=3.0s) sonrası normal koşulda (lerp=0)
+AYNI bacak sadece 1 kere fazladan adım atıyordu (`(105,'r'),(120,'r')` --
+zaten 8./9. turda belgelenen, kabul edilmiş bir davranış). Lerp
+eklenince bu **2-4 ardışık aynı-bacak adımına** çıkıyor (lerp=6'da 3,
+lerp=7'de 4). Kök neden: rest-length lerping kalçanın handoff sırasındaki
+YÜKSEKLİK yörüngesini değiştiriyor, bu da DİĞER bacağın capture-point
+(`xcp = hip_x + hip_vx/omega0`) hesabının zamanlamasını kaydırıp adım
+kararını erken/geç tetikliyor -- yani bir metrik (geometrik sıçrama)
+düzeltilirken, ÖNGÖRÜLMEMİŞ şekilde başka bir sistemin (yürüyüş
+zamanlama kararı) davranışına karışılmış oluyor. **Tavan da monoton
+değil** (10+ karede adım sayısı 21'den 28-30'a anomaliye kayıyor) --
+compliance'ta 10. turda görülen aynı "daha fazlası daha iyi değil"
+deseni burada da tekrarlandı. 65 saniyelik uzun-koşu testi (lerp=0/6/7)
+NaN üretmedi, ortalama hız/adım sayısı benzer kaldı -- yani bu bir
+KARARSIZLIK değil, sadece tokezleme-sonrası gait düzgünlüğünde gerçek
+bir bedel.
+
+**Karar (kullanıcıyla birlikte, gerekçeli):** kullanıcı üç seçeneği
+("takası kabul et", "capture point'i dondur", "reddet ve 10. turda kal")
+değerlendirip ikinciyi de ("Capture Point'i lerp penceresinde dondurmak")
+açıkça reddetti -- bu, bir hatayı örtmek için başka bir alt sisteme
+yapay bir körlük eklemek anlamına gelirdi: karakter tam o 6-7 karelik
+pencerede gerçek bir dış darbe alırsa, CP donuk olduğu için tepki
+veremeyip düşerdi (fiziği "kandıran" bir yama, üzerine yeni özellik
+inşa edildiğinde çökmeye mahkumdur -- tıpkı 9. turda reddedilen sahte
+"başarı"lar gibi). **Aynı bacağın ardışık 3-4 kez adım atması, iki
+ayaklı yürüyüş yanılsamasını görsel olarak bozacak kadar ciddi bir
+bedel** -- kararlılığın bedeli anatominin bozulması olamaz. Sonuç:
+Rest Length Lerping REDDEDİLDİ, `compliance=0.85` (10. tur) motorun bu
+mimarisi için ampirik olarak doğrulanmış "altın oran" olarak kabul
+edildi; geriye kalan ~7px'lik sekme artık bir HATA değil, eklemlerin
+kütleyi karşıladığı andaki doğal/organik esneme payı (give) olarak
+değerlendiriliyor.
+
+**Doğrulama:** prototip TAMAMEN `_proto11/` altında izole çalıştı (repo
+dosyalarına hiç yazılmadı), tüm ölçümler bu klasördeki tek-kullanımlık
+tanılama scriptleriyle yapıldı, tur sonunda `rm -rf _proto11` ile
+silindi -- `git status --short` bu turun başında da sonunda da temiz.
+
+**Dürüst v1 sınırları / açık kalan konu:** Dynamic Swing Time ve
+Mid-Air Retargeting hâlâ repoya alınmadı (9. tur). Kalan ~7px'lik sekme
+artık KASITLI OLARAK "çözülmeyecek" ilan edildi (organik esneme payı) --
+yani bunun sıfırlanması bundan sonra bu projenin bir hedefi DEĞİL.
+`anchor` mimarisinin (tek nokta, ayrık handoff) kendisi hâlâ aynı, ama
+üstüne inşa edilecek her yeni özellik artık compliance=0.85'in üstüne
+DAHA FAZLA "geometrik sıçrama gizleme" yaması eklemek yerine, gerçek bir
+çift-destek/ağırlık-aktarım mimarisi (daha büyük, ayrı bir round)
+gerektirecek.
+
+Commit: bu README güncellemesiyle birlikte (kod değişikliği yok).
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
