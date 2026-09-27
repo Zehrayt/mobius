@@ -2464,6 +2464,125 @@ rahatsiz-edilmemis) ve gorsel QA gercek dosyada tekrarlandi, hepsi
 bagimsiz bir `sweep_harness.py`), tur sonunda `rm -rf _proto13_eki` ile
 silindi -- `git status --short` bu turun basinda da sonunda da temiz.
 
+## 13. tur eki 2: "buz pateni safsatasi" ve "muz kabugu cokusu" -- anatomik geri bildirim eklendi
+
+**Kullanicinin tespiti (13. tur eki'nin -- gercek surtunme motoru -- SONRASI,
+yeni bir elestiri turu):** matematik (surtunme siniri, agirlik aktarimi,
+Stribeck) dogru cozulmus olsa da, kayma mekanizmasinin ANATOMIK/gorsel
+tepkisi hala eksikti -- 3 nokta:
+
+1. **"Ice skate" safsatasi:** bir bacagin tek basina 70+ kare (~2.3s)
+   boyunca kaymasi anatomik olarak imkansiz -- gercekte bacak-govde acisi
+   hizla acilir, ya splits pozisyonuna girip yirtilir ya da sistem acil
+   durum adimi atmak ZORUNDA kalir. Soru: kayan ayak kalcayi sadece
+   suruklüyor mu, yoksa bir "duşme tehlikesi" mekanizmasi bu acisal
+   acilmayi fark edip acil duruma geciriyor mu?
+2. **"Muz kabugu" cokusu eksikligi:** ayak kaydiginda kalca (kutle merkezi)
+   dikey eksende cokmeli. Eger anchor-kalca cubugu (compliance=0.85) ayak
+   kayarken bile kalcayi sabit bir Y yuksekliginde tutmaya devam ediyorsa,
+   karakter yeri itmiyor, "kukla ipiyle" havada tutuluyor demektir.
+3. **Nokta-temas (point-contact) limiti:** ayak hala TEK bir koordinat
+   noktasi uzerinden temas ediyor -- gercek bir kayan insanin topugu yeri
+   kazir (friction spike) veya ayak bilegi bukulur; tek nokta tork
+   uretemedigi icin kayma dinamigi hep "odunsu"/sabit gorunecektir.
+
+**Tanı (kod-temelli, izole olcumle dogrulandi):**
+
+* `demo/step14_active_biped.py` -- yani `step14` mimarisinin TAMAMI --
+  `physics/balance.py`'nin `FallRiskMonitor`'unu HICBIR ZAMAN kullanmadi
+  (o sadece eski `step12_balance.py`/`step13_full_integration_test.py`'de
+  var, 8. turda `step14`'e capture-point tabanli TAMAMEN FARKLI bir denge
+  modeline gecildiginde tasinmadi). Yani #1'in cevabi NET: HAYIR, kayan
+  bacak HICBIR seyi tetiklemiyordu -- sadece kalcayi suruklüyordu.
+  Izole olcum: buyuk-itki dusme senaryosunda bacak acisi (dikeyden)
+  -74°'ye, hatta baska bir framede -77.6°'ye ulasti -- gercek bir insan
+  hip abdüksiyon/ekstansiyon siniri ~30-45° civarindadir, yani bu
+  ANATOMIK OLARAK SAcMA bir poz.
+* **Muz kabugu**, HAFIF/hayatta-kalan bir kayma olayinda (15px tokezleme,
+  frame 104-139) da olculdu: hip_y SADECE ~143-173px araliginda kaldi --
+  neredeyse tamamen NORMAL yuruyus dongusunun kendi salinimi kadar,
+  `is_slipping`'in hicbir olculebilir ek etkisi YOK. Kullanicinin
+  tarifiyle birebir ortusuyor: "kukla ipi" dogrulandi.
+* **Nokta-temas limiti** kullanicinin KENDISI tarafindan de doğru
+  tanimlanmis: bu, ayagi TEK noktadan bir kapsule (Heel-to-Toe Roll)
+  cevirmeyi gerektiren, roadmap'te zaten (2 numarali madde) bekleyen
+  BUYUK bir mimari degisiklik -- bu turun kapsamina alinmadi (asagida
+  "Durust sinir" bolumune bkz).
+
+**Cozum (1 & 2 icin, izole `_proto13_eki2/`):**
+
+* **Ice-skate-limit -> acil kurtarma adimi:** `MAX_SLIP_LEG_ANGLE_DEG=45°`
+  -- kayan bacak (`is_slipping=True`) dikeyden 45°'yi asarsa, 7. turdan
+  MIRAS alinan (ama `step14`'te hic cagirilmayan) `trigger_emergency_
+  step()` HEMEN tetiklenir, ayni capture-point hedefine (xcp) yonlendirir
+  -- normal esik beklenmeden. Tam bir `FallRiskMonitor`/support-polygon
+  entegrasyonu DEGIL (bu, step14'un TAMAMEN farkli tek-anchor mimarisine
+  gore yeniden tasarlanmasi gereken, cok daha buyuk ayri bir is) --
+  SADECE bu ozel "kayan bacak splits'e giriyor" durumuna dar kapsamli,
+  dogrudan bir guvenlik supabı.
+* **Muz kabugu cokusu:** anchor-kalca cubugunun compliance'i ARTIK SABIT
+  DEGIL -- `is_slipping` sirasinda, kayma hizina ORANTILI olarak
+  gevsetiliyor (`ANCHOR_HIP_COMPLIANCE_BASE=0.85` -> `SLIP_COMPLIANCE_
+  MAX=0.90`, `SLIP_COMPLIANCE_SAT_VEL=2.0`'da doyar). `Terrain` gibi,
+  `VerletSystem.sticks` de zaten mutable bir liste -- `physics/verlet.py`
+  HICBIR degisiklik gerektirmeden, `body.sticks[idx["anchor_hip_stick"]]`
+  her karede yeni bir compliance degeriyle degistiriliyor.
+
+**Onemli bir durust sinir/bulgu (sweep ile kesfedildi):** `SLIP_COMPLIANCE_
+MAX` 0.92'yi asinca sistem "whip-crack" (kirbac sapi) kararsizligina
+giriyor -- cubuk o kadar gevsiyor ki hiz gecici olarak kontrolsuzce
+birikiyor, sonra compliance normale donunce bu enerji ani bir savurmaya
+donusuyor (gozlemlenen max_hip_vx: 4054px/kare -- 14.7'lik normal tavanin
+275 kati). Bu yuzden 0.90 GUVENLI TAVAN olarak secildi -- bunun anlami,
+ulasilabilen "cokme derinligi" mutevazi (peak hip_y'de ~2-3px ekstra
+sarkma, agir tokezleme sirasinda) -- gorsel olarak subtil ama olcumle
+DOGRULANMIS ve KARARLI. Daha dramatik bir cokus icin cubuk-tabanli
+yaklasimin OTESINE gecmek (ör. gercek bir "diz bukulmesi" -- bacak
+segmentlerinin kendisini kisaltmasi) gerekir; bu, dogal olarak #3'un
+(Heel-to-Toe Roll / Segment Foot) kapsamina giriyor.
+
+**En carpici bulgu -- iki eki'nin birlikte anlami:** #1 (omnidirectional/
+agirlik aktarimi, 13. tur eki) TEK BASINA, buyuk-itki dusme anini
+t=7.5s'den (orijinal 13. tur) t=11.57s'ye ERTELEMISTI -- bu, o zaman
+"gercekci kayma-toparlanma" olarak yorumlanmisti. Ama muz-kabugu-cokusu
+EKLENINCE (bu turda), dusme anı t=7.77s'ye (frame 233) GERI DUSTU --
+neredeyse ORIJINAL 13. turun degerine (t=7.5s, frame 225) esit. Yani
+onceki "347 kareye kadar hayatta kalma" bulgusunun BUYUK KISMI, aslinda
+tam da kullanicinin tespit ettigi hatanin (karakterin fiziksel olarak
+imkansiz bir sekilde "buz pateni" yaparak cokmesi gereken anda cokmemesi)
+BIR SONUCUYMUS -- gercek collapse eklenince bu yapay hayatta-kalma-suresi
+KAYBOLDU, dusme zamanlamasi FIZIKSEL OLARAK DAHA DOGRU/DAHA MUHAFAZAKAR
+bir degere geri donuyor. Bu, motorun onceki turda tespit edilemeyen bir
+"gizli tavizi" bu turda ortaya cikardigini gosteriyor.
+
+**Dogrulama:** 65s rahatsizsiz regresyon BIREBIR ozdes (185 adim,
+son_hip_y=148.66, 0 kayma/0 acil-adim -- iki yeni mekanizma da HERHANGI
+bir rahatsizlik olmadan tamamen atil). Standart 12s/65s senaryosunda
+(15px+150px): 5 acil-kurtarma-adimi tetiklendi (aci: 64.9° ila -89.4°
+arasi), dusme frame 233 (eskiden 347), NaN yok. Gorsel QA: acil adim
+tetiklenmeden hemen once bacak neredeyse yatay (65° civari), sonrasinda
+govde gercekci bir sekilde cokuyor -- artik uzun sureli "splits" pozu
+YOK.
+
+**Durust sinir (bilerek kapsam disi birakildi):** nokta-temas limiti (#3,
+Heel-to-Toe Roll / Segment Foot) bu turda ELE ALINMADI -- bu, ayagi tek
+bir koordinat noktasindan bir segmente/kapsule cevirmeyi, topuk-carpma /
+taban-yukleme / parmak-ucu-itis fazlarini modellemeyi gerektiren, roadmap'te
+zaten 2 numarali madde olarak bekleyen, cok daha buyuk bir mimari degisiklik.
+Bu tur SADECE #1 (ice-skate-limit) ve #2'yi (muz kabugu) kapatti.
+
+**Gercek dosyaya uygulama:** SADECE `demo/step14_active_biped.py`
+degisti -- `physics/active_gait.py`/`physics/gait.py`/`physics/balance.py`
+HICBIR sekilde degistirilmedi (7. turdan miras `trigger_emergency_step()`
+oldugu gibi yeniden kullanildi, `VerletSystem.sticks` zaten mutable bir
+liste oldugu icin `physics/verlet.py`'ye de dokunulmadi). `build_body()`'ye
+`idx["anchor_hip_stick"]` (index) eklendi; yeni sabitler + acil-adim/
+dinamik-compliance mantigi itki bloguna eklendi.
+
+**Doğrulama:** prototip TAMAMEN `_proto13_eki2/` altinda izole calisti,
+tur sonunda `rm -rf _proto13_eki2` ile silindi -- `git status --short`
+bu turun basinda da sonunda da temiz.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

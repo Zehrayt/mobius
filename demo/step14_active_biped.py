@@ -161,6 +161,17 @@ LOAD_FACTOR_MIN = 0.3     # asiri gerilme (kalkis/havalanma aninda) altinda bile
 LOAD_FACTOR_MAX = 3.0     # asiri sikisma (agir inis) ustunde patolojik/kararsiz buyumeyi kes
 STRESS_GAIN = 0.1         # cubugun gercek yatay sapmasinin (dis darbe/momentum) toplam strese katkisi (bkz. README -- sweep)
 
+# -- 13. tur eki 2 -- kullanicinin 2 yeni elestirisi (bkz. README): (1) "ice
+# skate safsatasi" -- kayan bacak anatomik aci sinirini asinca hicbir sey
+# fark etmiyor/mudahale etmiyordu; (2) "muz kabugu cokusu eksikligi" --
+# anchor-kalca cubugu kayarken bile SABIT compliance ile kalcayi
+# "kukla ipiyle" havada tutuyordu.
+ANCHOR_HIP_COMPLIANCE_BASE = 0.85  # normal (kaymayan) stance -- 10. turdaki deger, degismedi
+SLIP_COMPLIANCE_MAX = 0.90         # tam kaymis/hizli kayan ayakta -- cubuk gevser (bkz. README -- sweep: 0.92+ whip-crack kararsizligi)
+SLIP_COMPLIANCE_SAT_VEL = 2.0      # bu |slip_velocity| degerinde SLIP_COMPLIANCE_MAX'a doyar (bkz. README -- sweep)
+MAX_SLIP_LEG_ANGLE_DEG = 45.0      # kayarken bacagin dikeyden sapabilecegi azami "anatomik" aci -- asilirsa acil adim (bkz. README -- sweep)
+EMERGENCY_STEP_SPEEDUP = 2.0       # trigger_emergency_step()'in var olan varsayilani (7. tur) -- ayni deger, yeniden kullanildi
+
 # -- Capture-point (destek/adim) parametreleri (bkz. active_gait.py) ----
 # DURUST BULGU (izole tanilama sirasinda kesfedildi): LIP formulunun
 # TEORIK degeri omega0=sqrt(g/L) = sqrt(0.065/184) = 0.0188 buraya
@@ -212,7 +223,8 @@ def build_body() -> tuple[VerletSystem, dict]:
     # davranmaya zorluyor (bkz. modul dokstring'i).
     idx["hip"] = sys_.add_point([0.0, HIP_Y], mass=1.0)
     idx["anchor"] = sys_.add_point([0.0, GROUND_Y], pinned=True)
-    sys_.add_stick(idx["anchor"], idx["hip"], length=ARM_LENGTH, compliance=0.85)
+    idx["anchor_hip_stick"] = len(sys_.sticks)  # 13. tur eki 2 -- dinamik compliance icin index
+    sys_.add_stick(idx["anchor"], idx["hip"], length=ARM_LENGTH, compliance=ANCHOR_HIP_COMPLIANCE_BASE)
 
     idx["shoulder"] = sys_.add_point([0.0, HIP_Y - TORSO_LEN])
     sys_.add_stick(idx["hip"], idx["shoulder"], length=TORSO_LEN)
@@ -297,6 +309,7 @@ def main() -> None:
     fall_frame = None
     step_events = []
     slip_events = []
+    emergency_slip_events = []  # 13. tur eki 2 -- ice-skate-limit tetiklemeleri
 
     out_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                              "outputs", "step14_active_biped.mp4")
@@ -371,8 +384,37 @@ def main() -> None:
             else:
                 applied_thrust = desired_thrust
 
+            # 13. tur eki 2 -- "buz pateni safsatasi": kayan bacak anatomik
+            # aci sinirini (dikeyden MAX_SLIP_LEG_ANGLE_DEG) asarsa, sonsuza
+            # kadar kaymaya/splits pozisyonuna girmeye devam etmek yerine
+            # HEMEN bir kurtarma adimi (7. turdan miras `trigger_emergency_
+            # step()`) tetiklenir -- ayni capture-point hedefine (xcp)
+            # yonlendirilir, sadece ERKEN (normal esik beklenmeden).
+            leg_angle_deg = math.degrees(math.atan2(stretch_dir[0], -stretch_dir[1]))
+            if stance_leg.is_slipping and abs(leg_angle_deg) > MAX_SLIP_LEG_ANGLE_DEG:
+                xcp = hip_pos_before[0] + stance_leg.capture_gain * hip_vx / stance_leg.omega0
+                target_x = xcp + stance_leg.swing_lead_margin
+                if stance_leg.trigger_emergency_step(target_x, speedup=EMERGENCY_STEP_SPEEDUP):
+                    stance_leg.is_slipping = False
+                    stance_leg.slip_velocity = 0.0
+                    emergency_slip_events.append((f, "l" if stance_leg is left_leg else "r", round(leg_angle_deg, 1)))
+
             body.set_pinned_position(anchor, [stance_leg.planted[0], GROUND_Y])
             body.prev_points[hip][0] -= applied_thrust
+
+        # 13. tur eki 2 -- "muz kabugu cokusu": anchor-kalca cubugunun
+        # compliance'i ARTIK SABIT DEGIL -- ayak kayarken (is_slipping),
+        # kayma hizina ORANTILI olarak cubuk gevsetiliyor (compliance
+        # yukseliyor), boylece kalca GERCEKTEN cokmeye baslar (tutunmasini
+        # kaybeden bir ayagin govdeyi artik eskisi kadar dik tutamamasi).
+        # Kaymiyorken (veya stance_leg yokken) taban deger (10. turdan
+        # miras 0.85) hemen geri gelir.
+        if stance_leg is not None and stance_leg.is_slipping:
+            slip_ratio = min(1.0, abs(stance_leg.slip_velocity) / SLIP_COMPLIANCE_SAT_VEL)
+        else:
+            slip_ratio = 0.0
+        current_compliance = ANCHOR_HIP_COMPLIANCE_BASE + (SLIP_COMPLIANCE_MAX - ANCHOR_HIP_COMPLIANCE_BASE) * slip_ratio
+        body.sticks[idx["anchor_hip_stick"]] = (anchor, hip, ARM_LENGTH, current_compliance)
 
         body.step(dt=1.0)
         # DURUST BULGU (izole tanilama ile kesfedildi -- bkz. commit
@@ -479,6 +521,7 @@ def main() -> None:
                 cur = 1
         streaks.append(cur)
         print(f"  en uzun ardisik kayma serisi (kare -- Stribeck suruklenme fazinin gercekten kalici oldugunun kaniti): {max(streaks)}")
+    print(f"acil kurtarma adimi (ice-skate-limit) tetiklemeleri: {len(emergency_slip_events)}  -> {emergency_slip_events}")
 
 
 if __name__ == "__main__":
