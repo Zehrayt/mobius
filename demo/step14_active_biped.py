@@ -87,9 +87,79 @@ THRUST_CAP = 1.5     # tek karede uygulanabilecek max itki/fren (kararlilik sini
 # kaymıyor), mu<1.0 kaymaya başlatıyor şeklinde sezgisel/empirik bir ölçek
 # olarak tanımlandı (bkz. README "13. tur" -- dürüstçe belgelenen bir
 # basitleştirme, `dt=1.0`/`OMEGA0` ampirik seçimleriyle AYNI ruhta).
-GROUND_MU_DEFAULT = 1.2   # normal zemin -- THRUST_CAP'ten daima büyük, hiçbir zaman kaymaz
-ICE_ZONES: list = [(250.0, 450.0, 0.15)]  # (x0, x1, mu) üçlülerinden liste -- Terrain.zones ile aynı format
-SLIP_GAIN = 1.0           # asiri kuvvetin (excess) planted konumuna kayma olarak ne kadar çevrildiği -- 1.0-1.5 temiz, 3.0+ kararsızlık (bkz. README)
+# -- 13. tur eki -- kullanicinin elestirisi uzerine 3 mimari acigin
+# kapatilmasi: (1) Agirlik aktarimi yok sayilmisti (F_MAX sabit
+# THRUST_CAP'e bagliydi, bacaga binen GERCEK dikey yuk hic hesaba
+# katilmiyordu); (2) statik/kinetik (Stribeck) ayrimi yoktu -- tek
+# sinir vardi, kayma tetiklenince ANI olarak "sizip" ayni kare icinde
+# geri kilitleniyordu, gercek bir suruklenme (slip phase) yasanmiyordu;
+# (3) mekanizma SADECE kendi urettigi itkiye (1D) bakiyordu -- disaridan
+# gelen bir darbe, kendi P-kontrolculu itkisi THRUST_CAP'e ONCEDEN
+# sikistirildigi icin (bkz. yukaridaki THRUST_CAP clamp), normal zeminde
+# (mu_static=1.2>1.0) HICBIR ZAMAN kaymayi tetikleyemiyordu -- yapisal
+# bir kor nokta.
+#
+# ANAHTAR CIKARIM: anchor-kalca cubugunun (`build_body()`'deki
+# `ARM_LENGTH` uzunlugunda, compliance=0.85 olan cubuk) relaksasyon-
+# SONRASI gercek boyu (`body.points[hip] - body.points[anchor]`), HICBIR
+# `physics/verlet.py` degisikligi gerektirmeden zaten var olan, FIZIKSEL
+# olarak GERCEK bir nicelik -- ve rest-length'ten (ARM_LENGTH) sapmasi
+# (`stretch_dev`), itkiyi, yercekimi/carpma kaynakli dikey yuklenmeyi
+# VE disaridan gelen darbeleri (STUMBLE/BIG_PUSH, ikisi de `hip`'in
+# prev_points'ini degistirerek uygulaniyor) TEK bir olcumde yakalar --
+# cunku hepsi ayni yoldan (hip'in konumunu/hizini degistirerek) cubugun
+# gercek gerilme/sikisma durumunu etkiliyor.
+#
+#   * Agirlik aktarimi: `stretch_dev`'in ISARETI fiziksel olarak
+#     anlamli -- SIKISMA (- dev, hip anchor'a beklenenden YAKIN --
+#     agir bir inis/heel-strike'ta olur) f_n_effective'i YUKSELTIYOR
+#     (daha fazla tutunma); GERILME (+ dev, kalkis/havalanma) f_n'i
+#     DUSURUYOR. Izole testte dogrulandi: AYNI 60px yatay darbe, agir
+#     inis anında (compression) daha GEC ve daha KUCUK bir kaymaya yol
+#     acarken, hafif/kalkis anında (tension) daha ERKEN ve daha BUYUK
+#     bir kaymaya yol aciyor (bkz. README "13. tur eki").
+#   * Cok yonlu (omnidirectional) stres: `total_stress = desired_thrust
+#     + STRESS_GAIN * stress_vec[0]` -- stress_vec, stretch_dev'in
+#     cubugun GERCEK anlik dogrultusuna izdusumu (Verlet mesafe
+#     kisitlamasinin kendi duzeltme kuvvetiyle AYNI matematik). Bu,
+#     desired_thrust THRUST_CAP'e sikismis olsa bile, BUYUK bir dis
+#     darbenin normal zeminde (mu_static=1.2) bile kaymayi
+#     tetikleyebilmesini SAGLIYOR -- izole testte dogrulandi (bkz.
+#     README): 150px'lik bir darbe, ARTIK buzsuz zeminde de olculebilir
+#     (53+ kare) bir kayma tepkisi uretiyor; eskiden bu YAPISAL olarak
+#     IMKANSIZDI.
+#   * Statik/kinetik (Stribeck): `mu_kinetic = mu_static * KINETIC_RATIO`
+#     (HER ZAMAN kucuk) iki AYRI `Terrain` orneginden (`terrain_static`,
+#     `terrain_kinetic`) okunuyor -- `Terrain` sinifinin kendisi
+#     DEGISTIRILMEDI (step8-13 ile geriye-uyumluluk). Kayma tetiklenince
+#     (`is_slipping=True`) ayak o kareden itibaren KALICI olarak
+#     kilitsiz kalir; `slip_velocity` kendi ivmelenen (kinetik esigi asan
+#     "excess" kadar) ve sonumlenen (SLIP_DECAY) dinamigiyle surer, ta ki
+#     hem HIZ (SLIP_STOP_VEL altina) hem de STRES (kinetik sinirin
+#     altina) durana kadar -- tek karelik "sizinti" DEGIL, coklu-kare
+#     gercek bir suruklenme fazi (izole testte 60+ ardisik kare
+#     dogrulandi, bkz. README).
+#
+# DURUST SINIR (bilerek kapsam disi birakildi, README'de acikca
+# belirtiliyor): bu motorda TUM dis darbeler (STUMBLE_KICK_PX,
+# BIG_PUSH_KICK_PX) zaten SADECE yatay (x ekseni) -- gercek bir dikey
+# darbe modeli yok, `Terrain.ground_y` sabit (egim/slope destegi henuz
+# yok). O yuzden "cok yonlu/2B" burada "yatay eksendeki TUM kaynaklarin
+# (itki + dis darbe + cubuk gerilimi) BIRLESIMI" anlamina geliyor,
+# harfiyen "gercek dikey kayma" degil -- gercek dikey yukleme zaten
+# agirlik-aktarimi (f_n_effective) yoluyla dolayli olarak modelleniyor
+# (fizikte de dogru yer: yercekimi kaymaya degil, tutunma TAVANINA
+# etki eder).
+GROUND_MU_STATIC = 1.2    # normal zemin, STATIK ust sinir -- THRUST_CAP'ten daima buyuk
+ICE_ZONES: list = [(250.0, 450.0, 0.15)]  # (x0, x1, mu_static) uclulerinden liste -- Terrain.zones ile ayni format
+KINETIC_RATIO = 0.6       # mu_kinetic = mu_static * KINETIC_RATIO (Stribeck: kinetik HER ZAMAN statikten kucuk)
+SLIP_ACCEL_GAIN = 1.0     # kinetik esigi asan stresin slip_velocity'ye ne kadar ivme kazandirdigi (eski SLIP_GAIN)
+SLIP_DECAY = 0.85         # her karede slip_velocity'ye uygulanan sonum (surtunme freni) -- <1.0, kayma dogal olarak yavaslar
+SLIP_STOP_VEL = 0.05      # bu esigin altina inince (VE stres kinetik siniri asmiyorsa) slip biter, stance'a kilitlenir
+LOAD_GAIN = 0.02          # cubuk sikismasinin/gerilmesinin f_n_effective'i ne kadar degistirdigi (bkz. README -- sweep)
+LOAD_FACTOR_MIN = 0.3     # asiri gerilme (kalkis/havalanma aninda) altinda bile taban bir tutunma birak
+LOAD_FACTOR_MAX = 3.0     # asiri sikisma (agir inis) ustunde patolojik/kararsiz buyumeyi kes
+STRESS_GAIN = 0.1         # cubugun gercek yatay sapmasinin (dis darbe/momentum) toplam strese katkisi (bkz. README -- sweep)
 
 # -- Capture-point (destek/adim) parametreleri (bkz. active_gait.py) ----
 # DURUST BULGU (izole tanilama sirasinda kesfedildi): LIP formulunun
@@ -205,8 +275,11 @@ def main() -> None:
     body, idx = build_body()
     hip = idx["hip"]
     anchor = idx["anchor"]
-    terrain = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_DEFAULT,
-                       zones=list(ICE_ZONES))
+    terrain_static = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC,
+                              zones=list(ICE_ZONES))
+    kinetic_zones = [(x0, x1, mu * KINETIC_RATIO) for (x0, x1, mu) in ICE_ZONES]
+    terrain_kinetic = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC * KINETIC_RATIO,
+                               zones=kinetic_zones)
 
     half = ARM_LENGTH * 0.15
     left_leg = make_leg(body.points[hip].copy(), -half)
@@ -253,19 +326,51 @@ def main() -> None:
         if stance_leg is not None and not fell:
             desired_thrust = THRUST_GAIN * (TARGET_VX - hip_vx)
             desired_thrust = max(-THRUST_CAP, min(THRUST_CAP, desired_thrust))
-            # 13. tur -- Kinetik Sürtünme Sınırı: zemin itkiye sonsuz tepki
-            # veremez (bkz. modül dokstring'i -- F_MAX=mu*THRUST_CAP). Limit
-            # aşılırsa kas gücünün SADECE f_max kadarı kalçaya uygulanır,
-            # kalanı (excess) ayağı (planted) geriye doğru kaydırır (patinaj).
-            mu = terrain.friction_fn(stance_leg.planted[0])
-            f_max = mu * THRUST_CAP
-            if abs(desired_thrust) > f_max:
-                applied_thrust = math.copysign(f_max, desired_thrust)
-                excess = desired_thrust - applied_thrust
-                stance_leg.apply_slip(-excess * SLIP_GAIN)
-                slip_events.append((f, "l" if stance_leg is left_leg else "r", float(excess)))
+
+            # 13. tur eki -- gercek 2B stres: bir onceki karenin relaksasyon
+            # SONRASI anchor-kalca cubugu (bkz. yukaridaki "13. tur eki"
+            # yorum bloğu icin tam gerekce/dogrulama).
+            stretch_vec = body.points[hip] - body.points[anchor]
+            stretch_len = float(np.linalg.norm(stretch_vec))
+            stretch_dev = stretch_len - ARM_LENGTH  # + gerilme (tension), - sikisma (compression)
+            stretch_dir = stretch_vec / stretch_len if stretch_len > 1e-6 else np.array([0.0, -1.0])
+            stress_vec = stretch_dev * stretch_dir
+
+            load_factor = 1.0 - LOAD_GAIN * stretch_dev
+            load_factor = max(LOAD_FACTOR_MIN, min(LOAD_FACTOR_MAX, load_factor))
+            f_n_effective = THRUST_CAP * load_factor
+
+            total_stress = desired_thrust + STRESS_GAIN * stress_vec[0]
+
+            mu_static = terrain_static.friction_fn(stance_leg.planted[0])
+            mu_kinetic = terrain_kinetic.friction_fn(stance_leg.planted[0])
+            f_max_static = mu_static * f_n_effective
+            f_max_kinetic = mu_kinetic * f_n_effective
+
+            # Stribeck: statik/kinetik esik ayrimi + KALICI kayma fazi
+            # (bkz. yukaridaki yorum bloğu).
+            if not stance_leg.is_slipping and abs(total_stress) > f_max_static:
+                stance_leg.is_slipping = True
+                stance_leg.slip_velocity = 0.0
+
+            if stance_leg.is_slipping:
+                applied_thrust = math.copysign(min(abs(desired_thrust), f_max_kinetic), desired_thrust) \
+                    if desired_thrust != 0.0 else 0.0
+                if abs(total_stress) > f_max_kinetic:
+                    excess = total_stress - math.copysign(f_max_kinetic, total_stress)
+                else:
+                    excess = 0.0
+                stance_leg.slip_velocity += -excess * SLIP_ACCEL_GAIN
+                stance_leg.slip_velocity *= SLIP_DECAY
+                stance_leg.apply_slip(stance_leg.slip_velocity)
+                slip_events.append((f, "l" if stance_leg is left_leg else "r",
+                                     float(excess), float(stance_leg.slip_velocity)))
+                if abs(stance_leg.slip_velocity) < SLIP_STOP_VEL and abs(total_stress) <= f_max_kinetic:
+                    stance_leg.is_slipping = False
+                    stance_leg.slip_velocity = 0.0
             else:
                 applied_thrust = desired_thrust
+
             body.set_pinned_position(anchor, [stance_leg.planted[0], GROUND_Y])
             body.prev_points[hip][0] -= applied_thrust
 
@@ -305,9 +410,16 @@ def main() -> None:
         for leg in (left_leg, right_leg):
             other = right_leg if leg is left_leg else left_leg
             was_stance = leg.state == "stance"
+            was_swing = leg.state == "swing"
             leg.update(hip_pos, hip_vx=hip_vx, other_leg_swinging=(other.state == "swing"))
             if was_stance and leg.state == "swing":
                 step_events.append((f, "l" if leg is left_leg else "r"))
+            if was_swing and leg.state == "stance":
+                # 13. tur eki -- her yeni ayak basisi (heel-strike) TAZE bir
+                # statik-surtunme sansiyla baslar: bir onceki basisten kalma
+                # kayma durumu (is_slipping/slip_velocity) buraya TASINMAZ.
+                leg.is_slipping = False
+                leg.slip_velocity = 0.0
 
         if not fell and hip_pos[1] > FALL_HIP_Y_THRESHOLD:
             fell = True
@@ -353,7 +465,20 @@ def main() -> None:
           f"  (dusme karesi: {fall_frame}, t={fall_frame/FPS if fall_frame else None})")
     print(f"son hip_y: {hip_y_log[-1]:.2f} (GROUND_Y={GROUND_Y}, dusme esigi={FALL_HIP_Y_THRESHOLD})")
     print(f"ortalama hip_vx (buyuk itkiden ONCE, kararli yuruyus): {hip_vx_log[:bp].mean():.3f}px/kare (hedef={TARGET_VX})")
-    print(f"kayma (slip) olaylari: {len(slip_events)}  -> {slip_events}")
+    print(f"kayma (slip) olaylari (kare sayisi -- aktif kayma boyunca HER kare 1 olay): {len(slip_events)}")
+    if slip_events:
+        print(f"  ilk 8: {slip_events[:8]}")
+        print(f"  son 8: {slip_events[-8:]}")
+        slipping_frames = [s[0] for s in slip_events]
+        streaks, cur = [], 1
+        for i in range(1, len(slipping_frames)):
+            if slipping_frames[i] == slipping_frames[i - 1] + 1:
+                cur += 1
+            else:
+                streaks.append(cur)
+                cur = 1
+        streaks.append(cur)
+        print(f"  en uzun ardisik kayma serisi (kare -- Stribeck suruklenme fazinin gercekten kalici oldugunun kaniti): {max(streaks)}")
 
 
 if __name__ == "__main__":

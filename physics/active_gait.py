@@ -180,6 +180,14 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         self.support_margin = support_margin
         self.swing_lead_margin = swing_lead_margin
         self.omega0 = omega0
+        # 13. tur eki -- Stribeck (statik/kinetik) kalici kayma durumu:
+        # is_slipping=True oldugu surece ayak "stance" FSM etiketini
+        # KORUR (bkz. modul dokstring'i -- cagiran kodun stance-bacak
+        # tespiti buna bagli) ama artik zeminle kilitli DEGILDIR --
+        # slip_velocity kendi ivmelenen/sonumlenen dinamigiyle
+        # surer (bkz. demo/step14_active_biped.py).
+        self.is_slipping = False
+        self.slip_velocity = 0.0
 
     def update(self, hip_pos: np.ndarray, hip_vx: float = 0.0, hold_release: bool = False,
                other_leg_swinging: bool = False) -> np.ndarray:

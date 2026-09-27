@@ -2314,6 +2314,156 @@ tekrarlandı, hepsi `_proto13/` sonuçlarıyla birebir eşleşti.
 sonunda `rm -rf _proto13` ile silindi -- `git status --short` bu turun
 başında da sonunda da temiz.
 
+## 13. tur eki: gercek bir surtunme motoruna donusum -- kullanicinin 3 mimari elestirisi kapatildi
+
+**Kullanicinin tespiti:** 13. turda uygulanan "Kinetik Surtunme Siniri"
+mekanizmasi mimari olarak temiz olsa da ("itki uretiminin step14'te, kayma
+durumunun active_gait.py'de tutulmasi ... motorun modular yapisini
+koruyan dogru bir sistem tasarimi"), fiziksel olarak gercek bir surtunme
+modeli DEGIL, tek boyutlu bir "itki tiraslama" (thrust-clipping) hilesiydi.
+Uc somut mimari acik tespit edildi:
+
+1. **Dinamik agirlik aktarimi yok sayilmis:** surtunme sinirini sabit
+   `THRUST_CAP`'e baglayarak bacaga binen GERCEK dikey yuk (heel-strike,
+   agir inis) denklemden tamamen cikarilmisti -- ayak ister tuy gibi
+   dokunsun ister tum govde agirligiyla cokup bassin, ayni itki degerinde
+   kayiyordu.
+2. **Statik/kinetik surtunme (Stribeck etkisi) eksik:** tek bir surtunme
+   tavani vardi. Gercek fizikte statik katsayi (mu_s) daima kinetik
+   katsayidan (mu_k) buyuktur -- kaymayi BASLATMAK zordur, ama basladiktan
+   sonra tutunma aniden duser. Eski mekanizma, asan itkiyi ayni kare
+   icinde "sizdirip" hemen tekrar `stance`'a kilitleniyordu -- gercek bir
+   suruklenme (slip phase) yasanmiyordu.
+3. **Cok yonlu (omnidirectional) kayma korlugu:** `apply_slip()` SADECE
+   bacagin kendi urettigi ileri itkiye (1D) tepki veriyordu; disaridan
+   gelen darbelere (yanal carpma, vs.) tamamen kordu.
+
+**Anahtar cikarim (README'nin geri kalaninda tekrar eden "durust
+basitlestirme" felsefesiyle ayni ruhta):** anchor-kalca cubugunun
+(`build_body()`'deki ARM_LENGTH uzunlugunda, compliance=0.85 olan cubuk)
+relaksasyon-SONRASI GERCEK boyu -- `body.points[hip] - body.points[anchor]`
+-- `physics/verlet.py`'ye HICBIR degisiklik gerektirmeden zaten var olan,
+fiziksel olarak gercek bir nicelik. Bu cubugun rest-length'ten (ARM_LENGTH)
+sapmasi (`stretch_dev = |stretch_vec| - ARM_LENGTH`), itkiyi, yercekimi/
+carpma kaynakli dikey yuklenmeyi VE disaridan gelen darbeleri (STUMBLE_KICK/
+BIG_PUSH_KICK, ikisi de hip'in `prev_points`'ini degistirerek uygulaniyor)
+TEK bir olcumde yakalar -- cunku hepsi ayni yoldan (hip'in konumunu/hizini
+degistirerek) cubugun gercek gerilme/sikisma durumunu etkiler.
+
+**Mekanizma (bkz. `demo/step14_active_biped.py` -- tam kod/gerekce orada,
+uzun bir yorum blogu halinde):**
+
+* **Agirlik aktarimi:** `stretch_dev`'in ISARETI fiziksel olarak anlamli --
+  SIKISMA (negatif dev, hip anchor'a beklenenden yakin -- agir bir inis/
+  heel-strike'ta olur) `f_n_effective`'i YUKSELTIYOR (daha fazla tutunma);
+  GERILME (pozitif dev, kalkis/havalanma) DUSURUYOR:
+  `load_factor = clamp(1 - LOAD_GAIN * stretch_dev, LOAD_FACTOR_MIN,
+  LOAD_FACTOR_MAX)`, `f_n_effective = THRUST_CAP * load_factor`.
+* **Cok yonlu stres:** `stress_vec = stretch_dev * (stretch_vec /
+  |stretch_vec|)` -- stretch_dev'in cubugun GERCEK anlik dogrultusuna
+  izdusumu (Verlet mesafe kisitlamasinin kendi duzeltme kuvvetiyle AYNI
+  matematik). `total_stress = desired_thrust + STRESS_GAIN * stress_vec[0]`.
+  Bu, `desired_thrust` zaten `THRUST_CAP`'e sikismis olsa bile (ki HER ZAMAN
+  oyle -- bkz. asagidaki "yapisal kor nokta" bulgusu), buyuk bir dis
+  darbenin normal zeminde (mu_static=1.2) bile kaymayi tetikleyebilmesini
+  sagliyor.
+* **Statik/kinetik (Stribeck):** `mu_kinetic = mu_static * KINETIC_RATIO`
+  (KINETIC_RATIO=0.6, HER ZAMAN kucuk) iki AYRI `Terrain` orneginden
+  (`terrain_static`, `terrain_kinetic`) okunuyor -- `Terrain` sinifinin
+  KENDISI degistirilmedi (step8-13 ile geriye-uyumluluk icin, sadece iki
+  kez ornekleniyor). Kayma tetiklenince (`is_slipping=True`, yeni bir alan
+  -- `ActiveFootPlantingLeg.__init__`) ayak o kareden itibaren KALICI
+  olarak kilitsiz kalir; `slip_velocity` kendi ivmelenen (kinetik esigi asan
+  "excess" kadar) ve sonumlenen (`SLIP_DECAY=0.85`) dinamigiyle surer, ta ki
+  hem HIZ (`SLIP_STOP_VEL` altina) hem de STRES (kinetik sinirin altina)
+  ayni anda saglanana kadar. Her yeni ayak basisinda (`swing`->`stance`
+  gecisi) `is_slipping`/`slip_velocity` sifirlaniyor -- her adim TAZE bir
+  statik-surtunme sansiyla basliyor (gercek ayaklarin her adimda "yeniden
+  tutunmasi" gibi).
+
+**Onemli bir yapisal bulgu (izole testte kesfedildi, kullanicinin
+elestirisini dogrudan dogruluyor):** `desired_thrust` HER ZAMAN
+`THRUST_CAP=1.5`'e sikistirildigi ve normal zemin `mu_static=1.2>1.0`
+oldugu icin, ESKI (13. tur) mekanizmasinda `abs(desired_thrust) > f_max`
+kosulu normal zeminde MATEMATIKSEL OLARAK HICBIR ZAMAN gerceklesemezdi
+(`f_max = 1.2*1.5 = 1.8 > 1.5`) -- yani buz disinda, hicbir disaridan gelen
+darbe (ne kadar buyuk olursa olsun) eski modelde kaymayi tetikleyemezdi.
+Bu, kullanicinin "3 numarali" elestirisinin (cok yonlu kayma korlugu)
+somut, olcumle dogrulanan kanitidir.
+
+**Dogrulama (izole `_proto13_eki/`, gercek dosyalardan turetilen paket-
+yapida kopyalar uzerinde, hizli/video'suz bir "sweep_harness.py" ile):**
+
+1. *Parametre taramasi (LOAD_GAIN x STRESS_GAIN, rahatsizlik YOK):*
+   LOAD_GAIN<=0.02 VE STRESS_GAIN<=0.1 kombinasyonlarinda, hicbir kare
+   sahte/gereksiz kayma tetiklenmiyor (`n_slip_events=0`) -- normal zeminin
+   "hicbir zaman kaymaz" degismezi KORUNUYOR. STRESS_GAIN>=0.2'de bile
+   gunluk yuruyus titresimi (dogal gait-cycle salinimi, dev araligi
+   yaklasik [-3,+5]) bazen esigi asip 7-10 sahte kare uretebiliyor -- bu
+   yuzden STRESS_GAIN=0.1, LOAD_GAIN=0.02 secildi (muhafazakar, kanitlanmis
+   guvenli taraf).
+2. *Agirlik aktarimi izole testi (AYNI 60px yatay darbe, farkli yukleme
+   anlarinda):*
+
+   | Yukleme durumu (dikey darbe) | Kayma tetiklenme karesi | Zirve slip_velocity |
+   |---|---|---|
+   | Agir inis (sikisma, +40px dikey) | 83 (GEC) | 3.59 (KUCUK) |
+   | Notr (kontrol) | 81 | 5.96 |
+   | Hafif/kalkis (gerilme, -40px dikey) | 61 (ERKEN) + 80 | 6.86 (BUYUK) |
+
+   Monoton ve fiziksel olarak dogru sira: agir yuklu ayak daha GEC ve daha
+   AZ kayiyor, hafif yuklu ayak daha ERKEN ve daha COK kayiyor -- agirlik
+   aktarimi artik gercekten calisiyor.
+3. *Cok yonlu (omnidirectional) acik kapatma testi (150px darbe, BUZ YOK,
+   sadece normal zemin mu_static=1.2):* STRESS_GAIN=0.1 ile bile darbe
+   53+ kare boyunca gercek bir kayma tepkisi uretiyor -- eski modelde bu
+   YAPISAL OLARAK IMKANSIZDI (yukaridaki bulguya bkz.).
+4. *Stribeck sureklilik testi:* standart 12s senaryoda (15px tokez + 150px
+   itki) en uzun ardisik kayma serisi 70 kare (~2.3s) -- tek karelik bir
+   "sizinti" degil, gercekten kalici, coklu-kareli bir suruklenme fazi.
+5. *65s uzun-sure kararlilik, rahatsizlik YOK (regresyon):* 185 adim, kayma
+   olayi=0, son_hip_y=148.66 -- ESKI (13. tur, eki-oncesi) modelle
+   BIREBIR ayni (dijital olarak ozdes, cunku hicbir kayma tetiklenmedigi
+   icin fizik tamamen ayni yolu izliyor).
+6. *65s uzun-sure kararlilik, standart rahatsizliklarla:* NaN yok. Ilginc
+   bir yan bulgu: yeni mekanizma dusme anini t=7.5s'den (eski model)
+   t=11.57s'ye ERTELIYOR -- karakter, kontrollu/gercekci bir kayma-ve-
+   toparlanma dinamigi sayesinde buyuk itkiyi ESKI modelden DAHA UZUN
+   sureyle tolere ediyor (27 adim, eskisi 21 adim). Bu, mekanizmanin
+   sadece daha karmasik degil, GERCEKTEN daha fiziksel/gercekci davrandigini
+   gosteren emergent (istenmeden ortaya cikan) bir sonuc -- ayni 150px
+   darbeyle sonunda yine dusuyor (150px hala hayatta kalma esiginin cok
+   ustunde), sadece surecin kendisi artik daha inandirici.
+
+**Durust sinir (bilerek kapsam disi birakildi, acikca belirtiliyor):** bu
+motorda TUM dis darbeler (`STUMBLE_KICK_PX`, `BIG_PUSH_KICK_PX`) zaten
+SADECE yatay (x ekseni) -- gercek bir dikey darbe modeli yok,
+`Terrain.ground_y` sabit (egim/slope destegi henuz yok). O yuzden "cok
+yonlu/2B" burada "yatay eksendeki TUM kaynaklarin (itki + dis darbe +
+cubuk gerilimi) BIRLESIMI" anlamina geliyor, harfiyen "gercek dikey kayma"
+degil -- gercek dikey yukleme zaten agirlik-aktarimi (`f_n_effective`)
+yoluyla DOLAYLI olarak modelleniyor, ki bu fizikte de DOGRU yer: yercekimi
+kaymaya degil, tutunma TAVANINA etki eder.
+
+**Gercek dosyaya uygulama:** `physics/active_gait.py`'ye
+`ActiveFootPlantingLeg.__init__`'e `is_slipping`/`slip_velocity` alanlari
+eklendi (`apply_slip()` DEGISMEDI -- hala tek satirlik bir `planted[0]`
+mutator'u). `demo/step14_active_biped.py`'de: `GROUND_MU_DEFAULT` ->
+`GROUND_MU_STATIC` + `KINETIC_RATIO`/`SLIP_ACCEL_GAIN`/`SLIP_DECAY`/
+`SLIP_STOP_VEL`/`LOAD_GAIN`/`LOAD_FACTOR_MIN`/`LOAD_FACTOR_MAX`/
+`STRESS_GAIN` sabitleri eklendi; tek `terrain` -> `terrain_static` +
+`terrain_kinetic`; itki-hesaplama bloğu tamamen yeniden yazildi (agirlik
+aktarimi + cok yonlu stres + Stribeck kalici kayma durumu); her yeni ayak
+basisinda kayma durumu sifirlaniyor. 12s demo, 65s kararlilik (rahatsiz +
+rahatsiz-edilmemis) ve gorsel QA gercek dosyada tekrarlandi, hepsi
+`_proto13_eki/` sonuclariyla birebir eslesti (rahatsiz-edilmemis 65s:
+185 adim, son_hip_y=148.66 -- eski modelle dijital olarak ozdes).
+
+**Doğrulama:** prototip TAMAMEN `_proto13_eki/` altinda izole calisti
+(gercek dosyalardan turetilen, `physics`/`demo` paket yapisinda kopyalar +
+bagimsiz bir `sweep_harness.py`), tur sonunda `rm -rf _proto13_eki` ile
+silindi -- `git status --short` bu turun basinda da sonunda da temiz.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
