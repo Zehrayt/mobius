@@ -2666,6 +2666,108 @@ geçerdi). Segment Foot'un tam entegrasyonu ayrı, gelecekteki bir/birkaç
 tur olarak planlanıyor.
 
 
+## Adım 16 — Segment Foot dinamik doğrulama laboratuvarı (checkpoint 2): iki bulgu doğrulandı, bir sorun bilerek açık bırakıldı
+
+Kullanıcı, Adım 15 checkpoint 1'in (kinematik/pinned kalça) başarısını
+onayladıktan sonra 3 somut entegrasyon darboğazı sordu (IK uç-efektör
+çatışması, state machine parçalanması, asimetrik sürtünme dağılımı) ve
+bunlara mimari olarak cevap verilip bir ilk "checkpoint 2" prototipiyle
+(serbest kalça + per-node yük sensörü) 3. maddenin fizibilitesi gösterildi.
+Kullanıcı bunu doğrudan `active_gait.py` entegrasyonuna taşımak yerine
+şunu istedi: **önce checkpoint 2'yi temizle, parametre taramalarını
+tamamla, bağımsız bir laboratuvar modülü olarak commit'le** — çünkü ilk
+denemedeki `FOOT_STICK_COMPLIANCE=0.3`/`LOAD_GAIN=0.05` değerleri
+sezgisel seçilmişti; taranmadan entegre edilirse gelecekteki bir çöküşün
+gait-geçiş mantığından mı yoksa bu ham parametrelerdeki gizli bir
+rezonanstan mı kaynaklandığı asla izole edilemezdi.
+
+Bu tur, `demo/step16_segment_foot_lab.py` içinde tam olarak bunu yaptı:
+konsol-raporu bir ölçüm laboratuvarı (video üretmiyor), 2 tarama
+TAMAMLANDI + 1 sorun bilerek AÇIK bırakıldı.
+
+### BULGU 1 — Esneklik (compliance) taraması: 0.3 gerçekten güvenli
+
+İki BAĞIMSIZ yöntemle çapraz doğrulandı:
+
+**(a) İzole ring-down testi** (yerçekimi VE iç sürtünme KAPALI — en az
+sönümlü, worst-case senaryo; `ankle` sabit, `heel`'e tek 15px darbe;
+büyük kalça-sarkacı kirliliği olmadan SADECE `ankle-heel` çubuğunun
+kendi salınım/sönümleme davranışı ölçülüyor):
+
+| compliance | ilk_dev | max\|dev\| | 120.kare_dev | sönüm_oranı |
+|---|---|---|---|---|
+| 0.00 | 0.069 | 0.069 | -0.0000 | 0.0000 |
+| 0.30 | 0.223 | 0.223 | 0.0010 | 0.0049 |
+| 0.60 | 0.457 | 0.457 | 0.0067 | 0.0159 |
+| 0.70 | 0.364 | 0.692 | 0.0126 | 0.0196 |
+| 0.80 | -0.138 | 1.009 | 0.0255 | 0.0273 ← işaret tersine dönüyor |
+| 0.90 | -1.577 | 2.265 | 0.0677 | 0.0323 |
+| 0.95 | -2.944 | 4.535 | 0.1585 | 0.0378 |
+| 0.99 | -4.514 | 12.412 | 0.5628 | 0.0922 |
+
+0.7'ye kadar davranış sağlıklı (küçük, hızla sönen sapmalar). 0.8'den
+itibaren ilk-kare sapması İŞARET DEĞİŞTİRİYOR (beklenen gerilme yerine
+sıkışma görünüyor) ve genlik/sönüm oranı hızla büyüyor — kullanıcının
+"sünger etkisi" tam olarak bu davranış.
+
+**(b) Çapraz-kontrol** (aynı tarama, GERÇEK sistemde: yerçekimi+sürtünme+
+itki AÇIK, tek seferlik 40px darbe): `heel_dev_max` 0.44 (c=0.1) → 0.83
+(c=0.3) → 14.35 (c=0.9) — (a)'nın izole bulgusuyla AYNI eğilim, AYNI
+sıra: 0.3 hâlâ küçük/sağlıklı tarafta, büyüme 0.5–0.7 civarında
+hızlanıyor.
+
+**Sonuç**: `FOOT_STICK_COMPLIANCE=0.3`, hip çubuğundaki 0.85'in ayak
+çubukları için doğrudan karşılığı DEĞİL (çok daha kısa çubuk, farklı
+kütle oranı) — ama kendi ölçeği içinde, kendi sistemli taramasıyla
+doğrulanmış, güvenli bir seçim. ~0.7 civarı, gelecekte "daha esnek/hassas
+ayak" denenirse yaklaşılmaması gereken sınır olarak not edildi.
+
+### BULGU 2 — Yük-kazancı (LOAD_GAIN) taraması: 0.3'e kadar sakin, 0.5'te hafif çırpınma
+
+Sabit yürüyüş itkisi altında (compliance=0.3 sabit, 200 kare), `LOAD_GAIN`
+0.0'dan 0.3'e kadar heel/toe kayma-durumu hiç "toggle" (açıl/kapan)
+yapmıyor (0 → 0 → ... → 0). 0.5'te ilk kez hafif çırpınma beliriyor
+(heel: 2, toe: 2 toggle). `LOAD_GAIN=0.05` (13. tur eki'nden devralınan
+mertebe) bu tarama içinde rahat, geniş bir güvenlik payıyla oturuyor.
+
+### Dürüst sınır — açık/çözülmemiş sorun: per-node yatay stres formülü
+
+Kullanıcının istediği "pogo testi"ni (ikinci/swing bacak OLMADAN, tek
+ayağın en ağır darbe altında heel/toe sürtünmelerinin ayrışıp
+ayrışmadığı) kurarken İKİ ayrı, gerçek sorun bulundu — **ikisi de
+çözülmedi, bilerek yarım bırakıldı**:
+
+1. Bu izole "tek ayak" rigi gövde/karşı-denge/adım-atma içermiyor —
+   serbest kalça + rijit `ARM_LENGTH` çubuğu, matematiksel olarak ters
+   bir sarkaç (inverted pendulum). Aktif bir düzeltme mekanizması
+   (step14'ün torso-lean clamp'i ya da bir sonraki adımı atma refleksi)
+   olmadan HERHANGİ bir yatay darbe er ya da geç kalçayı devirir — hatta
+   sıfır darbeyle bile, sürekli yürüyüş itkisi altında (kontrol testiyle
+   doğrulandı). Bu, ayak modelinin değil, rigin gövdesiz olmasının doğal
+   sonucu. Yani "tam hayatta kalma" bu checkpoint'te ANLAMLI bir metrik
+   DEĞİL; analiz sadece darbe-hemen-sonrası (ilk ~25 kare) pencereye
+   odaklanabilir.
+2. O kısa pencerede bile, per-node yatay "stres" formülü (step14'ün
+   `stress_vec` tekniğinin `ankle-heel`/`ankle-toe`'ya doğrudan kopyası)
+   güvenli bir çalışma noktası BULAMADI. `NODE_STRESS_GAIN` taraması:
+   gain=1..8 → 20px darbede bile hiçbir kayma tetiklenmiyor; gain=10 →
+   darbe YOKKEN bile (normal yürüyüş) toe 18 kare kayıyor; gain=15..30 →
+   normal yürüyüşte her iki nod da sahte (spurious) kayıyor. Yani "büyük
+   darbede tetiklenir, normal yürüyüşte tetiklenmez" diye bir güvenli
+   aralık bulunamadı — step14'ün uzun anchor-kalça çubuğu için taranmış
+   formülü, çok daha kısa ayak çubuklarına naif biçimde taşınamıyor.
+   Olası neden (test EDİLMEDİ, sadece hipotez): yanlış nicelik ölçülüyor
+   olabilir — stick-stretch yerine `collide_ground()`'un o karede
+   uyguladığı gerçek dikey düzeltme miktarı (bir çarpma/impuls vekili)
+   daha doğru bir sinyal olabilir.
+
+**Bu yüzden**: pogo testi / asimetrik-kayma-ayrışma iddiası bu turda
+DOĞRULANAMADI, commit'e dahil EDİLMEDİ. Sadece BULGU 1 ve BULGU 2
+(sağlam ve tekrarlanabilir) commit'lendi. Per-node stres formülünün doğru
+fiziksel niceliğini bulmak, tam `active_gait.py` entegrasyonundan ÖNCE
+çözülmesi gereken ayrı bir sonraki adım.
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
