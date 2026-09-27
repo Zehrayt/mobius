@@ -2628,6 +2628,44 @@ Ardisik cift darbe (300px @ t=7s + X @ t=8s): 150px ve 300px ikinci darbeler hay
 `_proto_eki3/` prototipi bu turda da (onceki tum prototipler gibi) silindi -- sadece gercek dosyalara (`demo/step14_active_biped.py`) uygulanan degisiklik kaliciydi. FALL_RISK_ENTER_PX/EXIT_PX degerleri step12/13'ten dogrudan devralindi (step14'un kendi geometrisi/COM vekili icin YENIDEN ayarlanmadi) -- 20s regresyon ve siddet taramasinda sorun cikarmadilar, ama ozel bir tarama ile ince ayar YAPILMADI. Nokta-temas/Segment Foot elestirisi (3.) bu turda da ELE ALINMADI -- kullanicinin kendi talebi uzerine ayri bir izole laboratuvar (`step15_segment_foot.py`) olarak baslatildi (bkz. asagisi).
 
 
+## Adım 15 — Segment Foot (Heel-to-Toe Roll): checkpoint 1
+
+Kullanıcının 13. tur eki 2'ye getirdiği 3. eleştiri ("nokta temasına
+çarptın") üzerine açılan yeni, ayrı bir laboratuvar: `demo/step15_segment_
+foot.py`. **Bu, tam bir yürüyüş entegrasyonu DEĞİL** — kalça kasıtlı
+olarak kinematik/pinned ve yavaş (quasi-statik) bir süpürmeyle hareket
+ettiriliyor, `step14`'ün stance/swing/kayma mekanikleri burada yok.
+
+**Amaç**: `physics/verlet.py` veya `physics/collision.py`'ye TEK BİR
+SATIR bile dokunmadan, tek bir "anchor" noktası yerine rijit bir
+ankle→heel + ankle→toe + heel↔toe üçgeninden oluşan iki-noktalı bir
+ayağın, gerçek bir topuk-parmak ucu yuvarlanmasını (heel-to-toe roll)
+HİÇBİR "kaldır" kuralı yazmadan, sadece kısıt+çarpışma+yerçekiminden
+kendiliğinden (emergent) üretip üretemeyeceğini ölçmek.
+
+**Bulgu**: kalça ayağın tam üstünden (düz taban, açı≈0°) parmak ucunun
+ilerisine doğru süpürülünce, `toe_y` zeminde kilitli kalırken `heel_y`
+DÜZENLİ/MONOTONİK olarak yükseliyor (zeminden kalkıyor) ve ayak açısı
+0°'den ~44°'ye kadar sürekli artıyor — gerçek bir topuk-kalkışı/parmak-
+ucu-itişi yuvarlanması, hiçbir ek kural olmadan. Bu, kullanıcının "ayak
+bileği torku ve yüzey alanı olmadan sürtünme fiziğini daha fazla ileri
+götüremezsin" tespitinin doğru çözüm yönünü (nokta yerine rijit iki-nokta
+kapsül) sayısal olarak doğruluyor.
+
+**Dürüst sınır / sıradaki adımlar** (bu turda YAPILMADI): bu iki-nokta
+ayağın `step14`'ün stance/swing state machine'ine entegrasyonu (`planted`
+artık tek bir x değil, heel_x/toe_x çifti olmalı); Stribeck kayma
+modelinin heel/toe'ya AYRI uygulanması (gerçek bir "topuk kazıma"
+friction-spike modeli için); FABRIK/IK zincirinin ayak-ucu hedefi olarak
+bu segmenti kullanacak şekilde güncellenmesi; ayak bileği açısının kendi
+biyomekanik sınırı (bu checkpoint'te bilerek sınırsız bırakıldı — hip_x
+anatomik olarak anlamlı aralığın çok ötesine (foot uzunluğunun 4+ katı)
+taşındığında görülen tuhaf kısmi geri-sarma bir sınır-dışı artefakttır,
+gerçek yürüyüşte bu kadar ileri gidilmeden çok önce ayak zaten swing'e
+geçerdi). Segment Foot'un tam entegrasyonu ayrı, gelecekteki bir/birkaç
+tur olarak planlanıyor.
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
