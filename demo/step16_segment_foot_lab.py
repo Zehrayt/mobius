@@ -171,6 +171,75 @@ dogrulanmamis bulgular, izole test kodu ile birlikte belgeleniyor
 (bkz. `run_heelstrike()` asagida, `_proto16c/` silinmeden once buradan
 gercek repoya tasindi).
 
+===========================================================================
+EK (checkpoint 4) -- UC FAZLI (Heel-Strike / Flat-Foot / Toe-Off) DURUM
+MAKINESI: FAZ MASKELEMESI, ESIK-TABANLI K_NORMAL SORUNUNU COZUYOR
+===========================================================================
+DUZELTME NOTU: yukaridaki checkpoint 3 (BULGU 3 / ACIK SORUN 2) olcumleri,
+`run_heelstrike()` icindeki bir heel/toe ACI-ATAMA hatasiyla alinmisti --
+"heel" adi verilen nokta aslinda GEC degen, "toe" adi verilen nokta ERKEN
+degen noktaydi (base_ang +/- theta terimleri ters atanmisti). Hata bu
+turda duzeltildi. Ayni izole senaryo tekrar kosuldugunda nicel sonuc AYNI
+mertebede kaldi -- sadece artik dogru fiziksel noktaya dogru isim
+karsilik geliyor:
+  heel_pen oran:   5.2x (eskiden, ters etiketle, 4.4x)
+  toe_pen  oran:   3.4x (eskiden 2.9x)
+  heel_shear oran: 41.8x (eskiden 27.4x)
+  toe_shear  oran: 26.0x (eskiden 26.1x)
+ACIK SORUN 2 tablosu da tekrar kosuldu: sonuc ayni -- hicbir K_NORMAL
+"yuruyus=0,0 VE strike>0" satirini birlikte vermiyor.
+
+Kullanicinin onerdigi cozum: esikle (K_NORMAL) bogusmak yerine, heel_pen/
+toe_pen ciftinden dogrudan uc-fazli bir durum makinesi turetip, kayma
+hesaplamasini faz'a gore MASKELEMEK:
+
+  * Heel-Strike:  heel_pen > esik  VE  toe_pen == 0  -> sadece topuk
+    hesaplanir, parmak ucu o kare tamamen goz ardi edilir.
+  * Flat-Foot:    heel_pen > 0  VE  toe_pen > 0  -> agirlik-aktarim
+    (roll) fazi; iki dugum de PAYLASIMLI bir kapasiteye
+    (MU_STATIC * k_normal * (heel_pen + toe_pen)) karsi hesaplanir.
+  * Toe-Off:      heel_pen == 0  VE  toe_pen > esik  -> sadece parmak
+    ucu hesaplanir, topuk tamamen susturulur (masking).
+  * (tanimsiz -- TEK dugumde temas var ama esigin altinda) -> "airborne"a
+    dusuruluyor; bkz. ACIK SORUN 3.
+
+DOGRULAMA (izole laboratuvar, `run_phase_machine()`, itki KAPALI --
+checkpoint 3'teki ayni izolasyon disiplini): 9 farkli (heel_lead_deg,
+drop_height) kombinasyonunun 8'inde faz dizisi
+`airborne -> heel_strike -> (kisa, esik-alti bir sicrama) -> flat_foot`
+seklinde ARDISIK ilerliyor VE test penceresinin %79-90'inda (197-225/250
+kare) TEK bir flat_foot fazinda KESINTISIZ kaliyor (NaN yok, faz
+"cirpinmasi" yok). En temiz ornek (heel_lead=15 derece, drop=15.0):
+
+  airborne(22) -> heel_strike(4) -> airborne(1) -> flat_foot(223)
+
+En onemlisi: faz-maskeli kayma sinyali TAM ARANAN asimetrik ayrimi
+uretiyor. heel_lead=15, drop=5.0 kosusunda heel_slip=True olan TUM
+kareler [8,9,10,11,12,13] -- hepsi 'heel_strike' fazinda, heel_pen darbe
+tepe noktasinda (0.81 -> 1.58 -> 0.76). Ayni kosuda toe_slip HICBIR
+karede True olmuyor (topuk kayarken parmak ucu maskeli). Yerlesik
+flat_foot kuyrugunun tamaminda (200+ kare) HER IKI dugumde de kayma
+SIFIR -- checkpoint 3'un ACIK SORUN 2'sinde esikle asla ayristiramadigimiz
+"gercek darbe" ile "sahte sifir-yuk kaymasi" ayrimi, hicbir K_NORMAL
+ayarina ihtiyac duymadan, sadece faz bilgisiyle KUSURSUZCA cozuluyor.
+
+ACIK SORUN 3 (sinir durumu, dogru sekilde belgelendi): heel_lead=35,
+drop=5.0 kombinasyonunda parmak ucu testin TAMAMINDA hic yere degmiyor
+(toe_pen surekli 0.0) -- cok dik baslangic egimi + yetersiz dusme
+enerjisi, ayagin sadece topuk uzerinde sonumlenen bir sarkac gibi
+sallanmasina yol aciyor; genlik esigin altina inince (heel_pen>eps ama
+<esik, toe_pen==0) tanimli uc fazdan hicbirine tam uymuyor ve
+"airborne"a dusuyor. Bu bir HATA degil -- yeterli potansiyel enerjisi
+olmayan egik bir sarkacin parmak ucunu hic yere degdirmemesi Newton
+fizigi acisindan beklenen bir sonuc; sadece bu geometri/enerji
+kombinasyonunun test kapsami disinda kaldigini gosteriyor.
+
+SONUC: uc-fazli durum makinesi + faz-maskeli kayma, izole laboratuvarda
+dogrulandi -- ardisik ve stabil calisiyor, VE checkpoint 3'un cozemedigi
+"yuruyus vs. darbe" ayrimini gercekten cozuyor. `active_gait.py`'ye tam
+entegrasyon HALA yapilmadi (kullanicinin acik talimati bu sirayi
+koruyor) -- bu commit sadece izole dogrulamayi gercek repoya tasiyor.
+
 Cikti: konsol raporu (video uretmiyor -- bu bir olcum/tarama laboratuvari).
 """
 from __future__ import annotations
@@ -399,10 +468,10 @@ def run_heelstrike(drop_height=15.0, fwd_vel=1.5, heel_lead_deg=15.0, n_frames=1
     theta = math.radians(heel_lead_deg)
     heel_dist = float(np.hypot(FOOT_LEN / 2.0, ANKLE_HEIGHT))
     base_ang = math.atan2(ANKLE_HEIGHT, FOOT_LEN / 2.0)
-    idx["heel"] = sys_.add_point([-heel_dist * math.cos(base_ang - theta),
-                                   ankle_y + heel_dist * math.sin(base_ang - theta)], mass=0.3)
-    idx["toe"] = sys_.add_point([heel_dist * math.cos(base_ang + theta),
-                                  ankle_y + heel_dist * math.sin(base_ang + theta)], mass=0.3)
+    idx["heel"] = sys_.add_point([-heel_dist * math.cos(base_ang + theta),
+                                   ankle_y + heel_dist * math.sin(base_ang + theta)], mass=0.3)
+    idx["toe"] = sys_.add_point([heel_dist * math.cos(base_ang - theta),
+                                  ankle_y + heel_dist * math.sin(base_ang - theta)], mass=0.3)
     sys_.add_stick(idx["hip"], idx["ankle"], length=ARM_LENGTH, compliance=0.0)
     sys_.add_stick(idx["ankle"], idx["heel"], length=heel_dist, compliance=RECOMMENDED_FOOT_STICK_COMPLIANCE)
     sys_.add_stick(idx["ankle"], idx["toe"], length=heel_dist, compliance=RECOMMENDED_FOOT_STICK_COMPLIANCE)
@@ -479,6 +548,147 @@ def run_heelstrike(drop_height=15.0, fwd_vel=1.5, heel_lead_deg=15.0, n_frames=1
     return {k: np.array(v) for k, v in log.items()}
 
 
+PHASE_AIRBORNE = "airborne"
+PHASE_HEEL_STRIKE = "heel_strike"
+PHASE_FLAT_FOOT = "flat_foot"
+PHASE_TOE_OFF = "toe_off"
+
+
+def classify_phase(heel_pen, toe_pen, threshold, eps=1e-9):
+    """checkpoint 4: kullanicinin tam olarak belirttigi uc-fazli durum
+    siniflandirmasi. Heel-Strike: heel_pen > esik VE toe_pen == 0.
+    Flat-Foot: heel_pen > 0 VE toe_pen > 0 (agirlik aktarim/roll fazi,
+    ortak Normal Kuvvet). Toe-Off: heel_pen == 0 VE toe_pen > esik. Bu
+    ucunun disinda kalan (temas var ama esigin altinda, TEK dugumde)
+    durum, kullanicinin tanimladigi uc fazdan hicbirine tam uymuyor --
+    "henuz tanimli bir faz degil" anlaminda PHASE_AIRBORNE'a dusuruluyor
+    (bkz. ACIK SORUN 3, dosya dokstring'i)."""
+    heel_contact = heel_pen > eps
+    toe_contact = toe_pen > eps
+    if heel_contact and toe_contact:
+        return PHASE_FLAT_FOOT
+    if heel_contact and not toe_contact:
+        return PHASE_HEEL_STRIKE if heel_pen > threshold else PHASE_AIRBORNE
+    if toe_contact and not heel_contact:
+        return PHASE_TOE_OFF if toe_pen > threshold else PHASE_AIRBORNE
+    return PHASE_AIRBORNE
+
+
+def run_phase_machine(drop_height=15.0, fwd_vel=1.5, heel_lead_deg=15.0, n_frames=250,
+                       k_normal=1.0, phase_threshold=0.4, thrust_gain=THRUST_GAIN,
+                       target_vx=TARGET_VX):
+    """checkpoint 4: run_heelstrike() ile AYNI gercek-darbe rigini kullanir,
+    ama surtunme siniri artik tek bir mutlak esik (K_NORMAL) DEGIL, faz
+    farkindaligiyla (Heel-Strike / Flat-Foot / Toe-Off) MASKELENIYOR:
+
+      * Heel-Strike: sadece topugun kaymasi hesaplanir, parmak ucu o kare
+        tamamen goz ardi edilir (is_slipping zorla False).
+      * Toe-Off: sadece parmak ucunun kaymasi hesaplanir, topuk zorla
+        susturulur.
+      * Flat-Foot: iki dugum de hesaplanir ama PAYLASIMLI bir kapasiteye
+        (f_max = MU_STATIC * k_normal * (heel_pen + toe_pen)) karsi.
+      * Airborne (tanimsiz/hafif temas): hicbir dugum kaymiyor sayilir.
+
+    Bu, checkpoint 3'un ACIK SORUN 2'sinde (tek K_NORMAL ile yuruyus vs.
+    darbe ayristirilamiyordu) bulunan sorunu, esik yerine BAGLAM (faz)
+    bilgisiyle cozmeyi test eder."""
+    sys_ = VerletSystem.empty()
+    sys_.gravity = TUNED_GRAVITY.copy()
+    sys_.friction = TUNED_FRICTION
+    idx = {}
+    ankle_y = GROUND_Y - ANKLE_HEIGHT - drop_height
+    idx["hip"] = sys_.add_point([0.0, ankle_y - ARM_LENGTH], mass=1.0)
+    idx["ankle"] = sys_.add_point([0.0, ankle_y], mass=0.6)
+    theta = math.radians(heel_lead_deg)
+    heel_dist = float(np.hypot(FOOT_LEN / 2.0, ANKLE_HEIGHT))
+    base_ang = math.atan2(ANKLE_HEIGHT, FOOT_LEN / 2.0)
+    idx["heel"] = sys_.add_point([-heel_dist * math.cos(base_ang + theta),
+                                   ankle_y + heel_dist * math.sin(base_ang + theta)], mass=0.3)
+    idx["toe"] = sys_.add_point([heel_dist * math.cos(base_ang - theta),
+                                  ankle_y + heel_dist * math.sin(base_ang - theta)], mass=0.3)
+    sys_.add_stick(idx["hip"], idx["ankle"], length=ARM_LENGTH, compliance=0.0)
+    sys_.add_stick(idx["ankle"], idx["heel"], length=heel_dist, compliance=RECOMMENDED_FOOT_STICK_COMPLIANCE)
+    sys_.add_stick(idx["ankle"], idx["toe"], length=heel_dist, compliance=RECOMMENDED_FOOT_STICK_COMPLIANCE)
+    sys_.add_stick(idx["heel"], idx["toe"], length=FOOT_LEN, compliance=0.0)
+    for name in ("hip", "ankle", "heel", "toe"):
+        sys_.prev_points[idx[name]][0] += fwd_vel
+
+    hip, heel, toe = idx["hip"], idx["heel"], idx["toe"]
+    terrain = Terrain(ground_y=GROUND_Y, default_friction=GROUND_FRICTION, zones=[])
+    heel_state, toe_state = NodeSlipState(), NodeSlipState()
+
+    log = {k: [] for k in ["heel_pen", "toe_pen", "phase", "heel_slip", "toe_slip"]}
+    for f in range(n_frames):
+        hip_pos_before = sys_.points[hip].copy()
+        hip_prev = sys_.prev_points[hip].copy()
+        hip_vx = hip_pos_before[0] - hip_prev[0]
+        desired_thrust = thrust_gain * (target_vx - hip_vx)
+        desired_thrust = max(-THRUST_CAP, min(THRUST_CAP, desired_thrust))
+        sys_.prev_points[hip][0] -= desired_thrust
+
+        pre_points = sys_.points.copy()
+        pre_prev = sys_.prev_points.copy()
+        sys_.step(dt=1.0)
+
+        shear = {}
+        for name in ("heel", "toe"):
+            i = idx[name]
+            inertial_x = pre_points[i, 0] + (pre_points[i, 0] - pre_prev[i, 0])
+            shear[name] = float(sys_.points[i, 0]) - float(inertial_x)
+
+        heel_pen = max(0.0, float(sys_.points[heel][1]) - GROUND_Y)
+        toe_pen = max(0.0, float(sys_.points[toe][1]) - GROUND_Y)
+        phase = classify_phase(heel_pen, toe_pen, phase_threshold)
+
+        if phase == PHASE_HEEL_STRIKE:
+            active = {"heel": (heel_pen, shear["heel"], MU_STATIC * k_normal * heel_pen)}
+            toe_state.is_slipping = False
+            toe_state.slip_velocity = 0.0
+        elif phase == PHASE_TOE_OFF:
+            active = {"toe": (toe_pen, shear["toe"], MU_STATIC * k_normal * toe_pen)}
+            heel_state.is_slipping = False
+            heel_state.slip_velocity = 0.0
+        elif phase == PHASE_FLAT_FOOT:
+            shared_fmax = MU_STATIC * k_normal * (heel_pen + toe_pen)
+            active = {"heel": (heel_pen, shear["heel"], shared_fmax),
+                      "toe": (toe_pen, shear["toe"], shared_fmax)}
+        else:  # PHASE_AIRBORNE
+            active = {}
+            heel_state.is_slipping = False
+            heel_state.slip_velocity = 0.0
+            toe_state.is_slipping = False
+            toe_state.slip_velocity = 0.0
+
+        for name, (pen, stress, f_max_s) in active.items():
+            state = heel_state if name == "heel" else toe_state
+            f_max_k = f_max_s * KINETIC_RATIO
+            if not state.is_slipping and abs(stress) > f_max_s:
+                state.is_slipping = True
+                state.slip_velocity = 0.0
+            if state.is_slipping:
+                excess = (stress - math.copysign(f_max_k, stress)) if abs(stress) > f_max_k else 0.0
+                state.slip_velocity += -excess * SLIP_ACCEL_GAIN
+                state.slip_velocity *= SLIP_DECAY
+                node_idx = idx[name]
+                sys_.points[node_idx][0] += state.slip_velocity
+                sys_.prev_points[node_idx][0] += state.slip_velocity
+                if abs(state.slip_velocity) < SLIP_STOP_VEL and abs(stress) <= f_max_k:
+                    state.is_slipping = False
+                    state.slip_velocity = 0.0
+
+        collide_ground(sys_, terrain.floor_fn, terrain.friction_fn)
+
+        log["heel_pen"].append(heel_pen)
+        log["toe_pen"].append(toe_pen)
+        log["phase"].append(phase)
+        log["heel_slip"].append(heel_state.is_slipping)
+        log["toe_slip"].append(toe_state.is_slipping)
+
+        if not np.all(np.isfinite(sys_.points)):
+            return {"nan": True, "frame": f}
+    return {k: (np.array(v) if k != "phase" else v) for k, v in log.items()}
+
+
 def main() -> None:
     print("=== BULGU 1a: izole ring-down (yercekimi/surtunme KAPALI, worst-case) ===")
     print(f"{'compliance':>10} {'ilk_dev':>9} {'max|dev|':>10} {'120.kare_dev':>13} {'sonum_orani':>12} {'NaN?':>6}")
@@ -550,6 +760,43 @@ def main() -> None:
         sh, st = int(rs["heel_slip"].sum()), int(rs["toe_slip"].sum())
         print(f"{kn:9.1f} {wh:13d} {wt:12d} {sh:12d} {st:11d}")
     print("(hicbir K_NORMAL 'yuruyus=0,0 VE strike>0' satirini birlikte vermiyor -- bkz. dosya dokstring'i EK bolumu)")
+
+    print("\n=== EK (checkpoint 4): heel/toe aci-atama hatasi duzeltildi -- BULGU 3 tekrar ===")
+    r = run_heelstrike(drop_height=15.0, fwd_vel=1.5, heel_lead_deg=15.0, n_frames=150, k_normal=1e9, thrust_gain=0.0, target_vx=0.0)
+    impact_w = slice(20, 35)
+    print(f"heel_pen: darbe_max={r['heel_pen'][impact_w].max():.4f}  oran={r['heel_pen'][impact_w].max() / max(np.abs(r['heel_pen'][settle]).max(), 1e-9):.1f}x")
+    print(f"toe_pen:  darbe_max={r['toe_pen'][impact_w].max():.4f}  oran={r['toe_pen'][impact_w].max() / max(np.abs(r['toe_pen'][settle]).max(), 1e-9):.1f}x")
+    print(f"heel_shear: oran={np.abs(r['heel_shear'][impact_w]).max() / max(np.abs(r['heel_shear'][settle]).max(), 1e-9):.1f}x")
+    print(f"toe_shear:  oran={np.abs(r['toe_shear'][impact_w]).max() / max(np.abs(r['toe_shear'][settle]).max(), 1e-9):.1f}x")
+
+    print("\n=== EK (checkpoint 4): uc fazli (Heel-Strike/Flat-Foot/Toe-Off) durum makinesi -- izole dogrulama ===")
+
+    def _compress(phases):
+        out = []
+        for p in phases:
+            if not out or out[-1][0] != p:
+                out.append([p, 1])
+            else:
+                out[-1][1] += 1
+        return out
+
+    print("faz dizisi (itki KAPALI -- izole dusme-ve-yerlesme protokolu, checkpoint 3 ile ayni izolasyon):")
+    for hl, dh in [(15, 5.0), (15, 10.0), (15, 15.0), (25, 5.0), (25, 10.0), (25, 15.0),
+                   (35, 5.0), (35, 10.0), (35, 15.0)]:
+        rp = run_phase_machine(drop_height=dh, fwd_vel=1.5, heel_lead_deg=hl, n_frames=250,
+                                k_normal=1.0, phase_threshold=0.4, thrust_gain=0.0, target_vx=0.0)
+        comp = _compress(rp["phase"])
+        tail_stable = len(set(rp["phase"][-100:])) == 1
+        print(f"  heel_lead={hl:3d} drop={dh:5.1f}  son100_tekfaz={tail_stable}  {comp}")
+
+    print("\nfaz-maskeli kayma: 'gercek darbe' vs 'sahte sifir-yuk kaymasi' ayrimi (heel_lead=15, drop=5.0):")
+    rp = run_phase_machine(drop_height=5.0, fwd_vel=1.5, heel_lead_deg=15.0, n_frames=250,
+                            k_normal=1.0, phase_threshold=0.4, thrust_gain=0.0, target_vx=0.0)
+    heel_slip_frames = [f for f in range(len(rp["phase"])) if rp["heel_slip"][f]]
+    print(f"  heel_slip=True kareler: {heel_slip_frames}")
+    print(f"  bu karelerdeki faz(lar): {sorted(set(rp['phase'][f] for f in heel_slip_frames))}")
+    print(f"  toplam toe_slip kare sayisi: {int(rp['toe_slip'].sum())}")
+    print(f"  flat_foot kuyrugunda (son 100 kare) heel_slip: {int(rp['heel_slip'][-100:].sum())}  toe_slip: {int(rp['toe_slip'][-100:].sum())}")
 
 
 if __name__ == "__main__":

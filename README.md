@@ -2846,6 +2846,80 @@ bulgular dosyanın kendi docstring'inde ve `main()`'in konsol çıktısında
 belgeleniyor.
 
 
+## Adım 16 eki (checkpoint 4) — Üç fazlı (Heel-Strike / Flat-Foot / Toe-Off) durum makinesi: faz maskelemesi, K_NORMAL eşik sorununu çözdü
+
+**Düzeltme notu:** checkpoint 3'teki `run_heelstrike()` fonksiyonunda bir
+heel/toe **açı-atama hatası** bulundu — "heel" adı verilen nokta aslında
+GEÇ değen, "toe" adı verilen nokta ERKEN değen noktaydı (`base_ang ±
+theta` terimleri ters atanmıştı). Bu turda düzeltildi. Aynı izole senaryo
+tekrar koşulduğunda nicel sonuç aynı mertebede kaldı, sadece artık doğru
+fiziksel noktaya doğru isim karşılık geliyor:
+
+| Sinyal | darbe_max | oran (eski, ters etiketle) | oran (düzeltilmiş) |
+|---|---|---|---|
+| heel_pen (ΔY) | 1.1741 | 4.4x | **5.2x** |
+| toe_pen (ΔY) | 0.8484 | 2.9x | **3.4x** |
+| heel_shear (ΔX) | 0.9420 | 27.4x | **41.8x** |
+| toe_shear (ΔX) | 0.5850 | 26.1x | **26.0x** |
+
+ACIK SORUN 2 (K_NORMAL için güvenli aralık yok) tablosu da tekrar
+koşuldu — sonuç aynı: hiçbir `K_NORMAL` "yürüyüş=0,0 VE darbe>0"
+satırını birlikte vermiyor.
+
+**Kullanıcının önerdiği çözüm ve doğrulanan sonuç:** eşikle (K_NORMAL)
+boğuşmak yerine, `heel_pen`/`toe_pen` çiftinden doğrudan üç fazlı bir
+durum makinesi (`classify_phase()`) türetilip, kayma hesaplaması faz'a
+göre **maskelendi** (`run_phase_machine()`):
+
+- **Heel-Strike** (`heel_pen > eşik` ve `toe_pen == 0`): sadece topuk
+  hesaplanır, parmak ucu o kare tamamen göz ardı edilir.
+- **Flat-Foot** (`heel_pen > 0` ve `toe_pen > 0`): ağırlık-aktarım (roll)
+  fazı; iki düğüm de paylaşımlı bir kapasiteye
+  (`MU_STATIC * k_normal * (heel_pen + toe_pen)`) karşı hesaplanır.
+- **Toe-Off** (`heel_pen == 0` ve `toe_pen > eşik`): sadece parmak ucu
+  hesaplanır, topuk tamamen susturulur (masking).
+- Tanımsız durum (tek düğümde eşik-altı temas) → `airborne`'a düşürülür.
+
+**Doğrulama (izole laboratuvar, yürüyüş itkisi KAPALI — checkpoint 3 ile
+aynı izolasyon disiplini):** 9 farklı (`heel_lead_deg`, `drop_height`)
+kombinasyonunun 8'inde faz dizisi `airborne → heel_strike → (kısa,
+eşik-altı bir sıçrama) → flat_foot` şeklinde **ardışık** ilerliyor ve
+test penceresinin **%79-90'ında** (197-225/250 kare) tek bir `flat_foot`
+fazında **kesintisiz** kalıyor (NaN yok, faz çırpınması yok). En temiz
+örnek (`heel_lead=15°, drop=15.0`):
+
+```
+airborne(22) -> heel_strike(4) -> airborne(1) -> flat_foot(223)
+```
+
+**En önemli bulgu — aranan asimetrik kayma ayrımı elde edildi:**
+`heel_lead=15°, drop=5.0` koşusunda `heel_slip=True` olan tüm kareler
+`[8, 9, 10, 11, 12, 13]` — hepsi `heel_strike` fazında, tam darbe tepe
+noktasında (`heel_pen`: 0.81 → 1.58 → 0.76). Aynı koşuda `toe_slip`
+hiçbir karede tetiklenmiyor (topuk kayarken parmak ucu maskeli).
+Yerleşik `flat_foot` kuyruğunun tamamında (200+ kare) her iki düğümde de
+kayma sıfır — checkpoint 3'ün K_NORMAL ile asla ayrıştıramadığı "gerçek
+darbe" ile "sahte sıfır-yük kayması" ayrımı, hiçbir eşik ayarına ihtiyaç
+duymadan, sadece faz bilgisiyle çözülüyor.
+
+**Bulunan sınır durumu (dürüst rapor):** `heel_lead=35°, drop=5.0`
+kombinasyonunda parmak ucu testin tamamında hiç yere değmiyor
+(`toe_pen` sürekli 0.0) — çok dik başlangıç eğimi + yetersiz düşme
+enerjisi, ayağın sadece topuk üzerinde sönümlenen bir sarkaç gibi
+sallanmasına yol açıyor; genlik eşiğin altına inince tanımlı üç fazdan
+hiçbirine uymayıp `airborne`'a düşüyor. Bu bir hata değil — yeterli
+potansiyel enerjisi olmayan eğik bir sarkacın parmak ucunu hiç yere
+değdirmemesi beklenen bir sonuç; bu geometri/enerji kombinasyonunun test
+kapsamı dışında kaldığını gösteriyor.
+
+**Sonuç:** üç fazlı durum makinesi ve faz-maskeli kayma mantığı izole
+laboratuvarda doğrulandı — ardışık ve stabil çalışıyor, ve checkpoint
+3'ün çözemediği "yürüyüş vs. darbe" ayrımını gerçekten çözüyor.
+`classify_phase()` ve `run_phase_machine()`, `demo/step16_segment_foot_lab.py`'ye
+eklendi. `active_gait.py`'ye tam entegrasyon henüz yapılmadı — bu commit
+sadece izole doğrulamayı gerçek repoya taşıyor.
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
