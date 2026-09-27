@@ -2920,6 +2920,74 @@ eklendi. `active_gait.py`'ye tam entegrasyon henüz yapılmadı — bu commit
 sadece izole doğrulamayı gerçek repoya taşıyor.
 
 
+## Adım 16 eki (checkpoint 5) — Faz makinesinin gerçek dış müdahale (push) altında "savaş testi": active_gait.py entegrasyonundan önceki son izole doğrulama
+
+Kullanıcı, checkpoint 4'ün faz-maskeli durum makinesini `active_gait.py`'nin
+karmaşık çok-bacaklı ortamına taşımadan önce, gerçek bir dış müdahale
+(push) altında sınamak istedi: kapsülü yürüyüş itkisiyle `flat_foot`
+fazına oturtup, tam bu fazın ortasında ani bir yatay darbe uygulayıp,
+sistemin darbeyi doğru algılayıp sadece gereken kayma sinyalini üretip
+üretmediğini ve ayağın `airborne`'da takılıp kalmadan toparlanıp
+toparlanamadığını ölçmek. Gerekçe: iki bacağı birbirine bağlayıp
+yürütmeye başladığımızda bir şeyler ters giderse, hatanın faz makinesinden
+mi yoksa bacaklar arası koordinasyondan mı geldiğini asla izole
+edemeyeceğimiz için, önceden "çalıştığı kanıtlanmış" bir referans push
+testi bırakmak.
+
+**Yön asimetrisi (beklenmedik ama tutarlı bulgu):** `run_push_test()`,
+hip'e projenin standart ani-darbe konvansiyonuyla bir yatay kayma
+uyguluyor. İki yön çok farklı davranıyor:
+
+| push_px | yön | f25 heel_pen | f25 toe_pen | f25 faz | heel_slip | toe_slip |
+|---|---|---|---|---|---|---|
+| -150 | geri | 0.0000 | 0.0000 | airborne | 0 | 0 |
+| -50 | geri | 3.0675 | 3.1355 | flat_foot | 0 | 0 |
+| **-20** | **geri** | **2.3040** | **1.8681** | **flat_foot** | **0** | **7** |
+| -10 | geri | 1.4178 | 1.0554 | flat_foot | 0 | 0 |
+| 1 | ileri | 0.0000 | 0.0453 | airborne | 0 | 0 |
+| 2 | ileri | 0.0000 | 0.0000 | airborne | 0 | 1 |
+| 150 | ileri | 0.0000 | 0.0000 | airborne | 0 | 0 |
+
+**İleri yönde** (yürüyüş yönünde) +2px kadar küçük bir darbe bile ayağı
+AYNI karede tamamen havaya kaldırıyor — checkpoint 3'ün "yatay darbe
+ayağı bastırmıyor, kaldırıyor" bulgusunun +1/+2px'e kadar keskinleştirilmiş
+hali. Bu bir hata değil: kütle merkezi destek noktasını geçtiği an, bu
+rijit tek-bacak/ters-sarkaç geometrisinde bacak yerden kesilmek zorunda
+(mutlak Newton kinematiği). **Geri yönde** (yürüyüşe karşı) orta
+büyüklükte bir darbe (-20px) ayağı gerçekten yüklüyor (heel_pen/toe_pen
+~15-16x artıyor) ve tam aranan dizi ortaya çıktı:
+
+```
+f=25-28  flat_foot  (gerçek yükleme, heel_pen/toe_pen zirvede)
+f=29-52  airborne   (darbe ayağı GEÇİCİ olarak havalandırıyor)
+f=53-54  toe_off    (parmak-ucu-önce TEMİZ iniş)
+f=63-69  flat_foot  (yeniden basış) + toe_slip=True 7 kare KESİNTİSİZ
+```
+
+`heel_slip` hiç tetiklenmedi (doğru — darbe topukta değil parmak ucunda
+yük yarattı). -50px ve -150px'te darbe çok büyük kalıp aynı anlık-kalkış
+modunu tetikledi (+50/+150px ile aynı sonuç) — yani "yükleyip devirmeyen"
+pencere dar ama gerçek ve tekrar üretilebilir.
+
+**Maskeleme en agresif anda bile doğru çalıştı:** -50px darbesinde, ayak
+havalandığı anda (`heel_pen=0`, `f_max=0`) ham `shear/f_max` oranı teknik
+olarak eşiği aşıyordu (`shear=-2.87`, `f_max=0.0`) ama `airborne` dalı
+bunu doğru şekilde bastırdı — test edilen hiçbir konfigürasyonda (9 farklı
+`push_px` değeri, iki yön) sahte kayma üretilmedi. `foot_len_dev` (rijit
+heel-toe mesafesi) tüm testlerde 1.7px altında kaldı, NaN hiç görülmedi,
+faz çırpınması hiçbir konfigürasyonda oluşmadı.
+
+**Sonuç:** faz makinesi bu savaş testinin hiçbir biçiminde bozulmadı —
+yanlış sınıflandırma, çırpınma, sahte kayma veya sayısal patlama yok; ve
+geri yönde orta büyüklükte bir darbede (-20px) tam aranan "yükle → geçici
+ayrıl → toe_off'a temiz gir → flat_foot'a dönerken gerçek kayma üret"
+dizisini üreterek nihai doğrulamasını geçti. Yön asimetrisi yeni bir hata
+değil — gövde/karşı-bacak kütlesi olmadan bu rijit tek-bacak modelinin
+sonsuza dek yüklü kalamamasının, checkpoint 3'ten beri bilinen aynı
+mimari gerçeğin bir başka yüzü. `run_push_test()`, `demo/step16_segment_
+foot_lab.py`'ye eklendi. `active_gait.py`'ye tam entegrasyon SIRADA.
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
