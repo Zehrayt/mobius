@@ -102,6 +102,75 @@ kodla dogrulanip commit'lendi. Per-node stres formulunun dogru fiziksel
 niceligi bulmak, tam entegrasyondan ONCE cozulmesi gereken bir SONRAKI
 ayri adim.
 
+===========================================================================
+EK (checkpoint 3) -- collide_ground() TABANLI GERCEK NORMAL KUVVET VEKILI:
+KISMEN DOGRULANDI, DAHA DERIN bir sorun bulundu
+===========================================================================
+Kullanicinin hipotezi ("yanlis nicelik olculuyor -- stick-stretch yerine
+collide_ground()'un o karede uyguladigi gercek dikey duzeltme miktari
+daha dogru bir sinyal olabilir") test edildi. Iki ayri bulgu cikti --
+biri DOGRULANDI, digeri sorunu COZMEDI ama daha NET hale getirdi:
+
+1) DOGRULANDI -- ama pogo/push testinin KENDISI yanlis senaryoymus: yatay
+   push testi izole edildiginde (bkz. `_proto16c/diag_penetration.py`,
+   repoya alinmadi), bir yatay darbenin bu rijit tek-bacak geometrisinde
+   ayagi zemine DAHA COK BASTIRMADIGI, tam tersine zeminden KALDIRDIGI
+   (ters-sarkac devrilmesi -- ayni "govdesiz rig" bulgusuyla tutarli)
+   ortaya cikti: push arttikca heel/toe penetrasyonu (ΔY) SIFIRA
+   dusuyor, hicbir zaman buyumuyor. Yani orijinal pogo testi, friksiyon/
+   kayma davranisini olcmek icin dogru arac degil -- bir DEVRILME testi,
+   bir DARBE/YUK testi degil.
+
+   Bunun yerine gercek bir HEEL-STRIKE (topuk-once inis) senaryosu
+   kuruldu: ayak, checkpoint 1'in (Adim 15) dogruladigi topuk-once egimle,
+   kucuk bir yukseklikten ileri hizla dusuruluyor. Bu GERCEK bir temas
+   ani urettigi icin, ΔY (penetrasyon) izole olcumde net bir darbe
+   sinyali gosterdi: temas anindaki tepe deger (~0.7-1.3), sakin/yerlesik
+   durumdaki gurultu tabanindan (~0.2-0.3) 3-5 KAT daha buyuk -- eski
+   `dev` (cubuk-gerilmesi) sinyalinin HICBIR zaman ulasamadigi bir ayrim.
+   Ayni Verlet-native mantikla turetilen bir "shear" (yatay kisit-
+   duzeltmesi -- adim-oncesi/sonrasi konum farkindan, tam da ΔY'nin
+   yatay eslenigi) darbe aninda (~0.35) sakin durumdan (~0.01-0.02) yine
+   15-30 kat buyuk cikti. Yani IZOLE olcumde kullanicinin hipotezi tam
+   isabetliydi: ΔY/shear, `dev`'den cok daha temiz bir sinyal.
+
+2) COZULMEDI -- gercek yuruyus itkisi (`thrust_gain=1.0`) ile birlestirilip
+   `K_NORMAL` (ΔY'yi friksiyon-limitine cevirmek icin gerekli yeni bir
+   kazanc) tarandiginda, AYNI temel ayrim sorunu farkli bir yuzeyde geri
+   geldi: hicbir `K_NORMAL` degeri, hem (a) normal yuruyusu (darbe/inis
+   YOK, sadece surekli itki altinda ayak zeminde) sahte-tetiklemeden
+   birakip hem de (b) gercek heel-strike inisini dogru tetikleyemedi.
+   Kucuk K_NORMAL'da IKISI de tetikleniyor (ayrim yok); buyuk K_NORMAL'da
+   heel-strike TETIKLENMEZ HALE geliyor (hassasiyet kayboluyor) AMA normal
+   yuruyuste topugun agirligi one dogru KAYARKEN (checkpoint 2'de zaten
+   bulunan "sürekli itki agirligi one tasir" davranisi) penetrasyon SIFIRA
+   yaklastikca friksiyon limiti de sifira cokuyor ve kalan kucuk sayisal
+   gurultu bu sifira-yakin esigi trivial olarak asip sahte "kayma" olarak
+   isaretleniyor -- bkz. `_proto16c/lab3.py` tam tarama tablosu (ornek:
+   K_NORMAL=4.0 -> normal yuruyuste heel_slip=11 kare, YOK darbe; ayni
+   K_NORMAL'da gercek heel-strike'ta heel_slip=0 -- ISTENENIN TAM TERSI).
+
+SONUC (guncellenmis): kullanicinin ΔY/shear hipotezi izole olcumde
+DOGRU CIKTI (dev'den cok daha iyi SNR) -- ama bu, TEK BASINA, gercek
+yuruyus dinamigi + gercek darbe arasindaki ayrimi cozmuyor. Kok neden
+muhtemelen kullanicinin MESAJINDA ZATEN ONERILEN, henuz UYGULANMAMIS bir
+onceki adim: heel-strike/flat-foot/toe-off FAZ durum makinesi olmadan,
+"normal" ile "anormal" yerel sinyali MUTLAK bir esikle ayirmak yapisal
+olarak mumkun degil gibi gorunuyor -- cunku "normal" un kendisi (agirlik
+aktariminin dogal roll'u sirasinda) zaten penetrasyonu sifira yaklastirip
+ayni "az-yuk" rejimine giriyor ki bu tam da darbe-sonrasi rejimle CAKISAN
+bolge. Faz bilgisi (su an flat-foot mu, toe-off'a mi giriyor) olmadan,
+mutlak esik tabanli hicbir formul (ister dev, ister ΔY/shear) bu ikisini
+guvenilir sekilde ayiramiyor. Bu, tam `active_gait.py` entegrasyonundan
+ONCE -- hatta per-node stres formulunden bile ONCE -- cozulmesi gereken,
+daha temel bir on-kosul olarak yeniden cerceveleniyor.
+
+Bu ek de (checkpoint 2'nin geri kalani gibi) commit'e YENI bir slip-
+tetikleme mekanizmasi olarak DAHIL EDILMEDI -- sadece dogrulanmis/
+dogrulanmamis bulgular, izole test kodu ile birlikte belgeleniyor
+(bkz. `run_heelstrike()` asagida, `_proto16c/` silinmeden once buradan
+gercek repoya tasindi).
+
 Cikti: konsol raporu (video uretmiyor -- bu bir olcum/tarama laboratuvari).
 """
 from __future__ import annotations
@@ -303,6 +372,113 @@ def run_ringdown(foot_stick_compliance: float, impulse_px: float = 15.0, n_frame
     return {"dev": np.array(dev_log)}
 
 
+def run_heelstrike(drop_height=15.0, fwd_vel=1.5, heel_lead_deg=15.0, n_frames=150,
+                    k_normal=1.0, thrust_gain=THRUST_GAIN, target_vx=TARGET_VX):
+    """checkpoint 3: GERCEK bir heel-strike (topuk-once inis) senaryosu --
+    ayak, Adim 15'in (checkpoint 1) dogruladigi topuk-once egimle, kucuk
+    bir yukseklikten (drop_height) ileri hizla (fwd_vel) dusuruluyor.
+    Pogo/push testinin YERINE gecmiyor (o hala izole, ayri bir sinama) --
+    onun YANLIS senaryo oldugu bulgusundan (bkz. dosya dokstring'i EK
+    bolumu) sonra, friksiyon/yuk sinyalini GERCEK bir temas darbesiyle
+    test etmek icin ayrica kuruldu.
+
+    Friksiyon limiti burada `dev` (cubuk-gerilmesi) DEGIL, iki Verlet-
+    native buyuklukten turetiliyor: `pen` (ΔY, collide_ground'dan HEMEN
+    ONCE olculen penetrasyon derinligi -- gercek Normal Kuvvet vekili) ve
+    `shear` (ΔX, ayni karede adim-oncesi/sonrasi konum farkindan -- gercek
+    kesme/surtunme-kuvveti vekili, `pen`'in yatay eslenigi). Ikisi de AYNI
+    kokten (Verlet kisit-cozucusunun konum-duzeltmesi) geldigi icin ayni
+    olcekte ve `dev`'den cok daha temiz (bkz. dosya dokstring'i)."""
+    sys_ = VerletSystem.empty()
+    sys_.gravity = TUNED_GRAVITY.copy()
+    sys_.friction = TUNED_FRICTION
+    idx = {}
+    ankle_y = GROUND_Y - ANKLE_HEIGHT - drop_height
+    idx["hip"] = sys_.add_point([0.0, ankle_y - ARM_LENGTH], mass=1.0)
+    idx["ankle"] = sys_.add_point([0.0, ankle_y], mass=0.6)
+    theta = math.radians(heel_lead_deg)
+    heel_dist = float(np.hypot(FOOT_LEN / 2.0, ANKLE_HEIGHT))
+    base_ang = math.atan2(ANKLE_HEIGHT, FOOT_LEN / 2.0)
+    idx["heel"] = sys_.add_point([-heel_dist * math.cos(base_ang - theta),
+                                   ankle_y + heel_dist * math.sin(base_ang - theta)], mass=0.3)
+    idx["toe"] = sys_.add_point([heel_dist * math.cos(base_ang + theta),
+                                  ankle_y + heel_dist * math.sin(base_ang + theta)], mass=0.3)
+    sys_.add_stick(idx["hip"], idx["ankle"], length=ARM_LENGTH, compliance=0.0)
+    sys_.add_stick(idx["ankle"], idx["heel"], length=heel_dist, compliance=RECOMMENDED_FOOT_STICK_COMPLIANCE)
+    sys_.add_stick(idx["ankle"], idx["toe"], length=heel_dist, compliance=RECOMMENDED_FOOT_STICK_COMPLIANCE)
+    sys_.add_stick(idx["heel"], idx["toe"], length=FOOT_LEN, compliance=0.0)
+    for name in ("hip", "ankle", "heel", "toe"):
+        sys_.prev_points[idx[name]][0] += fwd_vel
+
+    hip, heel, toe = idx["hip"], idx["heel"], idx["toe"]
+    terrain = Terrain(ground_y=GROUND_Y, default_friction=GROUND_FRICTION, zones=[])
+    heel_state, toe_state = NodeSlipState(), NodeSlipState()
+
+    log = {k: [] for k in ["heel_pen", "toe_pen", "heel_shear", "toe_shear", "heel_slip", "toe_slip"]}
+    for f in range(n_frames):
+        hip_pos_before = sys_.points[hip].copy()
+        hip_prev = sys_.prev_points[hip].copy()
+        hip_vx = hip_pos_before[0] - hip_prev[0]
+        desired_thrust = thrust_gain * (target_vx - hip_vx)
+        desired_thrust = max(-THRUST_CAP, min(THRUST_CAP, desired_thrust))
+        sys_.prev_points[hip][0] -= desired_thrust
+
+        pre_points = sys_.points.copy()
+        pre_prev = sys_.prev_points.copy()
+        sys_.step(dt=1.0)
+
+        shear = {}
+        for name in ("heel", "toe"):
+            i = idx[name]
+            inertial_x = pre_points[i, 0] + (pre_points[i, 0] - pre_prev[i, 0])
+            shear[name] = float(sys_.points[i, 0]) - float(inertial_x)
+
+        heel_pen = max(0.0, float(sys_.points[heel][1]) - GROUND_Y)
+        toe_pen = max(0.0, float(sys_.points[toe][1]) - GROUND_Y)
+        heel_contact = heel_pen > 1e-9
+        toe_contact = toe_pen > 1e-9
+
+        f_max_static_heel = MU_STATIC * k_normal * heel_pen
+        f_max_kinetic_heel = f_max_static_heel * KINETIC_RATIO
+        f_max_static_toe = MU_STATIC * k_normal * toe_pen
+        f_max_kinetic_toe = f_max_static_toe * KINETIC_RATIO
+
+        for name, state, stress, f_max_s, f_max_k, contact in [
+            ("heel", heel_state, shear["heel"], f_max_static_heel, f_max_kinetic_heel, heel_contact),
+            ("toe", toe_state, shear["toe"], f_max_static_toe, f_max_kinetic_toe, toe_contact),
+        ]:
+            if not contact:
+                state.is_slipping = False
+                state.slip_velocity = 0.0
+                continue
+            if not state.is_slipping and abs(stress) > f_max_s:
+                state.is_slipping = True
+                state.slip_velocity = 0.0
+            if state.is_slipping:
+                excess = (stress - math.copysign(f_max_k, stress)) if abs(stress) > f_max_k else 0.0
+                state.slip_velocity += -excess * SLIP_ACCEL_GAIN
+                state.slip_velocity *= SLIP_DECAY
+                node_idx = idx[name]
+                sys_.points[node_idx][0] += state.slip_velocity
+                sys_.prev_points[node_idx][0] += state.slip_velocity
+                if abs(state.slip_velocity) < SLIP_STOP_VEL and abs(stress) <= f_max_k:
+                    state.is_slipping = False
+                    state.slip_velocity = 0.0
+
+        collide_ground(sys_, terrain.floor_fn, terrain.friction_fn)
+
+        log["heel_pen"].append(heel_pen)
+        log["toe_pen"].append(toe_pen)
+        log["heel_shear"].append(shear["heel"])
+        log["toe_shear"].append(shear["toe"])
+        log["heel_slip"].append(heel_state.is_slipping)
+        log["toe_slip"].append(toe_state.is_slipping)
+
+        if not np.all(np.isfinite(sys_.points)):
+            return {"nan": True, "frame": f}
+    return {k: np.array(v) for k, v in log.items()}
+
+
 def main() -> None:
     print("=== BULGU 1a: izole ring-down (yercekimi/surtunme KAPALI, worst-case) ===")
     print(f"{'compliance':>10} {'ilk_dev':>9} {'max|dev|':>10} {'120.kare_dev':>13} {'sonum_orani':>12} {'NaN?':>6}")
@@ -351,6 +527,29 @@ def main() -> None:
         r = run(n_frames=90, node_stress_gain=gain)
         hs, ts = int(r["heel_slip"].sum()), int(r["toe_slip"].sum())
         print(f"  gain={gain:5.1f} (darbe YOK) -> heel_slip={hs:3d} toe_slip={ts:3d}")
+
+    print("\n=== EK (checkpoint 3) BULGU 3: izole heel-strike'ta ΔY/shear SNR'i (dev ile karsilastir) ===")
+    r = run_heelstrike(drop_height=15.0, fwd_vel=1.5, heel_lead_deg=15.0, n_frames=150, k_normal=1e9, thrust_gain=0.0, target_vx=0.0)
+    settle = slice(100, 150)
+    impact_w = slice(20, 35)
+    print(f"heel_pen: darbe_max={r['heel_pen'][impact_w].max():.4f}  yerlesik_max={np.abs(r['heel_pen'][settle]).max():.4f}"
+          f"  oran={r['heel_pen'][impact_w].max() / max(np.abs(r['heel_pen'][settle]).max(), 1e-9):.1f}x")
+    print(f"toe_pen:  darbe_max={r['toe_pen'][impact_w].max():.4f}  yerlesik_max={np.abs(r['toe_pen'][settle]).max():.4f}"
+          f"  oran={r['toe_pen'][impact_w].max() / max(np.abs(r['toe_pen'][settle]).max(), 1e-9):.1f}x")
+    print(f"heel_shear: darbe_max={np.abs(r['heel_shear'][impact_w]).max():.4f}  yerlesik_max={np.abs(r['heel_shear'][settle]).max():.4f}"
+          f"  oran={np.abs(r['heel_shear'][impact_w]).max() / max(np.abs(r['heel_shear'][settle]).max(), 1e-9):.1f}x")
+    print(f"toe_shear:  darbe_max={np.abs(r['toe_shear'][impact_w]).max():.4f}  yerlesik_max={np.abs(r['toe_shear'][settle]).max():.4f}"
+          f"  oran={np.abs(r['toe_shear'][impact_w]).max() / max(np.abs(r['toe_shear'][settle]).max(), 1e-9):.1f}x")
+
+    print("\n=== EK (checkpoint 3) ACIK SORUN 2: K_NORMAL icin de guvenli aralik YOK (yuruyus+heel-strike birlikte) ===")
+    print(f"{'k_normal':>9} {'yuruyus_heel':>13} {'yuruyus_toe':>12} {'strike_heel':>12} {'strike_toe':>11}")
+    for kn in [0.2, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 8.0, 20.0]:
+        rw = run_heelstrike(drop_height=0.0, fwd_vel=0.0, heel_lead_deg=0.0, n_frames=200, k_normal=kn)
+        rs = run_heelstrike(drop_height=15.0, fwd_vel=1.5, heel_lead_deg=15.0, n_frames=150, k_normal=kn)
+        wh, wt = int(rw["heel_slip"].sum()), int(rw["toe_slip"].sum())
+        sh, st = int(rs["heel_slip"].sum()), int(rs["toe_slip"].sum())
+        print(f"{kn:9.1f} {wh:13d} {wt:12d} {sh:12d} {st:11d}")
+    print("(hicbir K_NORMAL 'yuruyus=0,0 VE strike>0' satirini birlikte vermiyor -- bkz. dosya dokstring'i EK bolumu)")
 
 
 if __name__ == "__main__":

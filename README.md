@@ -2768,6 +2768,84 @@ fiziksel niceliğini bulmak, tam `active_gait.py` entegrasyonundan ÖNCE
 çözülmesi gereken ayrı bir sonraki adım.
 
 
+## Adım 16 eki (checkpoint 3) — collide_ground() tabanlı gerçek Normal Kuvvet vekili: hipotez izole doğrulandı, daha derin bir sorun bulundu
+
+Adım 16'nın açık bıraktığı soruna kullanıcı somut bir hipotezle geri
+döndü: per-node yatay stres formülünün `dev` (çubuk-gerilmesi) yerine,
+`collide_ground()`'un o karede uyguladığı **gerçek dikey düzeltme
+miktarını** (ΔY — penetrasyon derinliği) Normal Kuvvet vekili olarak
+kullanması gerektiğini savundu; kısa/sert `ankle-heel`/`ankle-toe`
+çubuklarında `dev`'in mikroskobik Verlet titreşimleriyle kirlendiğini,
+ΔY'nin ise iteratif fizik motorlarında Normal Kuvvet'in doğrudan
+matematiksel karşılığı olduğunu belirtti.
+
+**Bulgu 3 (hipotez İZOLE olarak doğrulandı, ama pogo testinin kendisi
+yanlış senaryo çıktı):** orijinal pogo/push testi izole edildiğinde,
+yatay bir darbenin bu rijit tek-bacak geometrisinde ayağı zemine daha
+çok bastırmadığı, tam tersine zeminden kaldırdığı (ters-sarkaç
+devrilmesi) ortaya çıktı — push arttıkça ΔY sıfıra düşüyor, hiçbir zaman
+büyümüyor. Yani pogo testi bir devrilme testi, bir darbe/yük testi
+değil. Bunun yerine gerçek bir **heel-strike (topuk-önce iniş)**
+senaryosu kuruldu (checkpoint 1'in doğruladığı topuk-önce eğimle, küçük
+bir yükseklikten ileri hızla düşürme). İzole ölçümde (yerçekimi/darbe
+açık, yürüyüş itkisi KAPALI) ΔY ve ona eşlik eden bir "shear" sinyali
+(ΔX — aynı Verlet-native kökten, adım-öncesi/sonrası konum farkından
+türetilen yatay eşlenik) gerçekten çok daha temiz çıktı:
+
+| Sinyal | darbe_max | yerleşik_max | oran |
+|---|---|---|---|
+| heel_pen (ΔY) | 1.0053 | 0.2307 | 4.4x |
+| toe_pen (ΔY) | 0.7053 | 0.2466 | 2.9x |
+| heel_shear (ΔX) | 0.3562 | 0.0130 | 27.4x |
+| toe_shear (ΔX) | 0.3393 | 0.0130 | 26.1x |
+
+Eski `dev` sinyalinin hiçbir gain'de ulaşamadığı bir ayrım — kullanıcının
+hipotezi izole ölçümde tam isabetli.
+
+**Ama daha derin bir sorun (ACIK SORUN 2):** bu iyileştirilmiş ΔY/shear
+çifti, gerçek yürüyüş itkisiyle (`thrust_gain=1.0`) birleştirilip
+`K_NORMAL` (ΔY'yi friksiyon-limitine çeviren yeni bir kazanç) tarandığında
+AYNI temel ayrım sorunu farklı bir yüzeyde geri geldi:
+
+| K_NORMAL | yürüyüş_heel | yürüyüş_toe | heel-strike_heel | heel-strike_toe |
+|---|---|---|---|---|
+| 0.2 | 12 | 31 | 0 | 26 |
+| 1.0 | 3 | 22 | 0 | 24 |
+| 2.0 | 9 | 2 | 0 | 1 |
+| 4.0 | 11 | 1 | 0 | 0 |
+| 20.0 | 16 | 0 | 0 | 0 |
+
+Küçük `K_NORMAL`'da ikisi de tetikleniyor (ayrım yok); büyük `K_NORMAL`'da
+heel-strike ARTIK TETİKLENMİYOR (hassasiyet kayboluyor) AMA normal
+yürüyüşte topuğun ağırlığı öne doğru kayarken (checkpoint 2'nin zaten
+bulduğu "sürekli itki ağırlığı öne taşır" davranışı) penetrasyon sıfıra
+yaklaştıkça friksiyon limiti de sıfıra çöküyor ve kalan küçük sayısal
+gürültü bu sıfıra-yakın eşiği trivial olarak aşıp sahte kayma
+işaretliyor — istenenin tam tersi (K_NORMAL=4.0: yürüyüşte heel_slip=11,
+DARBE YOKKEN; aynı K_NORMAL'da gerçek heel-strike'ta heel_slip=0).
+
+**Sonuç (güncellenmiş):** kullanıcının ΔY/shear hipotezi izole ölçümde
+DOĞRU çıktı (`dev`'den kat kat daha iyi SNR) — ama bu tek başına, gerçek
+yürüyüş dinamiği ile gerçek darbe arasındaki ayrımı çözmüyor. Kök neden
+muhtemelen kullanıcının kendi orijinal 2. maddesinde (mesaj: IK/state-
+machine eleştirisi) zaten önerilen, henüz UYGULANMAMIŞ bir ön-koşul:
+heel-strike/flat-foot/toe-off FAZ durum makinesi olmadan, "normal" ile
+"anormal" yerel sinyali mutlak bir eşikle ayırmak yapısal olarak mümkün
+görünmüyor — çünkü "normal"in kendisi (ağırlık aktarımının doğal roll'u
+sırasında) zaten penetrasyonu sıfıra yaklaştırıp tam da darbe-sonrası
+rejimle çakışan bir bölgeye giriyor. Faz bilgisi olmadan, mutlak eşik
+tabanlı hiçbir formül (ister `dev`, ister ΔY/shear) bu ikisini güvenilir
+şekilde ayıramıyor. Bu, tam `active_gait.py` entegrasyonundan ÖNCE —
+hatta per-node stres formülünden bile ÖNCE — çözülmesi gereken, daha
+temel bir ön-koşul olarak yeniden çerçeveleniyor.
+
+Bu ek de (checkpoint 2'nin geri kalanı gibi) commit'e yeni bir slip-
+tetikleme mekanizması olarak dahil edilmedi — `run_heelstrike()` izole
+test fonksiyonu olarak `demo/step16_segment_foot_lab.py`'ye eklendi,
+bulgular dosyanın kendi docstring'inde ve `main()`'in konsol çıktısında
+belgeleniyor.
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
