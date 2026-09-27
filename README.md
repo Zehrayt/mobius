@@ -2583,6 +2583,51 @@ dinamik-compliance mantigi itki bloguna eklendi.
 tur sonunda `rm -rf _proto13_eki2` ile silindi -- `git status --short`
 bu turun basinda da sonunda da temiz.
 
+## 13. tur eki 3: "45 derece sihirli sayi" ve "whip-crack yalani" -- var olan mekanizma dogru baglandi, hile kaldirildi
+
+Kullanicinin 13. tur eki 2'ye getirdigi 2 yeni elestiri (3.'su -- nokta-temas/Segment Foot -- ayri, daha buyuk bir mimari is olarak `step15_segment_foot.py`'a birakildi, bkz. asagisi):
+
+1. **"45 derece sihirli sayi bir geriye gidistir"**: kayan bacagi sabit bir aci esigiyle (`MAX_SLIP_LEG_ANGLE_DEG`) acil adima zorlamak, kutle merkezinin (COM) destek poligonuna GORE nerede oldugunu hic bilmiyordu -- COM kayan bacakla ayni yondeyse 45 derece guvenli olabilir, tersiyse 20 derece bile olumcul olabilir. Bu, projenin uzun zamandir kacindigi "constraint soup"a (sabit sihirli sayilarla yamali kisitlama yigini) geri donustu.
+2. **"Whip-crack tesadüf degil, kotu fizigin ciglaligidir"**: `SLIP_COMPLIANCE_MAX`/`SLIP_COMPLIANCE_SAT_VEL` ile anchor-kalca cubugunun compliance'ini kayma hizina bagli dinamik degistirmek, bir yay sabitini yuk altinda degistirmekti -- gercek bir "ayagin artik dikey Normal Kuvvet uretememesi" fizigi degil, matematigi goruntu icin kandirmak.
+
+### Tani
+
+Kod incelemesi carpici bir şey ortaya cikardi: kullanicinin talep ettigi tam mekanizma -- kutle merkezi vs. GERCEK destek araligi (ayagin fiziksel genisligi dahil), histerezisli tehlike tespiti -- `physics/balance.py`'de **zaten mevcuttu** (`FallRiskMonitor`, `support_interval`, `outside_interval_error`) ve `demo/step12_balance.py`/`step13_full_integration_test.py`'de zaten kullaniliyor, dogrulanmisti. Bu, `demo/step14_active_biped.py`'ye (ve dolayisiyla 13. tur/13. tur eki/13. tur eki 2'ye) hic baglanmamisti -- yeni bir sey icat etmek yerine, mevcut ve zaten test edilmis makineyi doğru yere kablolamak gerekiyordu.
+
+### Cozum
+
+- **(1) icin**: acil adim tetikleyicisi artik `is_slipping`'e VEYA sabit bir aciya degil, `com_x`'in `support_interval([stance_leg.planted[0]], foot_half_len=FOOT_HALF_LEN, ...)`'in GERCEKTEN disina cikip cikmadigina (`outside_interval_error`, `FallRiskMonitor` histerezisiyle) bakiyor. Bilerek `is_slipping`'den BAGIMSIZ: bir darbe, ayak hic kaymadan bile COM'u destek disina cikarabilir.
+- **(2) icin**: `ANCHOR_HIP_COMPLIANCE_BASE=0.85` artik HICBIR ZAMAN degismiyor -- dinamik compliance TAMAMEN KALDIRILDI. `build_body()`'deki `anchor_hip_stick` indeksi de (artik gereksiz oldugu icin) kaldirildi.
+
+### Dogrulama (izole `_proto_eki3/demo/ablation.py`, gercek repo dosyalarindan TURETILEN kopyalar)
+
+5 konfigurasyonluk bir ablation matrisi calistirildi (aci-kriteri x compliance-modu). Standart senaryo: 15px tokez (t=3s) + 150px buyuk itki (t=7s), 12s.
+
+| Konfigurasyon | Dustu mu? | Dusme karesi | Buyuk-itki-sonrasi max\|bacak acisi\| |
+|---|---|---|---|
+| Eski (aci=45°, compliance=SABIT 0.85) | Evet | 230 | 85.9° |
+| **Kommitli hali (aci=45°, compliance=DINAMIK)** | **Evet** | **233** | **89.4°** |
+| Orijinal (13.tur eki, aci-kriteri YOK) | Evet | 347 | 77.6° |
+| **YENI (COM-kriteri, compliance=SABIT)** | **HAYIR** | **--** | **53.8°** |
+| COM-kriteri + compliance=DINAMIK (capraz-kontrol) | Evet | 225 | 84.6° |
+
+**En onemli satir, son ikisinin karsilastirmasi**: aynen ayni (dogru) COM-kriterini kullanirken, dinamik compliance EKLEMEK sonucu DAHA KOTU yapiyor (hic dusmeyen bir senaryoyu 225. karede dusmeye ceviriyor). Bu, kullanicinin "compliance hilesi termodinamik bir yalan" elestirisinin DOGRUDAN sayisal dogrulamasi -- dinamik compliance'i kaldirmak sadece daha durust degil, OLCULEBILIR sekilde daha iyi.
+
+**Siddet taramasi** (YENI konfigurasyon, COM-kriteri + sabit compliance) gercek bir kirilma noktasi buldu -- "hic dusmuyor" degil, cok daha yuksek VE karakterize edilmis bir esik:
+
+| Tek darbe (px) | 150 | 200-700 | 1000 | 1500 | 2500 |
+|---|---|---|---|---|---|
+| Dustu mu? | Hayir | Hayir | **Evet** (frame 235) | Evet (215) | Evet (214) |
+
+Ardisik cift darbe (300px @ t=7s + X @ t=8s): 150px ve 300px ikinci darbeler hayatta kaliyor, **500px ikinci darbe dusuyor** (frame 252).
+
+**20s rahatsiz-edilmemis regresyon**: 0 acil-adim tetiklemesi, ort. `hip_vx`=1.898 (hedef 2.0) -- `FALL_RISK_ENTER_PX`/`EXIT_PX` (step12/13'ten AYNEN alinan 45.0/20.0) normal yuruyuste hicbir yanlis-pozitif uretmiyor, retune gerekmedi.
+
+### Durust sinir
+
+`_proto_eki3/` prototipi bu turda da (onceki tum prototipler gibi) silindi -- sadece gercek dosyalara (`demo/step14_active_biped.py`) uygulanan degisiklik kaliciydi. FALL_RISK_ENTER_PX/EXIT_PX degerleri step12/13'ten dogrudan devralindi (step14'un kendi geometrisi/COM vekili icin YENIDEN ayarlanmadi) -- 20s regresyon ve siddet taramasinda sorun cikarmadilar, ama ozel bir tarama ile ince ayar YAPILMADI. Nokta-temas/Segment Foot elestirisi (3.) bu turda da ELE ALINMADI -- kullanicinin kendi talebi uzerine ayri bir izole laboratuvar (`step15_segment_foot.py`) olarak baslatildi (bkz. asagisi).
+
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

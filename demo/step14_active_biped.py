@@ -41,6 +41,7 @@ import cv2
 from physics.verlet import VerletSystem, clamp_direction
 from physics.active_gait import ActiveFootPlantingLeg
 from physics.environment import Terrain
+from physics.balance import support_interval, outside_interval_error, FallRiskMonitor, upper_body_com_x
 import math
 
 W, H = 640, 400
@@ -161,16 +162,52 @@ LOAD_FACTOR_MIN = 0.3     # asiri gerilme (kalkis/havalanma aninda) altinda bile
 LOAD_FACTOR_MAX = 3.0     # asiri sikisma (agir inis) ustunde patolojik/kararsiz buyumeyi kes
 STRESS_GAIN = 0.1         # cubugun gercek yatay sapmasinin (dis darbe/momentum) toplam strese katkisi (bkz. README -- sweep)
 
-# -- 13. tur eki 2 -- kullanicinin 2 yeni elestirisi (bkz. README): (1) "ice
-# skate safsatasi" -- kayan bacak anatomik aci sinirini asinca hicbir sey
-# fark etmiyor/mudahale etmiyordu; (2) "muz kabugu cokusu eksikligi" --
-# anchor-kalca cubugu kayarken bile SABIT compliance ile kalcayi
-# "kukla ipiyle" havada tutuyordu.
-ANCHOR_HIP_COMPLIANCE_BASE = 0.85  # normal (kaymayan) stance -- 10. turdaki deger, degismedi
-SLIP_COMPLIANCE_MAX = 0.90         # tam kaymis/hizli kayan ayakta -- cubuk gevser (bkz. README -- sweep: 0.92+ whip-crack kararsizligi)
-SLIP_COMPLIANCE_SAT_VEL = 2.0      # bu |slip_velocity| degerinde SLIP_COMPLIANCE_MAX'a doyar (bkz. README -- sweep)
-MAX_SLIP_LEG_ANGLE_DEG = 45.0      # kayarken bacagin dikeyden sapabilecegi azami "anatomik" aci -- asilirsa acil adim (bkz. README -- sweep)
-EMERGENCY_STEP_SPEEDUP = 2.0       # trigger_emergency_step()'in var olan varsayilani (7. tur) -- ayni deger, yeniden kullanildi
+# -- 13. tur eki 3 -- kullanicinin eki-2'ye getirdigi 2 elestiri (bkz.
+# README "13. tur eki 3"): (1) "45 derece sihirli sayi geriye gidistir" --
+# sabit bir aci, kutle merkezinin (COM) destek poligonuna gore NEREDE
+# oldugunu bilmiyor (COM kayan bacakla AYNI yondeyse 45 derece bile
+# guvenli olabilir, tersiyse 20 derece bile olumcul olabilir); (2)
+# "whip-crack tesadüf degil, kotu fizigin ciglaligidir" -- compliance'i
+# kayma hizina bagli dinamik degistirmek bir yay sabitini yuk altinda
+# degistirmekti, gercek bir "dikey Normal Kuvvet kaybi" DEGIL.
+#
+# COZUM: ikisi de YENI bir mekanizma icat ETMEDEN cozuldu -- `physics/
+# balance.py`'de zaten var olan, `demo/step12_balance.py` ve `step13_
+# full_integration_test.py`'de zaten kullanilan ve dogrulanmis
+# `FallRiskMonitor`/`support_interval`/`outside_interval_error` (kutle
+# merkezi vs. GERCEK destek araligi, histerezisli) bu dosyaya hic
+# baglanmamisti -- kod incelemesiyle dogrulanan, dogrudan bir gozden
+# kacirma. (1) icin: acil adim artik SABIT bir aciya degil, com_x'in
+# support_interval()'in (stance ayagin gercek genisligi) GERCEKTEN
+# disina cikip cikmadigina bakiyor. (2) icin: ANCHOR_HIP_COMPLIANCE_BASE
+# ARTIK HICBIR ZAMAN degistirilmiyor (compliance HER ZAMAN sabit 0.85) --
+# dinamik compliance (eski SLIP_COMPLIANCE_MAX/SAT_VEL) TAMAMEN KALDIRILDI.
+#
+# DOGRULAMA (izole `_proto_eki3/demo/ablation.py`, gercek repo dosyalarindan
+# TURETILEN kopyalar + 5 konfigurasyonluk ablation + siddet taramasi):
+# standart senaryoda (15px tokez + 150px buyuk itki) ESKI (aci+dinamik-
+# compliance) kombinasyonu frame 233'te dusuyordu; YENI (COM-kriteri +
+# SABIT compliance) kombinasyonu bu senaryoyu TAMAMEN atlatiyor (dusme
+# YOK) -- VE bacak acisi hicbir zaman ~54 dereceyi asmiyor (eskisi -89
+# dereceye kadar cikiyordu). Siddet taramasi GERCEK bir kirilma noktasi
+# buldu: tek darbede ~1000px civari (700px'te hala hayatta), veya
+# 300px+500px'lik ardisik CIFT darbede dusuyor -- yani "hic dusmuyor"
+# degil, cok daha yuksek VE karakterize edilmis bir esik. KRITIK CAPRAZ-
+# KONTROL: COM-kriterini SABIT compliance yerine dinamik compliance ile
+# birlikte calistirinca sonuc DAHA KOTU cikiyor (frame 225'te dusuyor,
+# sabit-compliance'in "hic dusmuyor"undan) -- yani dinamik compliance'i
+# KALDIRMAK sadece daha durust degil, OLCULEBILIR sekilde daha iyi
+# (kullanicinin "termodinamik yalan" elestirisinin dogrudan sayisal
+# dogrulamasi). 20s rahatsiz-edilmemis regresyon: 0 acil-adim
+# tetiklemesi, ort. hip_vx=1.898 (hedef 2.0) -- FALL_RISK_ENTER_PX/
+# EXIT_PX (step12/13'ten AYNEN alinan 45.0/20.0) normal yuruyuste
+# hicbir yanlis-pozitif uretmiyor.
+ANCHOR_HIP_COMPLIANCE_BASE = 0.85  # normal stance -- 10. turdaki deger, degismedi; ARTIK HER ZAMAN SABIT (bkz. yukarisi)
+FOOT_HALF_LEN = 12.0               # physics.balance.FOOT_HALF_LEN ile ayni varsayilan -- support_interval() icin
+FALL_RISK_ENTER_PX = 45.0          # step12/13'ten AYNEN alindi (bkz. yukaridaki dogrulama -- retune GEREKMEDI)
+FALL_RISK_EXIT_PX = 20.0
+EMERGENCY_STEP_LEAD_PX = 15.0
+EMERGENCY_SWING_SPEEDUP = 2.5
 
 # -- Capture-point (destek/adim) parametreleri (bkz. active_gait.py) ----
 # DURUST BULGU (izole tanilama sirasinda kesfedildi): LIP formulunun
@@ -223,7 +260,10 @@ def build_body() -> tuple[VerletSystem, dict]:
     # davranmaya zorluyor (bkz. modul dokstring'i).
     idx["hip"] = sys_.add_point([0.0, HIP_Y], mass=1.0)
     idx["anchor"] = sys_.add_point([0.0, GROUND_Y], pinned=True)
-    idx["anchor_hip_stick"] = len(sys_.sticks)  # 13. tur eki 2 -- dinamik compliance icin index
+    # 13. tur eki 3 -- compliance ARTIK HICBIR ZAMAN degismiyor (bkz.
+    # yukaridaki eki-3 yorum bloğu), bu yuzden dinamik mutasyon icin
+    # index tutmaya gerek kalmadi (eski "anchor_hip_stick" indeksi
+    # kaldirildi).
     sys_.add_stick(idx["anchor"], idx["hip"], length=ARM_LENGTH, compliance=ANCHOR_HIP_COMPLIANCE_BASE)
 
     idx["shoulder"] = sys_.add_point([0.0, HIP_Y - TORSO_LEN])
@@ -309,7 +349,8 @@ def main() -> None:
     fall_frame = None
     step_events = []
     slip_events = []
-    emergency_slip_events = []  # 13. tur eki 2 -- ice-skate-limit tetiklemeleri
+    emergency_step_events = []  # 13. tur eki 3 -- FallRiskMonitor tabanli acil adim tetiklemeleri
+    risk_monitor = FallRiskMonitor(FALL_RISK_ENTER_PX, FALL_RISK_EXIT_PX)
 
     out_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                              "outputs", "step14_active_biped.mp4")
@@ -384,37 +425,36 @@ def main() -> None:
             else:
                 applied_thrust = desired_thrust
 
-            # 13. tur eki 2 -- "buz pateni safsatasi": kayan bacak anatomik
-            # aci sinirini (dikeyden MAX_SLIP_LEG_ANGLE_DEG) asarsa, sonsuza
-            # kadar kaymaya/splits pozisyonuna girmeye devam etmek yerine
-            # HEMEN bir kurtarma adimi (7. turdan miras `trigger_emergency_
-            # step()`) tetiklenir -- ayni capture-point hedefine (xcp)
-            # yonlendirilir, sadece ERKEN (normal esik beklenmeden).
-            leg_angle_deg = math.degrees(math.atan2(stretch_dir[0], -stretch_dir[1]))
-            if stance_leg.is_slipping and abs(leg_angle_deg) > MAX_SLIP_LEG_ANGLE_DEG:
-                xcp = hip_pos_before[0] + stance_leg.capture_gain * hip_vx / stance_leg.omega0
-                target_x = xcp + stance_leg.swing_lead_margin
-                if stance_leg.trigger_emergency_step(target_x, speedup=EMERGENCY_STEP_SPEEDUP):
+            # 13. tur eki 3 -- eski SABIT-aci kriteri (MAX_SLIP_LEG_ANGLE_DEG)
+            # KALDIRILDI (bkz. yukaridaki eki-3 yorum bloğu): artik gercek
+            # COM-vs-destek-araligi (FallRiskMonitor) kullaniliyor. BILEREK
+            # `is_slipping`'e bagli DEGIL -- bir darbe, kaymayi hic
+            # tetiklemeden bile COM'u destek araliginin disina cikarabilir
+            # (bkz. dogrulama: 15px'lik kucuk bir tokezleme bile, hicbir
+            # kayma sinirina yaklasmadan, birkac acil-duzeltme adimi
+            # tetikleyebiliyor).
+            leg_angle_deg = math.degrees(math.atan2(stretch_dir[0], -stretch_dir[1]))  # artik SADECE raporlama/log icin
+            com_x = upper_body_com_x(body.points, [hip, idx["shoulder"], idx["head"]])
+            interval = support_interval([stance_leg.planted[0]], foot_half_len=FOOT_HALF_LEN,
+                                         fallback_x=[left_leg.swing_target[0], right_leg.swing_target[0]])
+            real_error = outside_interval_error(com_x, interval)
+            in_danger = risk_monitor.update(real_error)
+            if in_danger:
+                target_x = com_x + np.sign(real_error) * EMERGENCY_STEP_LEAD_PX
+                if stance_leg.trigger_emergency_step(target_x, speedup=EMERGENCY_SWING_SPEEDUP):
                     stance_leg.is_slipping = False
                     stance_leg.slip_velocity = 0.0
-                    emergency_slip_events.append((f, "l" if stance_leg is left_leg else "r", round(leg_angle_deg, 1)))
+                    emergency_step_events.append((f, "l" if stance_leg is left_leg else "r", round(float(real_error), 1)))
 
             body.set_pinned_position(anchor, [stance_leg.planted[0], GROUND_Y])
             body.prev_points[hip][0] -= applied_thrust
 
-        # 13. tur eki 2 -- "muz kabugu cokusu": anchor-kalca cubugunun
-        # compliance'i ARTIK SABIT DEGIL -- ayak kayarken (is_slipping),
-        # kayma hizina ORANTILI olarak cubuk gevsetiliyor (compliance
-        # yukseliyor), boylece kalca GERCEKTEN cokmeye baslar (tutunmasini
-        # kaybeden bir ayagin govdeyi artik eskisi kadar dik tutamamasi).
-        # Kaymiyorken (veya stance_leg yokken) taban deger (10. turdan
-        # miras 0.85) hemen geri gelir.
-        if stance_leg is not None and stance_leg.is_slipping:
-            slip_ratio = min(1.0, abs(stance_leg.slip_velocity) / SLIP_COMPLIANCE_SAT_VEL)
-        else:
-            slip_ratio = 0.0
-        current_compliance = ANCHOR_HIP_COMPLIANCE_BASE + (SLIP_COMPLIANCE_MAX - ANCHOR_HIP_COMPLIANCE_BASE) * slip_ratio
-        body.sticks[idx["anchor_hip_stick"]] = (anchor, hip, ARM_LENGTH, current_compliance)
+        # 13. tur eki 3 -- eski dinamik-compliance ("muz kabugu") hilesi
+        # TAMAMEN KALDIRILDI (bkz. yukaridaki eki-3 yorum bloğu -- ablation
+        # dogrulamasi, dinamik compliance'in COM-kriteriyle birlikte bile
+        # net ZARARLI oldugunu gosterdi). Anchor-kalca cubugu artik HER
+        # ZAMAN sabit ANCHOR_HIP_COMPLIANCE_BASE ile kuruluyor (bkz.
+        # build_body()) ve bir daha ASLA degistirilmiyor.
 
         body.step(dt=1.0)
         # DURUST BULGU (izole tanilama ile kesfedildi -- bkz. commit
@@ -521,7 +561,7 @@ def main() -> None:
                 cur = 1
         streaks.append(cur)
         print(f"  en uzun ardisik kayma serisi (kare -- Stribeck suruklenme fazinin gercekten kalici oldugunun kaniti): {max(streaks)}")
-    print(f"acil kurtarma adimi (ice-skate-limit) tetiklemeleri: {len(emergency_slip_events)}  -> {emergency_slip_events}")
+    print(f"acil kurtarma adimi (FallRiskMonitor/COM-vs-destek-araligi) tetiklemeleri: {len(emergency_step_events)}  -> {emergency_step_events}")
 
 
 if __name__ == "__main__":
