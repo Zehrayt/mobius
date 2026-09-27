@@ -2230,6 +2230,90 @@ Bu dört özellik motoru "Mükemmel" statüsüne taşıyacak; her biri kendi
 izole prototip/doğrulama turunda ele alınacak.
 
 
+## 13. tur: Kinetik Sürtünme Sınırı (Slipping) -- zemin artık sonsuz tutunmuyor
+
+**Kullanıcının tespiti:** motorun yürüyüş fiziğinde büyük bir taviz (loophole)
+vardı -- bacağın kalçayı ileri itmek (push-off) için uyguladığı kuvvet ne
+kadar agresif olursa olsun, ayak zeminle arasında SONSUZ bir statik sürtünme
+varmış gibi davranıyor, asla geriye kaymıyordu. İstenen: itki kuvveti zemin
+sürtünme katsayısı (mu) ile o an bacağa binen normal kuvvetin çarpımını
+(`F_thrust <= mu * F_N`) aşarsa, ayak `stance`'tan çıkıp geriye doğru
+kinetik olarak kaymaya (slip) başlamalı -- buzlu/düşük sürtünmeli bir
+zeminde "patinaj çekme" ve "ayağı kayıp düşme" dinamiği.
+
+**Mekanizma (bkz. `demo/step14_active_biped.py` ve `physics/active_gait.py`
+-- tam kod ve gerekçe orada):**
+
+`physics/environment.py`'nin `Terrain` sınıfı (önceki turlardan hazır duran,
+ama `step14`'e hiç kablolanmamış altyapı -- step8-13'ün eski
+`collide_ground()` tabanlı demolarında kullanılıyordu) ilk kez `step14`'e
+bağlandı. Her karede, o an zeminde duran bacağın konumundaki sürtünme
+katsayısı (`terrain.friction_fn(planted_x)`) okunuyor:
+
+  * `F_MAX = mu * THRUST_CAP` -- **dürüst basitleştirme:** gerçek
+    `F_N = m*g` hesaplamak yerine (bu motorda itki zaten doğrudan
+    kinematik bir hız-değişimi, gerçek bir F=ma kuvveti DEĞİL -- bu
+    yüzden gerçek bir normal kuvvetle boyutsal olarak karşılaştırılamaz),
+    zaten var olan `THRUST_CAP`'i (bu aynı birim sisteminde anlamlı "kas
+    gücü tavanı") referans-normal-kuvvet olarak kullandık. Sonuç sezgisel
+    bir ölçek: `mu=1.0` "zemin en az kas kadar güçlü tutuyor" (asla
+    kaymaz), `mu<1.0` kaymaya başlatıyor (buz için `mu=0.15`). Bu,
+    `OMEGA0`/`dt=1.0` gibi önceki turlarda da benimsenen "teorik değil,
+    dürüstçe ampirik" yaklaşımla aynı ruhta.
+  * İstenen itki (`desired_thrust`, mevcut `THRUST_CAP=1.5` ile
+    sınırlanmış P-kontrolcü çıktısı) `F_MAX`'ı aşarsa: kalçaya SADECE
+    `F_MAX` kadarı uygulanır (`applied_thrust`), kalan (`excess`) kuvvet
+    `ActiveFootPlantingLeg.apply_slip()` (yeni, tek satırlık metod) ile
+    ayağın `planted` konumuna, itkinin TERS yönünde bir kayma olarak
+    aktarılır (`SLIP_GAIN=1.0` ile ölçeklenir) -- gerçek bir ayağın buzda
+    kayması gibi.
+
+**Doğrulama (izole `_proto13/`, gerçek dosyalardan türetilen kopyalar
+üzerinde):**
+
+  * **Regresyon:** `mu` her yerde `THRUST_CAP`'ten büyük tutulunca (buz
+    yok) çıktı 12. tur ile BİREBİR aynı (adım listesi, düşme karesi,
+    `hip_vx` -- hepsi karakter karakter eşleşti).
+  * **65s kararlılık, rahatsızlık YOK:** periyodik buz yamaları (her
+    400px'de bir) eklense bile sonuç baseline ile BİREBİR aynı (185 adım,
+    NaN yok) -- çünkü sabit hızda yürürken istenen itki zaten sıfıra
+    yakın, `F_MAX=0.15*1.5=0.225`'i hiç aşmıyor. **Mekanizma tam olarak
+    olması gerektiği yerde atıl** (12. turdaki MAR v2 ile aynı desen:
+    "atıl değil, sadece gerekmiyor").
+  * **SLIP_GAIN taraması:** 1.0-1.5 arası temiz (max ardışık aynı-bacak
+    adımı=1-2, hip_vx sınırlı sapma); 3.0'da kararsızlık başlıyor
+    (hip_vx aralığı [-3.59, 10.89], max ardışık=3) -- 9./10./11./12.
+    turların "daha agresif parametre = gizli bedel" deseniyle tutarlı,
+    bu yüzden `SLIP_GAIN=1.0` seçildi.
+  * **Tokezleme-büyüklüğü × buz taraması (en anlamlı bulgu):** aynı
+    tokezleme darbesi, buzsuz zeminde ve buzlu zeminde karşılaştırıldı:
+
+    | Darbe | Buzsuz (mu=1.2) | Buzlu (mu=0.15) |
+    |---|---|---|
+    | 5-15px | Hayatta kalır | Hayatta kalır (hip_vx sapması artıyor) |
+    | 20px | Hayatta kalır | **DÜŞÜYOR** (frame 146) |
+    | 25px | Hayatta kalır | **DÜŞÜYOR** (frame 128) |
+    | 30px | Hayatta kalır | **DÜŞÜYOR** (frame 127) |
+
+    Düzgün, monoton bir eşik etkisi -- NaN yok, ani/patolojik bir sıçrama
+    yok. Buz, karakterin tokezleme toleransını yaklaşık yarıya indiriyor;
+    bu tam olarak istenen fizik ("buzlu zeminde aynı tokezleme çok daha
+    tehlikeli").
+
+**Gerçek dosyaya uygulama:** `physics/active_gait.py`'ye `ActiveFootPlantingLeg.
+apply_slip()` (tek satırlık, `planted[0]`'ı kaydırıyor) eklendi.
+`demo/step14_active_biped.py`'ye `Terrain` import edildi, `GROUND_MU_DEFAULT
+=1.2`/`ICE_ZONES`/`SLIP_GAIN=1.0` sabitleri ve itki-hesaplama bloğuna
+sürtünme-sınırı + kayma mantığı eklendi (varsayılan demoda x=[250,450]
+aralığında tek bir buz yaması var, karakterin tokezleme-sonrası bu yamaya
+girdiği an görülüyor). 12s demo (buzsuz regresyon + buzlu), 65s kararlılık
+(rahatsız edilmemiş + darbe+buz kombinasyonu) ve görsel QA gerçek dosyada
+tekrarlandı, hepsi `_proto13/` sonuçlarıyla birebir eşleşti.
+
+**Doğrulama:** prototip TAMAMEN `_proto13/` altında izole çalıştı, tur
+sonunda `rm -rf _proto13` ile silindi -- `git status --short` bu turun
+başında da sonunda da temiz.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

@@ -229,3 +229,14 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         # esikli) stride_release kontrolu bu sinif icin ASLA devreye
         # girmesin -- release karari SADECE yukarida, capture-point'e gore.
         return super().update(hip_pos, hold_release=True)
+
+    def apply_slip(self, delta_x: float) -> None:
+        """13. tur -- Kinetik Sürtünme Sınırı (Slipping): itki üreten
+        taraf (bkz. demo/step14_active_biped.py) zemin sürtünmesinin
+        (`Terrain.friction_fn`) izin verdiği azami tepki kuvvetini
+        (`F_MAX = mu * THRUST_CAP`) aştığını tespit ettiğinde, kalan
+        (excess) kuvveti buraya -- ayağın bastığı noktaya (`planted`) bir
+        kayma (kinetik slip) olarak uygular. Bu metod SADECE STANCE
+        fazında çağrılmalıdır (bu sınıf kendi başına kontrol etmiyor --
+        `update()` ile aynı sözleşme, çağıran kod garanti eder)."""
+        self.planted[0] += delta_x

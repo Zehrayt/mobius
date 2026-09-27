@@ -40,6 +40,8 @@ import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
 from physics.active_gait import ActiveFootPlantingLeg
+from physics.environment import Terrain
+import math
 
 W, H = 640, 400
 FPS = 30
@@ -74,6 +76,20 @@ TARGET_VX = 2.0     # hedef ileri hiz (px/kare) -- eski WALK_SPEED=60px/s'in
                      # EDILEN degil).
 THRUST_GAIN = 1.0
 THRUST_CAP = 1.5     # tek karede uygulanabilecek max itki/fren (kararlilik siniri)
+
+# -- 13. tur: Kinetik Sürtünme Sınırı (Slipping) -- `physics/environment.py`
+# `Terrain`'i (önceki turlardan hazır duran altyapı) ilk kez buraya
+# kablolüyoruz. F_MAX = mu * THRUST_CAP: gerçek F_N = m*g yerine
+# THRUST_CAP'i referans "normal kuvvet" olarak kullanıyoruz -- bu motorda
+# itki zaten doğrudan kinematik bir hız-değişimi (gerçek bir F=ma kuvveti
+# DEĞİL), bu yüzden gerçek bir F_N ile boyutsal olarak karşılaştırılamaz;
+# bunun yerine mu=1.0 "zemin en az kas kadar güçlü tutuyor" (hiçbir zaman
+# kaymıyor), mu<1.0 kaymaya başlatıyor şeklinde sezgisel/empirik bir ölçek
+# olarak tanımlandı (bkz. README "13. tur" -- dürüstçe belgelenen bir
+# basitleştirme, `dt=1.0`/`OMEGA0` ampirik seçimleriyle AYNI ruhta).
+GROUND_MU_DEFAULT = 1.2   # normal zemin -- THRUST_CAP'ten daima büyük, hiçbir zaman kaymaz
+ICE_ZONES: list = [(250.0, 450.0, 0.15)]  # (x0, x1, mu) üçlülerinden liste -- Terrain.zones ile aynı format
+SLIP_GAIN = 1.0           # asiri kuvvetin (excess) planted konumuna kayma olarak ne kadar çevrildiği -- 1.0-1.5 temiz, 3.0+ kararsızlık (bkz. README)
 
 # -- Capture-point (destek/adim) parametreleri (bkz. active_gait.py) ----
 # DURUST BULGU (izole tanilama sirasinda kesfedildi): LIP formulunun
@@ -189,6 +205,8 @@ def main() -> None:
     body, idx = build_body()
     hip = idx["hip"]
     anchor = idx["anchor"]
+    terrain = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_DEFAULT,
+                       zones=list(ICE_ZONES))
 
     half = ARM_LENGTH * 0.15
     left_leg = make_leg(body.points[hip].copy(), -half)
@@ -205,6 +223,7 @@ def main() -> None:
     fell = False
     fall_frame = None
     step_events = []
+    slip_events = []
 
     out_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                              "outputs", "step14_active_biped.mp4")
@@ -232,10 +251,23 @@ def main() -> None:
             if leg.state == "stance":
                 stance_leg = leg
         if stance_leg is not None and not fell:
+            desired_thrust = THRUST_GAIN * (TARGET_VX - hip_vx)
+            desired_thrust = max(-THRUST_CAP, min(THRUST_CAP, desired_thrust))
+            # 13. tur -- Kinetik Sürtünme Sınırı: zemin itkiye sonsuz tepki
+            # veremez (bkz. modül dokstring'i -- F_MAX=mu*THRUST_CAP). Limit
+            # aşılırsa kas gücünün SADECE f_max kadarı kalçaya uygulanır,
+            # kalanı (excess) ayağı (planted) geriye doğru kaydırır (patinaj).
+            mu = terrain.friction_fn(stance_leg.planted[0])
+            f_max = mu * THRUST_CAP
+            if abs(desired_thrust) > f_max:
+                applied_thrust = math.copysign(f_max, desired_thrust)
+                excess = desired_thrust - applied_thrust
+                stance_leg.apply_slip(-excess * SLIP_GAIN)
+                slip_events.append((f, "l" if stance_leg is left_leg else "r", float(excess)))
+            else:
+                applied_thrust = desired_thrust
             body.set_pinned_position(anchor, [stance_leg.planted[0], GROUND_Y])
-            thrust = THRUST_GAIN * (TARGET_VX - hip_vx)
-            thrust = max(-THRUST_CAP, min(THRUST_CAP, thrust))
-            body.prev_points[hip][0] -= thrust
+            body.prev_points[hip][0] -= applied_thrust
 
         body.step(dt=1.0)
         # DURUST BULGU (izole tanilama ile kesfedildi -- bkz. commit
@@ -321,6 +353,7 @@ def main() -> None:
           f"  (dusme karesi: {fall_frame}, t={fall_frame/FPS if fall_frame else None})")
     print(f"son hip_y: {hip_y_log[-1]:.2f} (GROUND_Y={GROUND_Y}, dusme esigi={FALL_HIP_Y_THRESHOLD})")
     print(f"ortalama hip_vx (buyuk itkiden ONCE, kararli yuruyus): {hip_vx_log[:bp].mean():.3f}px/kare (hedef={TARGET_VX})")
+    print(f"kayma (slip) olaylari: {len(slip_events)}  -> {slip_events}")
 
 
 if __name__ == "__main__":
