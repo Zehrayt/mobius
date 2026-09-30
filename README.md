@@ -3478,6 +3478,44 @@ Sıkıştırılmış yakalama salınımında eski uç kalçanın üstünde kalab
 bir karede dizi geriye atıyordu. Gövde noktaları tohumdan bağımsız, bit-bit
 aynı.
 
+
+### 19c. Prediktif sensör
+Faz A sensörü bir önceki karenin sonundaki konumu okuyor. İtki
+`prev_points` üzerinden verildiği için itkinin geldiği karede kalça henüz
+hareket etmemiş oluyor, açı ancak bir sonraki karede sıçrıyor.
+`ActiveFootPlantingLeg.predict_contact(hip, hip_prev)` bir sonraki karenin
+kalça konumunu Verlet'in kendi kuralıyla tahmin ediyor (`x + (x − x_prev)`)
+ve stance açısını ondan hesaplıyor. Faz B'nin aşım tetiği ölçülen ve tahmin
+edilen açının **daha uç olanını** kullanıyor. Tahmin gecikmeyi kapatıyor,
+ölçüm de tahmin hatasına karşı taban oluyor. Faz A'nın `contact_phase`'i
+(görsel/ölçüm) değişmiyor. Kapatmak için `PREDICTIVE_SENSOR_ENABLED` /
+`ActiveBipedSim(predictive_sensor=False)`.
+
+| İtki | Tahminsiz: gecikme / en alçak kalça | Prediktif: gecikme / en alçak kalça |
+|---|---|---|
+| +150 | 2 kare / 92 | **0 / 154** |
+| +300 | 1 / 102 | 0 / 126 |
+| +500 | 1 / 81 | 0 / 104 |
+| −150 | 1 / 93 | 0 / 115 |
+| −300 | 1 / 68 | 0 / 86 |
+| −500 | 1 / 52 | 0 / 71 |
+| ±150, 24 gait anı | ort. 1.38 kare / 73–155 | **ort. 0.08 / 92–154** |
+
+Tüm koşularda çift-havada 0, eski acil adım 0, düşme 0, hepsi toparlanıyor.
+İtkisiz 60 saniyede tahmin açık ve kapalı bit-bit aynı, 0 tetik. Sadece
+15 px tökezlemede de 0 tetik.
+
+"Çarpıcı sonuca şüpheyle bak" kuralı gereği +150 px kare kare izlendi. Kalça
+her karede sürekli ilerliyor (+65, +38, +23, +8… px), sıçrama ya da ışınlanma
+yok. Havadaki bacak itki karesinde sıkıştırılıyor, 2 kare sonra kalçanın
+48 px önüne iniyor (heel_strike −17°), kalça 154 px'te durup 2 karede normal
+yüksekliğe dönüyor. Bu bir tökezleme adımı; önceki versiyondaki derin
+hamle/çömelme artık yok.
+
+### Adım 19 özet kanaryaları (`step14` varsayılan senaryo)
+26 adım, 0 acil adım, 2 kayma karesi, 1 Faz B yakalaması (itki karesinde),
+son `hip_y` 146.60. Testler 47/47.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

@@ -27,7 +27,8 @@ açıkça gösteriyor.
 | 14. Serbest kalçalı dinamik biped (capture-point) | `demo/step14_active_biped.py` (`ActiveBipedSim`) | 🔶 Adım 17'de döngü sınıfa taşındı (bit-bit aynı), diz dalı düzeltildi |
 | 15–16. Segment ayak laboratuvarları | `demo/step15_segment_foot.py`, `demo/step16_segment_foot_lab.py` | 🔶 izole ölçüm |
 | 17. Bilge derisi fizik iskeletinde + Faz A kontak-faz sensörü | `demo/step17_bilge_physics_skin.py`, `physics/active_gait.py` | 🔶 README "Adım 17" |
-| 18. 60/−15 yuvarlanma geometrisi + Faz B toe_off yakalama adımı | `physics/active_gait.py` (`compress_swing`, `launch_catch_step`), `demo/step14_active_biped.py` | 🔶 ileri itkiler çözüldü; geri itki (heel_strike aynası) açık — README "Adım 18" |
+| 18. 60/−15 yuvarlanma geometrisi + Faz B toe_off yakalama adımı | `physics/active_gait.py` (`compress_swing`, `launch_catch_step`), `demo/step14_active_biped.py` | 🔶 README "Adım 18" |
+| 19. Faz B heel_strike aynası + yakalama sonrası şok emilimi + prediktif sensör | `physics/active_gait.py` (`heel_strike_overrun`, `predict_contact`), `demo/step14_active_biped.py` (`SHOCK_*`) | 🔶 README "Adım 19" |
 | — Bilge kinematik yürüyüş (REFERANS) | `demo/bilge_walk_validation.py`, `demo/bilge_walk_skinned.py` | render referansı: kalça kinematik eğriyle sürülür, ana motor DEĞİL |
 
 `step6` artık `scene/` üretim katmanının ilk sahnesidir. `step11` yok

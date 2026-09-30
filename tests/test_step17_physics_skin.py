@@ -52,12 +52,12 @@ class Step14RegressionTest(unittest.TestCase):
         sim = self.sim
         self.assertFalse(sim.nan)
         self.assertFalse(sim.fell)
-        # Adim 19b: sok emilimi dahil (Adim 18: 26/0/14/1/146.62; Adim 17: 27/36/89/147.51)
+        # Adim 19c: prediktif sensor dahil (19b: 26/0/5/1/146.42; 18: 26/0/14/1/146.62; 17: 27/36/89/147.51)
         self.assertEqual(len(sim.step_events), 26)
         self.assertEqual(len(sim.emergency_step_events), 0)
-        self.assertEqual(len(sim.slip_events), 5)
+        self.assertEqual(len(sim.slip_events), 2)
         self.assertEqual(len(sim.fazb_events), 1)
-        self.assertAlmostEqual(sim.hip_y_log[-1], 146.42, places=2)
+        self.assertAlmostEqual(sim.hip_y_log[-1], 146.60, places=2)
 
     def test_knees_bend_forward(self):
         self.assertEqual(sum(o < -1.0 for o in self.knee_offsets["swing"]), 0)
@@ -107,8 +107,10 @@ class FazBTest(unittest.TestCase):
     def test_catch_shock_absorption_limits_rise(self):
         """Adim 19b: yakalama sonrasi kalca yukselisi sinirli; itkisiz yuruyus degismez."""
         for push in (150.0, -150.0):
-            on, _, _ = self.run_sim(420, big_push_kick_px=push)
-            off, _, _ = self.run_sim(420, big_push_kick_px=push, shock_absorb=False)
+            # sok emilimini izole etmek icin prediktif sensor kapali (19c o
+            # senaryoda cokusun kendisini kucultuyor)
+            on, _, _ = self.run_sim(420, big_push_kick_px=push, predictive_sensor=False)
+            off, _, _ = self.run_sim(420, big_push_kick_px=push, shock_absorb=False, predictive_sensor=False)
             rise_on = max(-np.diff(np.array(on.hip_y_log))[210:])
             rise_off = max(-np.diff(np.array(off.hip_y_log))[210:])
             self.assertLess(rise_on, 25.0, push)
@@ -116,6 +118,20 @@ class FazBTest(unittest.TestCase):
             self.assertFalse(on.fell, push)
         a, _, pa = self.run_sim(900, stumble_kick_px=0.0, big_push_kick_px=0.0)
         b, _, pb = self.run_sim(900, stumble_kick_px=0.0, big_push_kick_px=0.0, shock_absorb=False)
+        self.assertTrue(np.array_equal(pa, pb))
+
+    def test_predictive_sensor_removes_lag(self):
+        """Adim 19c: yakalama itkinin geldigi karede tetiklenir; itkisiz yuruyus degismez."""
+        for push in (150.0, -150.0):
+            on, _, _ = self.run_sim(300, big_push_kick_px=push)
+            off, _, _ = self.run_sim(300, big_push_kick_px=push, predictive_sensor=False)
+            bp = round(s14.BIG_PUSH_T * s14.FPS)
+            self.assertEqual(min(e[0] for e in on.fazb_events if e[0] >= bp), bp, push)
+            self.assertGreater(min(e[0] for e in off.fazb_events if e[0] >= bp), bp, push)
+            self.assertGreater(s14.GROUND_Y - max(on.hip_y_log[bp:]), s14.GROUND_Y - max(off.hip_y_log[bp:]), push)
+        a, _, pa = self.run_sim(900, stumble_kick_px=0.0, big_push_kick_px=0.0)
+        b, _, pb = self.run_sim(900, stumble_kick_px=0.0, big_push_kick_px=0.0, predictive_sensor=False)
+        self.assertEqual(a.fazb_events, [])
         self.assertTrue(np.array_equal(pa, pb))
 
     def test_compress_swing_keeps_position_continuous(self):

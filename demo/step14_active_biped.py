@@ -259,6 +259,9 @@ FAZ_B_ENABLED = True
 # sebebi normal handoff'lari bozmasiydi; itkisiz yuruyus bit-bit ayni).
 # Denenip reddedilen: birinci derece low-pass (rate 0.1-0.5) -- -500 px'te
 # HER oranda dustu.
+# Adim 19c -- Faz B tetigi, bir sonraki karenin tahmini bacak acisini da okur
+# (bkz. ActiveFootPlantingLeg.predict_contact).
+PREDICTIVE_SENSOR_ENABLED = True
 SHOCK_ABSORB_ENABLED = True
 SHOCK_RISE_CAP_PX = 15.0
 SHOCK_FLOOR_PX = 90.0
@@ -382,7 +385,7 @@ class ActiveBipedSim:
                  big_push_t: float | None = None, big_push_kick_px: float | None = None,
                  fps: int = FPS, support_margin: float | None = None,
                  swing_lead_margin: float | None = None, faz_b: bool | None = None,
-                 shock_absorb: bool | None = None):
+                 shock_absorb: bool | None = None, predictive_sensor: bool | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -390,6 +393,7 @@ class ActiveBipedSim:
         self.fps = fps
         self.dt = 1.0 / fps
         self.faz_b = FAZ_B_ENABLED if faz_b is None else faz_b
+        self.predictive_sensor = PREDICTIVE_SENSOR_ENABLED if predictive_sensor is None else predictive_sensor
         self.fazb_events = []   # (kare, bacak, 'compress'|'launch', 'toe'|'heel', bacak_acisi)
         self.shock_absorb = SHOCK_ABSORB_ENABLED if shock_absorb is None else shock_absorb
         self.shock_pending = None   # yakalama inisi yapan bacak (anchor ona gecince baslar)
@@ -409,6 +413,7 @@ class ActiveBipedSim:
         self.right_leg = make_leg(self.body.points[hip].copy(), +half, support_margin, swing_lead_margin)
         for leg in (self.left_leg, self.right_leg):
             leg.faz_b_enabled = self.faz_b
+            leg.predictive_sensor = self.predictive_sensor
         # sag bacak baslangicta swing'de -- alternatif adimla baslamasi icin.
         self.right_leg.state = "swing"
         self.right_leg.swing_start = self.right_leg.planted.copy()
@@ -520,6 +525,9 @@ class ActiveBipedSim:
             # bozmadan yakalama adimi: havadaki bacak varsa ONUN salinimini
             # sikistir, yoksa toe_off bacagini sikistirilmis salinimla birak.
             fazb_handled = False
+            # Adim 19c -- prediktif sensor: bu karenin itkisi prev_points'te,
+            # kalcanin bir sonraki konumu Verlet kuraliyla tahmin edilir.
+            stance_leg.predict_contact(body.points[hip], body.prev_points[hip])
             front = stance_leg.catch_overrun() if self.faz_b else None
             if self.faz_b and front is None and in_danger:
                 # tehlike + dogru cephe: COM onde & toe_off / COM geride & heel_strike

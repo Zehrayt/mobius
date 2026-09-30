@@ -234,6 +234,8 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         self.foot_target = self.planted.copy()
         self.catch_active = False   # Adim 18 (Faz B) -- yakalama salinimi suruyor mu
         self.faz_b_enabled = True   # False: Adim 17 davranisi (karsilastirma icin)
+        self.predictive_sensor = True   # Adim 19c
+        self.predicted_leg_angle_deg = None
         self.capture_gain = capture_gain
         self.support_margin = support_margin
         self.swing_lead_margin = swing_lead_margin
@@ -338,19 +340,45 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
     def toe_off_overrun(self) -> bool:
         """Faz A sensoru: stance'ta, toe_off fazinda VE normal yuruyusun
         ulasamadigi bir asim acisinda mi? (kalca ayagi hizla geciyor)"""
-        return (self.state == "stance" and self.contact_phase == PHASE_TOE_OFF
-                and self.leg_angle_deg > FAZB_TOE_OFF_OVERRUN_DEG)
+        ang = self._overrun_angle()
+        return (self.state == "stance" and classify_contact_phase(ang) == PHASE_TOE_OFF
+                and ang > FAZB_TOE_OFF_OVERRUN_DEG)
 
     def _reach_clamp(self, target_x: float, hip_x: float) -> float:
         if not self.faz_b_enabled:
             return target_x
         return max(hip_x - FAZB_MAX_STEP_AHEAD_PX, min(hip_x + FAZB_MAX_STEP_AHEAD_PX, target_x))
 
+    def predict_contact(self, hip_pos: np.ndarray, hip_prev: np.ndarray) -> float:
+        """Adim 19c -- prediktif sensor. Konum-tabanli Faz A sensoru bir
+        onceki karenin sonunu okur; itkinin geldigi karede kalca henuz
+        hareket etmemistir (hiz prev_points'te). Bir sonraki karenin kalca
+        konumu Verlet'in kendi kuraliyla (x + (x - x_prev)) tahmin edilip
+        stance acisi ondan hesaplanir. Sonuc `predicted_leg_angle_deg`;
+        Faz A'nin `contact_phase`'i (gorsel/olcum) DEGISMEZ."""
+        if self.state != "stance":
+            self.predicted_leg_angle_deg = None
+            return 0.0
+        nxt = hip_pos + (hip_pos - hip_prev)
+        dx = float(nxt[0] - self.planted[0])
+        dy = float(nxt[1] - self.planted[1])
+        self.predicted_leg_angle_deg = float(np.degrees(np.arctan2(dx, -dy)))
+        return self.predicted_leg_angle_deg
+
+    def _overrun_angle(self) -> float:
+        p = getattr(self, "predicted_leg_angle_deg", None)
+        if p is None or not self.predictive_sensor:
+            return self.leg_angle_deg
+        # olculen ile tahminin daha UC olani: tahmin gecikmeyi kapatir, olcum
+        # tahmin hatasina karsi taban olur
+        return max(self.leg_angle_deg, p) if p >= 0 else min(self.leg_angle_deg, p)
+
     def heel_strike_overrun(self) -> bool:
         """Adim 19 -- toe_off_overrun'in aynasi: stance'ta, heel_strike'ta VE
         kalca ayagin gerisine normal yuruyusun ulasamadigi acida kacmis."""
-        return (self.state == "stance" and self.contact_phase == PHASE_HEEL_STRIKE
-                and self.leg_angle_deg < FAZB_HEEL_STRIKE_OVERRUN_DEG)
+        ang = self._overrun_angle()
+        return (self.state == "stance" and classify_contact_phase(ang) == PHASE_HEEL_STRIKE
+                and ang < FAZB_HEEL_STRIKE_OVERRUN_DEG)
 
     def catch_overrun(self) -> str | None:
         """'toe' / 'heel' / None -- hangi cephede yakalama gerekiyor."""
