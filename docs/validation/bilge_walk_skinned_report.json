@@ -1,0 +1,63 @@
+{
+  "minimum_pair_overlap_pixels": {
+    "left_upper_arm/left_forearm": 161,
+    "left_forearm/left_hand": 96,
+    "left_thigh/left_shin": 277,
+    "left_shin/left_shoe": 219,
+    "torso/left_upper_arm": 770,
+    "pelvis/left_thigh": 875,
+    "right_upper_arm/right_forearm": 155,
+    "right_forearm/right_hand": 92,
+    "right_thigh/right_shin": 244,
+    "right_shin/right_shoe": 213,
+    "torso/right_upper_arm": 218,
+    "pelvis/right_thigh": 853,
+    "torso/head": 634,
+    "torso/pelvis": 1593,
+    "head/braid": 135
+  },
+  "max_visible_sole_penetration_px": 0.0,
+  "max_visible_stance_sole_gap_px": 1.0,
+  "max_stance_shoe_translation_px": 1.948993482274278e-09,
+  "alpha_measurement_threshold": 0.5,
+  "note": "Raster sole measurement excludes contact shadows; shoes use an alpha-hull contact offset. Original gait points are unchanged; visual ankles sit above the sole points.",
+  "gait": {
+    "resolution": [
+      1280,
+      720
+    ],
+    "fps": 30,
+    "frames": 240,
+    "duration_s": 8.0,
+    "max_stance_horizontal_slip_px": 5.362608135328628e-10,
+    "max_ground_penetration_px": 9.677023626863956e-10,
+    "max_bone_length_error_px": 8.526512829121202e-14,
+    "max_foot_target_error_px": 9.999227560844499e-10,
+    "max_target_overreach_px": 0.0,
+    "knee_bend_deg": [
+      25.483256984353048,
+      74.96942152058327
+    ],
+    "steps_including_settling": {
+      "left": 6,
+      "right": 6
+    },
+    "max_foot_lift_px": {
+      "left": 29.999999999841748,
+      "right": 29.999999999818897
+    },
+    "double_swing_frames": 0,
+    "max_joint_displacement_per_frame_px": 15.466684836671723,
+    "transition_displacements_px": {
+      "1.0": 0.0933531065398873,
+      "6.0": 9.900800000009431,
+      "7.0": 0.41896827314167545
+    },
+    "all_joints_finite": true,
+    "all_joints_in_frame": true,
+    "measurement": "World-space solved joints before rasterization; stance measured relative to each touchdown. Feet are point contacts (no shoe/sole geometry)."
+  },
+  "missing_parts": [],
+  "joint_source": "demo.bilge_walk_validation.simulate(WalkConfig()) without changes",
+  "decoded_video_frames": 240
+}
