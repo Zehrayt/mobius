@@ -1,0 +1,373 @@
+{
+  "reference": "../bilge_happy.png",
+  "atlas": "atlas.png",
+  "provenance": "Original reference pixels for head/face; imagegen built-in for separated body/limb parts and hidden surfaces; generation_prompt.txt",
+  "parts": {
+    "head": {
+      "file": "head.png",
+      "anchor": [
+        0.5057471264367817,
+        0.4680365296803653
+      ],
+      "end": null,
+      "width_px": 94,
+      "atlas_region": null,
+      "crop_in_region": null,
+      "source": "../bilge_happy.png",
+      "source_crop": [
+        300,
+        45,
+        735,
+        483
+      ],
+      "preservation": "Original RGB pixels; neck isolation changes alpha only"
+    },
+    "torso": {
+      "file": "torso.png",
+      "anchor": [
+        0.5,
+        0.2
+      ],
+      "end": [
+        0.5,
+        0.91
+      ],
+      "width_px": 55,
+      "atlas_region": [
+        335,
+        0,
+        630,
+        343
+      ],
+      "crop_in_region": [
+        18,
+        46,
+        287,
+        317
+      ]
+    },
+    "pelvis": {
+      "file": "pelvis.png",
+      "anchor": [
+        0.5,
+        0.78
+      ],
+      "end": null,
+      "width_px": 49,
+      "atlas_region": [
+        640,
+        0,
+        940,
+        330
+      ],
+      "crop_in_region": [
+        29,
+        57,
+        277,
+        298
+      ]
+    },
+    "braid": {
+      "file": "braid.png",
+      "anchor": [
+        0.48,
+        0.08
+      ],
+      "end": [
+        0.48,
+        0.91
+      ],
+      "width_px": 22,
+      "atlas_region": [
+        1000,
+        0,
+        1200,
+        352
+      ],
+      "crop_in_region": [
+        40,
+        17,
+        156,
+        351
+      ]
+    },
+    "left_upper_arm": {
+      "file": "left_upper_arm.png",
+      "anchor": [
+        0.65,
+        0.15
+      ],
+      "end": [
+        0.37,
+        0.93
+      ],
+      "width_px": 22,
+      "atlas_region": [
+        45,
+        344,
+        265,
+        615
+      ],
+      "crop_in_region": [
+        37,
+        10,
+        191,
+        265
+      ]
+    },
+    "left_forearm": {
+      "file": "left_forearm.png",
+      "anchor": [
+        0.49,
+        0.17
+      ],
+      "end": [
+        0.49,
+        0.86
+      ],
+      "width_px": 19,
+      "atlas_region": [
+        390,
+        344,
+        575,
+        615
+      ],
+      "crop_in_region": [
+        36,
+        18,
+        152,
+        263
+      ]
+    },
+    "right_upper_arm": {
+      "file": "right_upper_arm.png",
+      "anchor": [
+        0.35,
+        0.15
+      ],
+      "end": [
+        0.66,
+        0.93
+      ],
+      "width_px": 22,
+      "atlas_region": [
+        680,
+        344,
+        910,
+        615
+      ],
+      "crop_in_region": [
+        39,
+        15,
+        201,
+        260
+      ]
+    },
+    "right_forearm": {
+      "file": "right_forearm.png",
+      "anchor": [
+        0.5,
+        0.17
+      ],
+      "end": [
+        0.5,
+        0.86
+      ],
+      "width_px": 19,
+      "atlas_region": [
+        990,
+        352,
+        1170,
+        615
+      ],
+      "crop_in_region": [
+        34,
+        10,
+        150,
+        256
+      ]
+    },
+    "left_thigh": {
+      "file": "left_thigh.png",
+      "anchor": [
+        0.56,
+        0.17
+      ],
+      "end": [
+        0.44,
+        0.94
+      ],
+      "width_px": 32,
+      "atlas_region": [
+        45,
+        618,
+        260,
+        948
+      ],
+      "crop_in_region": [
+        33,
+        11,
+        187,
+        313
+      ]
+    },
+    "left_shin": {
+      "file": "left_shin.png",
+      "anchor": [
+        0.48,
+        0.1
+      ],
+      "end": [
+        0.55,
+        0.89
+      ],
+      "width_px": 30,
+      "atlas_region": [
+        375,
+        618,
+        580,
+        948
+      ],
+      "crop_in_region": [
+        34,
+        14,
+        178,
+        306
+      ]
+    },
+    "right_thigh": {
+      "file": "right_thigh.png",
+      "anchor": [
+        0.42,
+        0.17
+      ],
+      "end": [
+        0.57,
+        0.94
+      ],
+      "width_px": 32,
+      "atlas_region": [
+        680,
+        618,
+        910,
+        948
+      ],
+      "crop_in_region": [
+        33,
+        13,
+        194,
+        313
+      ]
+    },
+    "right_shin": {
+      "file": "right_shin.png",
+      "anchor": [
+        0.54,
+        0.1
+      ],
+      "end": [
+        0.49,
+        0.89
+      ],
+      "width_px": 30,
+      "atlas_region": [
+        985,
+        618,
+        1180,
+        948
+      ],
+      "crop_in_region": [
+        27,
+        18,
+        168,
+        306
+      ]
+    },
+    "left_hand": {
+      "file": "left_hand.png",
+      "anchor": [
+        0.52,
+        0.12
+      ],
+      "end": null,
+      "width_px": 18,
+      "atlas_region": [
+        45,
+        960,
+        255,
+        1230
+      ],
+      "crop_in_region": [
+        35,
+        20,
+        196,
+        242
+      ]
+    },
+    "right_hand": {
+      "file": "right_hand.png",
+      "anchor": [
+        0.49,
+        0.12
+      ],
+      "end": null,
+      "width_px": 18,
+      "atlas_region": [
+        375,
+        960,
+        570,
+        1230
+      ],
+      "crop_in_region": [
+        18,
+        20,
+        180,
+        242
+      ]
+    },
+    "left_shoe": {
+      "file": "left_shoe.png",
+      "anchor": [
+        0.26,
+        0.22
+      ],
+      "end": null,
+      "width_px": 43,
+      "atlas_region": [
+        630,
+        980,
+        944,
+        1210
+      ],
+      "crop_in_region": [
+        19,
+        31,
+        292,
+        194
+      ]
+    },
+    "right_shoe": {
+      "file": "right_shoe.png",
+      "anchor": [
+        0.26,
+        0.22
+      ],
+      "end": null,
+      "width_px": 43,
+      "atlas_region": [
+        947,
+        980,
+        1254,
+        1210
+      ],
+      "crop_in_region": [
+        15,
+        34,
+        282,
+        192
+      ]
+    }
+  },
+  "missing_parts": [],
+  "note": "Hidden sleeve/hip surfaces are reconstructed from the reference. This atlas supports this fixed camera, not rear views."
+}
