@@ -26,7 +26,8 @@ açıkça gösteriyor.
 | 13. Tam entegrasyon stres testi | `demo/step13_full_integration_test.py` | 🔶 (yol haritasında numaralı bir "madde" değil, ayrı bir doğrulama/stres testi — bkz. aşağıdaki not) |
 | 14. Serbest kalçalı dinamik biped (capture-point) | `demo/step14_active_biped.py` (`ActiveBipedSim`) | 🔶 Adım 17'de döngü sınıfa taşındı (bit-bit aynı), diz dalı düzeltildi |
 | 15–16. Segment ayak laboratuvarları | `demo/step15_segment_foot.py`, `demo/step16_segment_foot_lab.py` | 🔶 izole ölçüm |
-| 17. Bilge derisi fizik iskeletinde + Faz A kontak-faz sensörü | `demo/step17_bilge_physics_skin.py`, `physics/active_gait.py` | 🔶 Faz B başlatılmadı (README "Adım 17") |
+| 17. Bilge derisi fizik iskeletinde + Faz A kontak-faz sensörü | `demo/step17_bilge_physics_skin.py`, `physics/active_gait.py` | 🔶 README "Adım 17" |
+| 18. 60/−15 yuvarlanma geometrisi + Faz B toe_off yakalama adımı | `physics/active_gait.py` (`compress_swing`, `launch_catch_step`), `demo/step14_active_biped.py` | 🔶 ileri itkiler çözüldü; geri itki (heel_strike aynası) açık — README "Adım 18" |
 | — Bilge kinematik yürüyüş (REFERANS) | `demo/bilge_walk_validation.py`, `demo/bilge_walk_skinned.py` | render referansı: kalça kinematik eğriyle sürülür, ana motor DEĞİL |
 
 `step6` artık `scene/` üretim katmanının ilk sahnesidir. `step11` yok

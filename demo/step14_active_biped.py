@@ -39,7 +39,7 @@ import numpy as np
 import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
-from physics.active_gait import ActiveFootPlantingLeg
+from physics.active_gait import ActiveFootPlantingLeg, PHASE_TOE_OFF
 from physics.environment import Terrain
 from physics.balance import support_interval, outside_interval_error, FallRiskMonitor, upper_body_com_x
 import math
@@ -228,8 +228,23 @@ EMERGENCY_SWING_SPEEDUP = 2.5
 # kararli oldugunu gosterdi -- bu deger o yuzden TEORIK degil, OLCULEREK
 # secildi (bkz. commit mesaji/README).
 OMEGA0 = 0.045
-SUPPORT_MARGIN = 6.0
-SWING_LEAD_MARGIN = 12.0
+# Adim 18: 6.0/12.0 idi. Faz A sensoru (Adim 17) bu degerlerle kalcanin
+# ayagin onune HIC gecmedigini gosterdi: xcp = hip + vx/OMEGA0 ~ hip + 44px
+# oldugu icin bacak, kalca ayagin ~38px GERISINDEYKEN birakiliyordu -- 60s
+# itkisiz koşuda 171 stance'in 0'i tam yuvarlanma, stance karelerinin %99'u
+# heel_strike (topukta yuruyen, geriye yaslanmis karakter). 60/-15: bacak
+# kalca ayagin ~16px ONUNE gecince birakilir, yeni ayak xcp'nin 15px GERISINE
+# basar -> 124 stance'in 123'u HS->FF->TO. Bedeli (itki dayanikliligi) Faz B
+# ile ele alindi, bkz. README "Adim 18".
+SUPPORT_MARGIN = 60.0
+SWING_LEAD_MARGIN = -15.0
+LEGACY_SUPPORT_MARGIN = 6.0      # Adim 17 oncesi "topuk yuruyusu" -- karsilastirma icin
+LEGACY_SWING_LEAD_MARGIN = 12.0
+
+# Adim 18 (Faz B) -- toe_off tetikli yakalama adimi (bkz. physics/active_gait.py
+# FAZB_* sabitleri ve README "Adim 18"). False: Adim 17 davranisi (yalnizca
+# FallRiskMonitor -> trigger_emergency_step).
+FAZ_B_ENABLED = True
 
 # -- Sahne olaylari: bir kucuk (ABSORBE EDILEN) ve bir buyuk (GERCEK
 #    DUSMEYE yol acan) darbe.
@@ -348,13 +363,15 @@ class ActiveBipedSim:
     def __init__(self, stumble_t: float | None = None, stumble_kick_px: float | None = None,
                  big_push_t: float | None = None, big_push_kick_px: float | None = None,
                  fps: int = FPS, support_margin: float | None = None,
-                 swing_lead_margin: float | None = None):
+                 swing_lead_margin: float | None = None, faz_b: bool | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
         self.big_push_kick_px = BIG_PUSH_KICK_PX if big_push_kick_px is None else big_push_kick_px
         self.fps = fps
         self.dt = 1.0 / fps
+        self.faz_b = FAZ_B_ENABLED if faz_b is None else faz_b
+        self.fazb_events = []   # (kare, bacak, 'compress'|'launch', bacak_acisi)
 
         self.body, self.idx = build_body()
         self.terrain_static = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC,
@@ -367,6 +384,8 @@ class ActiveBipedSim:
         half = ARM_LENGTH * 0.15
         self.left_leg = make_leg(self.body.points[hip].copy(), -half, support_margin, swing_lead_margin)
         self.right_leg = make_leg(self.body.points[hip].copy(), +half, support_margin, swing_lead_margin)
+        for leg in (self.left_leg, self.right_leg):
+            leg.faz_b_enabled = self.faz_b
         # sag bacak baslangicta swing'de -- alternatif adimla baslamasi icin.
         self.right_leg.state = "swing"
         self.right_leg.swing_start = self.right_leg.planted.copy()
@@ -473,7 +492,23 @@ class ActiveBipedSim:
                                          fallback_x=[left_leg.swing_target[0], right_leg.swing_target[0]])
             real_error = outside_interval_error(com_x, interval)
             in_danger = self.risk_monitor.update(real_error)
-            if in_danger:
+            # Adim 18 (Faz B): stance bacagi toe_off'ta ve kalca onu asiri
+            # hizla geciyorsa (ya da tehlike + toe_off), tek-destek kuralini
+            # bozmadan yakalama adimi: havadaki bacak varsa ONUN salinimini
+            # sikistir, yoksa toe_off bacagini sikistirilmis salinimla birak.
+            fazb_handled = False
+            if self.faz_b and (stance_leg.toe_off_overrun()
+                               or (in_danger and stance_leg.contact_phase == PHASE_TOE_OFF)):
+                other = right_leg if stance_leg is left_leg else left_leg
+                side = "l" if stance_leg is left_leg else "r"
+                if other.state == "swing":
+                    if other.compress_swing(hip_pos_before[0], hip_vx):
+                        self.fazb_events.append((f, "r" if side == "l" else "l", "compress",
+                                                 round(stance_leg.leg_angle_deg, 1)))
+                elif stance_leg.launch_catch_step(hip_pos_before[0], hip_vx):
+                    self.fazb_events.append((f, side, "launch", round(stance_leg.leg_angle_deg, 1)))
+                fazb_handled = True
+            if in_danger and not fazb_handled:
                 target_x = com_x + np.sign(real_error) * EMERGENCY_STEP_LEAD_PX
                 if stance_leg.trigger_emergency_step(target_x, speedup=EMERGENCY_SWING_SPEEDUP):
                     stance_leg.is_slipping = False
@@ -593,6 +628,8 @@ def main() -> None:
         streaks.append(cur)
         print(f"  en uzun ardisik kayma serisi (kare -- Stribeck suruklenme fazinin gercekten kalici oldugunun kaniti): {max(streaks)}")
     print(f"acil kurtarma adimi (FallRiskMonitor/COM-vs-destek-araligi) tetiklemeleri: {len(sim.emergency_step_events)}  -> {sim.emergency_step_events}")
+    print(f"Faz B yakalama adimlari (toe_off tetikli): {len(sim.fazb_events)}  -> {sim.fazb_events}")
+    print(f"en dusuk kalca yuksekligi (buyuk itkiden sonra): {GROUND_Y - max(sim.hip_y_log[bp:]):.1f}px")
 
 
 if __name__ == "__main__":

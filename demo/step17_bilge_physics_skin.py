@@ -70,11 +70,9 @@ UPPER_ARM, FOREARM = 54.0, 50.0
 HEEL_STRIKE_MAX_PITCH_DEG = 20.0
 TOE_OFF_MAX_PITCH_DEG = 35.0
 PITCH_GAIN = 1.0
-# Faz A'nin ortaya cikardigi bulgu uzerine IZOLE taranan (commit edilmis step14
-# varsayilanlarini DEGISTIRMEYEN) aday: step14'un kendi 6/12 degerleri
-# kararli yuruyuste stance'larin %99'unu heel_strike'ta bitiriyor (kalca
-# ayagin onune hic gecmiyor). Bkz. README "Adim 17" tarama tablosu.
-ROLL_PROPOSAL = dict(support_margin=60.0, swing_lead_margin=-15.0)
+# Adim 18: 60/-15 yuvarlanma geometrisi artik step14'un VARSAYILANI. Eski
+# "topuk yuruyusu" (6/12) karsilastirma icin --legacy-heel-gait ile.
+LEGACY_GAIT = dict(support_margin=s14.LEGACY_SUPPORT_MARGIN, swing_lead_margin=s14.LEGACY_SWING_LEAD_MARGIN)
 LANDING_BLEND_START = 0.6        # swing_t bu degerden sonra inis egimine yumusak gecis
 THIGH_LEN = s14.LEG_SEGMENT_LEN
 SIDES = (("left", "left_leg"), ("right", "right_leg"))
@@ -495,7 +493,8 @@ def preview_picks(frames) -> tuple[list[int], list[str]]:
     picks = [(first(lambda s: s["frame"] >= 40 and stance(s, PHASE_HEEL_STRIKE)), "HEEL STRIKE"),
              (first(lambda s: stance(s, PHASE_FLAT_FOOT)), "FLAT FOOT"),
              (first(lambda s: s["frame"] >= 110 and stance(s, PHASE_TOE_OFF)), "TOE OFF"),
-             (first(lambda s: s["frame"] >= round(s14.BIG_PUSH_T * FPS) + 8), "ITKI SONRASI")]
+             (max(frames[round(s14.BIG_PUSH_T * FPS):], key=lambda s: s["hip"][1])["frame"]
+              if len(frames) > round(s14.BIG_PUSH_T * FPS) else None, "ITKI: EN ALCAK KALCA")]
     picks = [(i, l) for i, l in picks if i is not None]
     return [i for i, _ in picks], [l for _, l in picks]
 
@@ -504,21 +503,28 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--debug", action="store_true")
     ap.add_argument("--preview-only", action="store_true")
-    ap.add_argument("--roll-proposal", action="store_true",
-                    help="DENEY (kabul edilmedi): capture-point marjlari ROLL_PROPOSAL ile -- "
-                         "kalca ayagin onune gecmeden adim birakilmasin (bkz. README Adim 17)")
+    ap.add_argument("--legacy-heel-gait", action="store_true",
+                    help="Adim 17 oncesi 6/12 capture-point marjlari (topuk yuruyusu) -- karsilastirma")
+    ap.add_argument("--no-faz-b", action="store_true",
+                    help="Faz B yakalama adimini kapat (Adim 17 acil adim davranisi) -- karsilastirma")
     args = ap.parse_args()
-    frames, sim = simulate(**(ROLL_PROPOSAL if args.roll_proposal else {}))
+    kw = dict(LEGACY_GAIT) if args.legacy_heel_gait else {}
+    if args.no_faz_b:
+        kw["faz_b"] = False
+    frames, sim = simulate(**kw)
     report = dict(source="demo.step14_active_biped.ActiveBipedSim (fizik degismedi)",
                   fell=sim.fell, fall_frame=sim.fall_frame, steps=len(sim.step_events),
                   emergency_steps=len(sim.emergency_step_events), slip_frames=len(sim.slip_events),
+                  faz_b=sim.faz_b, faz_b_events=sim.fazb_events,
+                  min_hip_height_after_push=round(s14.GROUND_Y - max(sim.hip_y_log[round(s14.BIG_PUSH_T * FPS):]), 1),
+                  double_swing_frames=sum(all(l["state"] == "swing" for l in fr["legs"].values()) for fr in frames),
                   frames=len(frames))
     report["phases"] = phase_report(frames)
     report["skin"] = inspect(frames)
     out = ROOT / "outputs"
     out.mkdir(exist_ok=True)
-    stem = "step17_bilge_physics_skin" + ("_rollprop" if args.roll_proposal else "") + ("_debug" if args.debug else "")
-    report["gait_params"] = ROLL_PROPOSAL if args.roll_proposal else dict(
+    stem = "step17_bilge_physics_skin" + ("_legacy" if args.legacy_heel_gait else "") + ("_nofazb" if args.no_faz_b else "") + ("_debug" if args.debug else "")
+    report["gait_params"] = LEGACY_GAIT if args.legacy_heel_gait else dict(
         support_margin=s14.SUPPORT_MARGIN, swing_lead_margin=s14.SWING_LEAD_MARGIN)
     picks, labels = preview_picks(frames)
     rig = PhysicsBilgeRig()   # kamera takibi sirali: her kare sirayla poz'lanir

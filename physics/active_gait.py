@@ -174,6 +174,27 @@ PHASE_FLAT_FOOT = "flat_foot"
 PHASE_TOE_OFF = "toe_off"
 
 
+# Adim 18 (Faz B) -- toe_off tetikli "yakalama adimi" (opportunistic override).
+# Tetik: stance bacagi toe_off'ta VE bacak acisi normal yuruyusun ulasamadigi
+# bir asim acisinda (60s itkisiz kosuda stance acisi hic +14.4 dereceyi
+# gecmiyor) -- ya da FallRiskMonitor tehlike bildirirken bacak toe_off'ta.
+# Eylem: tek-destek kuralini BOZMADAN (a) havadaki bacak varsa onun kalan
+# salinimini FAZB_CATCH_FRAMES'e sikistir, (b) yoksa toe_off bacagini hemen
+# sikistirilmis bir salinimla birak. Hedef her karede, inis anindaki tahmini
+# kalca konumuna dogru (kare basina sinirli) kayar.
+FAZB_TOE_OFF_OVERRUN_DEG = 20.0
+FAZB_CATCH_FRAMES = 3.0
+FAZB_TARGET_LEAD_PX = 10.0
+FAZB_MAX_PREDICT_PX = 60.0
+FAZB_MAX_RETARGET_PX = 25.0
+# Capture-point hedefinin kalcaya gore ust siniri. xcp = hip + vx/OMEGA0 (=22*vx):
+# itki sonrasi vx~20 iken normal birakis hedefi kalcanin 400+ px ONUNE
+# dusuyordu (bacak boyu 184 px) -- ayak 260 px ileriye basip karakteri geri
+# firlatiyordu. Normal yuruyuste hedef kalcanin ~+30 px onunde oldugu icin bu
+# sinir itkisiz yuruyuste HIC devreye girmiyor (60 s kosu bit-bit ayni).
+FAZB_MAX_STEP_AHEAD_PX = 70.0
+
+
 def classify_contact_phase(leg_angle_deg: float, deadband_deg: float = CONTACT_DEADBAND_DEG) -> str:
     """Faz A kinematik sensoru -- stance bacaginin mutlak acisindan faz."""
     if leg_angle_deg < -deadband_deg:
@@ -199,14 +220,16 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
       omega0: sqrt(g/L) -- cagiran kod hesaplayip geciriyor (bu sinif
         kendi basina g/L bilmiyor, sahne sabitlerine bagli olmasin diye)."""
 
-    def __init__(self, *args, capture_gain: float = 1.0, support_margin: float = 6.0,
-                 swing_lead_margin: float = 12.0, omega0: float = 0.05,
+    def __init__(self, *args, capture_gain: float = 1.0, support_margin: float = 60.0,
+                 swing_lead_margin: float = -15.0, omega0: float = 0.05,
                  knee_forward_seed: float | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         # Adim 17 -- FABRIK diz dali tohumu (None = eski davranis). +1/-1:
         # yuruyus yonu. Bkz. `_seed_knee_branch()`.
         self.knee_forward_seed = knee_forward_seed
         self.foot_target = self.planted.copy()
+        self.catch_active = False   # Adim 18 (Faz B) -- yakalama salinimi suruyor mu
+        self.faz_b_enabled = True   # False: Adim 17 davranisi (karsilastirma icin)
         self.capture_gain = capture_gain
         self.support_margin = support_margin
         self.swing_lead_margin = swing_lead_margin
@@ -249,13 +272,27 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         yol actigini gosterdi (bkz. commit mesaji/README)."""
         if self.state == "stance" and not hold_release and not other_leg_swinging:
             xcp = hip_pos[0] + self.capture_gain * hip_vx / self.omega0
-            if xcp - self.planted[0] > self.support_margin:
+            if xcp - self.planted[0] > self.support_margin and self.faz_b_enabled and self.toe_off_overrun():
+                # Adim 18 (Faz B): kalca bu ayagi asiri hizla gecmisken (toe_off
+                # asim acisi) normal capture-point birakisi xcp'yi (hip_vx/omega0)
+                # yuzlerce piksel ileriye atiyordu -- bunun yerine sikistirilmis
+                # yakalama salinimi.
+                self.launch_catch_step(hip_pos[0], hip_vx)
+            elif xcp - self.planted[0] > self.support_margin:
                 self.state = "swing"
                 self.swing_start = self.planted.copy()
-                self.swing_target = np.array([xcp + self.swing_lead_margin, self.ground_y])
+                self.swing_target = np.array([self._reach_clamp(xcp + self.swing_lead_margin, hip_pos[0]), self.ground_y])
                 self.swing_t = 0.0
                 self._active_swing_duration = float(self.swing_duration_frames)
                 self.emergency_step_active = False
+        elif self.state == "swing" and self.catch_active:
+            # Adim 18 (Faz B): yakalama salinimi -- hedef, INIS anindaki
+            # tahmini kalca konumuna dogru her karede sinirli hizla kayar
+            # (sikistirilmis salinimda kalca ayagi gecmeye devam ediyor).
+            desired = self._catch_target_x(hip_pos[0], hip_vx)
+            delta = desired - self.swing_target[0]
+            cap = FAZB_MAX_RETARGET_PX + abs(hip_vx)   # kalcanin kendi hizindan geri kalmasin
+            self.swing_target[0] += max(-cap, min(cap, delta))
         elif self.state == "swing" and not self.emergency_step_active:
             # 12. tur -- Dinamik Salinim Suresi v2: HER KAREDE o anki
             # hip_vx'e gore bir hedef sure hesapla, sonra suresi ANI
@@ -278,7 +315,7 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
             # DEGIL -- bkz. 9. turun reddedilen "teleport" versiyonu).
             if self.swing_t < MAR_LOCK_IN_T:
                 xcp = hip_pos[0] + self.capture_gain * hip_vx / self.omega0
-                desired_target_x = xcp + self.swing_lead_margin
+                desired_target_x = self._reach_clamp(xcp + self.swing_lead_margin, hip_pos[0])
                 delta = desired_target_x - self.swing_target[0]
                 step = max(-MAR_MAX_STEP_PX, min(MAR_MAX_STEP_PX, delta))
                 self.swing_target[0] += step
@@ -287,9 +324,62 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         # girmesin -- release karari SADECE yukarida, capture-point'e gore.
         self._seed_knee_branch(hip_pos)
         foot = super().update(hip_pos, hold_release=True)
+        if self.state == "stance":
+            self.catch_active = False
         self.foot_target = np.array(foot, dtype=float).copy()
         self.sense_contact_phase(hip_pos)
         return foot
+
+    # -- Adim 18 (Faz B) ---------------------------------------------------
+    def toe_off_overrun(self) -> bool:
+        """Faz A sensoru: stance'ta, toe_off fazinda VE normal yuruyusun
+        ulasamadigi bir asim acisinda mi? (kalca ayagi hizla geciyor)"""
+        return (self.state == "stance" and self.contact_phase == PHASE_TOE_OFF
+                and self.leg_angle_deg > FAZB_TOE_OFF_OVERRUN_DEG)
+
+    def _reach_clamp(self, target_x: float, hip_x: float) -> float:
+        if not self.faz_b_enabled:
+            return target_x
+        return max(hip_x - FAZB_MAX_STEP_AHEAD_PX, min(hip_x + FAZB_MAX_STEP_AHEAD_PX, target_x))
+
+    def _catch_target_x(self, hip_x: float, hip_vx: float) -> float:
+        remaining = max(0.0, (1.0 - self.swing_t) * self._active_swing_duration)
+        ahead = max(-FAZB_MAX_PREDICT_PX, min(FAZB_MAX_PREDICT_PX, hip_vx * remaining))
+        lead = FAZB_TARGET_LEAD_PX if hip_vx >= 0 else -FAZB_TARGET_LEAD_PX
+        return hip_x + ahead + lead
+
+    def compress_swing(self, hip_x: float, hip_vx: float, frames: float = FAZB_CATCH_FRAMES) -> bool:
+        """Havadaki bacagin KALAN salinimini `frames` kareye sikistirir.
+        `swing_t` degismez (Bezier konumu sicramaz); sadece kare basina
+        artis hizi (1/_active_swing_duration) buyur. DST/MAR bu salinim
+        icin devre disi (emergency_step_active), hedefi yakalama mantigi
+        surer. Zaten daha kisa kaldiysa dokunmaz."""
+        if self.state != "swing" or self.swing_t >= 1.0:
+            return False
+        remaining = (1.0 - self.swing_t) * self._active_swing_duration
+        if remaining <= frames + 1e-9 and self.catch_active:
+            return False
+        new_remaining = min(remaining, frames)
+        self._active_swing_duration = max(1.0, new_remaining / (1.0 - self.swing_t))
+        self.emergency_step_active = True
+        self.catch_active = True
+        return True
+
+    def launch_catch_step(self, hip_x: float, hip_vx: float, frames: float = FAZB_CATCH_FRAMES) -> bool:
+        """toe_off'taki stance bacagini HEMEN, sikistirilmis bir salinimla
+        birakir (cagiran kod diger bacagin havada OLMADIGINI garanti eder)."""
+        if self.state != "stance":
+            return False
+        self.state = "swing"
+        self.swing_start = self.planted.copy()
+        self.swing_t = 0.0
+        self._active_swing_duration = max(1.0, float(frames))
+        self.emergency_step_active = True
+        self.catch_active = True
+        self.is_slipping = False
+        self.slip_velocity = 0.0
+        self.swing_target = np.array([self._catch_target_x(hip_x, hip_vx), self.ground_y])
+        return True
 
     def _seed_knee_branch(self, hip_pos: np.ndarray) -> None:
         """Adim 17 -- FABRIK her karede bir onceki noktalardan baslar; bacak

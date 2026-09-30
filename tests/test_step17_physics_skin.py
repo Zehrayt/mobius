@@ -52,10 +52,12 @@ class Step14RegressionTest(unittest.TestCase):
         sim = self.sim
         self.assertFalse(sim.nan)
         self.assertFalse(sim.fell)
-        self.assertEqual(len(sim.step_events), 27)
-        self.assertEqual(len(sim.emergency_step_events), 36)
-        self.assertEqual(len(sim.slip_events), 89)
-        self.assertAlmostEqual(sim.hip_y_log[-1], 147.51, places=2)
+        # Adim 18: 60/-15 geometrisi + Faz B (Adim 17'de 27/36/89/147.51 idi)
+        self.assertEqual(len(sim.step_events), 26)
+        self.assertEqual(len(sim.emergency_step_events), 0)
+        self.assertEqual(len(sim.slip_events), 14)
+        self.assertEqual(len(sim.fazb_events), 1)
+        self.assertAlmostEqual(sim.hip_y_log[-1], 146.62, places=2)
 
     def test_knees_bend_forward(self):
         self.assertEqual(sum(o < -1.0 for o in self.knee_offsets["swing"]), 0)
@@ -63,6 +65,43 @@ class Step14RegressionTest(unittest.TestCase):
 
     def test_all_phases_observed(self):
         self.assertTrue({PHASE_HEEL_STRIKE, PHASE_FLAT_FOOT, PHASE_TOE_OFF, PHASE_SWING} <= self.phases_seen)
+
+
+class FazBTest(unittest.TestCase):
+    """Adim 18: toe_off tetikli yakalama adimi."""
+
+    @staticmethod
+    def run_sim(n, **kw):
+        sim = s14.ActiveBipedSim(**kw)
+        double_swing, pts = 0, []
+        for _ in range(n):
+            sim.step()
+            double_swing += all(l.state == "swing" for l in sim.legs)
+            pts.append(sim.body.points.copy())
+        return sim, double_swing, np.array(pts)
+
+    def test_undisturbed_walk_never_triggers_and_is_unchanged(self):
+        on, ds_on, p_on = self.run_sim(900, stumble_kick_px=0.0, big_push_kick_px=0.0)
+        off, _, p_off = self.run_sim(900, stumble_kick_px=0.0, big_push_kick_px=0.0, faz_b=False)
+        self.assertEqual(on.fazb_events, [])
+        self.assertEqual(ds_on, 0)
+        self.assertTrue(np.array_equal(p_on, p_off))
+
+    def test_forward_pushes_single_support_and_no_collapse(self):
+        for push in (100.0, 150.0, 300.0):
+            sim, ds, _ = self.run_sim(420, big_push_kick_px=push)
+            self.assertFalse(sim.fell, push)
+            self.assertEqual(ds, 0, push)
+            self.assertGreater(s14.GROUND_Y - max(sim.hip_y_log[210:]), 75.0, push)
+
+    def test_compress_swing_keeps_position_continuous(self):
+        leg = s14.make_leg(np.array([0.0, s14.HIP_Y]), 0.0)
+        leg.state, leg.swing_t, leg._active_swing_duration = "swing", 0.4, 10.0
+        leg.swing_start, leg.swing_target = np.array([-20.0, s14.GROUND_Y]), np.array([30.0, s14.GROUND_Y])
+        self.assertTrue(leg.compress_swing(0.0, 2.0, frames=3.0))
+        self.assertAlmostEqual(leg.swing_t, 0.4)
+        self.assertAlmostEqual((1.0 - leg.swing_t) * leg._active_swing_duration, 3.0)
+        self.assertTrue(leg.catch_active and leg.emergency_step_active)
 
 
 class SkinOnPhysicsTest(unittest.TestCase):

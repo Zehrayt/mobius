@@ -3317,8 +3317,11 @@ değiştirir, onay olmadan varsayılan yapılmadı. `--roll-proposal` bayrağıy
 yan yana izlenebiliyor.
 
 Önizlemeler: [varsayılan](docs/previews/step17_bilge_physics_skin.png),
-[roll-proposal](docs/previews/step17_bilge_physics_skin_rollprop.png); tam
+[Faz B kapalı](docs/previews/step17_bilge_physics_skin_nofazb.png); tam
 ölçüm raporları `docs/validation/step17_*_report.json`.
+
+> **GÜNCELLEME (Adım 18):** 60/−15 artık varsayılan, `--roll-proposal` bayrağı
+> `--legacy-heel-gait` oldu, Faz B uygulandı — bkz. "Adım 18".
 
 ### 7. Faz B durumu: BAŞLATILMADI
 Koşul "görsel doğal akıyorsa" idi. Varsayılan gait'te sensör doğru çalışıyor
@@ -3327,6 +3330,86 @@ tek karelik stance). Push altındaki opportunistic override bu tabanın üstüne
 kurulursa, override'ın etkisi gait'in kendi kusurundan ayrıştırılamaz. Bu,
 Adım 16'daki "hatanın kaynağını izole edebilmek" ilkesinin aynısı. Önce
 6.'daki gait kararı verilmeli.
+
+## Adım 18 — 60/−15 yuvarlanma geometrisi varsayılan + Faz B: toe_off tetikli yakalama adımı
+
+### 1. Geometri artık varsayılan
+`step14`: `SUPPORT_MARGIN 6 → 60`, `SWING_LEAD_MARGIN 12 → −15`;
+`ActiveFootPlantingLeg` sınıf varsayılanları da aynı. Eski değerler
+`LEGACY_SUPPORT_MARGIN/LEGACY_SWING_LEAD_MARGIN` olarak duruyor
+(`step17 --legacy-heel-gait`). Kanaryalar değişti (beklenen). 60 s itkisiz:
+124 adım, 0 acil adım, 0 çift-havada karesi, stance açısı −7.8°…+14.4°,
+123/124 tam HS→FF→TO.
+
+### 2. Çöküşün teşhisi (Faz B'siz, 150 px ileri itki)
+Kare kare iz (`t=7.0 s`): itki geldiğinde sol bacak havada
+(`swing_t=0.30`), sağ bacak stance. Kalça 65 px/kare ile ileri fırlıyor.
+Havadaki bacağın MAR hedefi kare başına 8 px ile sınırlı olduğu için hedef
+kalçanın 119 px gerisinde kalıyor. Aynı anda `FallRiskMonitor` stance
+bacağını acil adıma atıyor, ama diğer bacak zaten havada. Sonuç: 11 çift-havada
+karesi. Kalçayı tutan tek şey geride kalmış eski anchor, kalça onun etrafında
+sarkaç gibi düşüyor (183 → 60 px). İkinci darbe: toparlanırken `vx≈7–20` ile
+yapılan normal capture-point bırakışları `xcp = hip + vx/ω0 ≈ hip + 22·vx`
+yüzünden hedefi kalçanın 150–430 px önüne koyuyor, ayak 260 px ileriye basıyor.
+
+### 3. Faz B mekanizması (`physics/active_gait.py`, `step14` bağlantısı)
+- **Tetik (Faz A sensöründen):** stance bacağı `toe_off`'ta ve açı
+  `> FAZB_TOE_OFF_OVERRUN_DEG = 20°` (itkisiz yürüyüşte hiç aşılmıyor), ya
+  da `FallRiskMonitor` tehlike bildirirken bacak `toe_off`'ta.
+- **Eylem, tek-destek kuralını bozmadan:** Havada bacak varsa
+  `compress_swing()` onun kalan salınımını 3 kareye sıkıştırıyor. Bu
+  `_active_swing_duration` üzerinden yapılıyor, `swing_t` değişmiyor, yani
+  Bezier konumu sıçramıyor. Havada bacak yoksa `launch_catch_step()` toe_off
+  bacağını 3 karelik salınımla hemen bırakıyor.
+- **Hedef:** Yakalama salınımında hedef her kare, iniş anındaki tahmini kalça
+  konumuna doğru kayıyor. Kayma sınırı `25 px + |vx|`.
+- **Sıkıştırılmış bırakış:** Toe_off aşımı sürerken gelen normal
+  capture-point bırakışı da sıkıştırılmış yakalama salınımına dönüşüyor.
+- **Erişim sınırı:** `FAZB_MAX_STEP_AHEAD_PX = 70`. Capture-point hedefi
+  kalçadan en fazla 70 px önde ya da geride olabilir. Normal yürüyüşte hedef
+  ~+30 px olduğu için hiç devreye girmiyor.
+- **Doğrulama:** 60 s itkisiz koşu Faz B açıkken ve kapalıyken bit-bit aynı,
+  0 tetik. `FAZ_B_ENABLED` / `ActiveBipedSim(faz_b=False)` / `step17 --no-faz-b`
+  ile kapatılabilir.
+
+### 4. Ölçümler (15 px tökezleme + t=7 s itki, 16 s)
+| İtki | Faz B KAPALI: en alçak kalça / çift-havada / acil adım | Faz B AÇIK: en alçak kalça / çift-havada / acil / yakalama |
+|---|---|---|
+| +50 | 146 / 13 / 12 | 149 / 2 / 2 / 2 |
+| +100 | 90 / 13 / 8 | 119 / 0 / 0 / 1 |
+| **+150** | **60 / 11 / 7** | **92 / 0 / 0 / 1** |
+| +200 | 65 / 8 / 5 | 118 / 0 / 0 / 1 |
+| +300 | 59 / 6 / 4 | 102 / 0 / 0 / 1 |
+| +500 | 60 / 7 / 5 | 81 / 0 / 0 / 1 |
+| −100 (geri) | **DÜŞTÜ** | 95 / 5 / 3 / 2 |
+| −150 (geri) | **DÜŞTÜ** | 62 / 9 / 8 / 1 |
+
+Tek senaryo tuzağına karşı 150 px itki, yürüyüş döngüsünün 12 farklı anında
+verildi (`t = 7.0 + k/30`). Faz B kapalıyken en alçak kalça 12–62 px arası,
+bir durumda düştü, 9–27 çift-havada karesi var. Faz B açıkken en alçak kalça
+90–150 px, düşme yok, **0 çift-havada karesi**.
+
+Deri (step17, varsayılan senaryo): 0 tek karelik stance (eskiden 6). İnişte
+eğim sıçraması ortalama 1.0°, en fazla 8° (eskiden 3.1° / 29.7°). Taban
+gömülmesi 0, en küçük parça örtüşmesi 90 px.
+
+### 5. Dürüst sınırlar
+- **Bir kare gecikme:** Sensör konum ölçüyor, hız ölçmüyor. İtkinin geldiği
+  karede açı henüz +17°, tetik bir sonraki karede (+28°). Hızdan tahmin
+  edilen açı bunu bir kare öne çekebilir. Bu turda denenmedi.
+- **Yakalamadan sonra kalça 57 px/kare yükseliyor:** Faz B yokken bu 75
+  px/kare idi. Ayak kalçanın altına indiğinde anchor–kalça çubuğu (sabit 184
+  px, compliance 0.85) sıkışmış halden geri yayılıyor. Görselde derin
+  hamleden bir-iki karede dikilme. 9./10. turlardaki anlık handoff'un aynısı;
+  yumuşatılması ayrı bir iş.
+- **Geri itkiler Faz B kapsamı dışında:** Tetik yalnızca `toe_off` tarafında.
+  Geri itkide kalça ayağın gerisine düşüyor (`heel_strike` tarafı), eski
+  `trigger_emergency_step` yolu hâlâ çalışıyor ve çift-havada kareleri orada
+  kalıyor (−150 px'te 9). Düşme artık yok (erişim sınırı sayesinde), ama
+  kalça 62 px'e iniyor. Aynı mekanizmanın `heel_strike` aynası sıradaki aday.
+- **FABRIK erişemiyor:** Yakalama hamlesinde arka ayak 150 px geride
+  kalabiliyor. Bacak zinciri bu hedefe erişemiyor (24 karede >5 px). Deri
+  ayakkabıyı gait hedefine koyuyor, incik en fazla 14 px geriliyor.
 
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 

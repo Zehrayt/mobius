@@ -5,6 +5,10 @@
   "steps": 25,
   "emergency_steps": 7,
   "slip_frames": 15,
+  "faz_b": false,
+  "faz_b_events": [],
+  "min_hip_height_after_push": 59.7,
+  "double_swing_frames": 11,
   "frames": 360,
   "phases": {
     "deadband_deg": 2.0,
