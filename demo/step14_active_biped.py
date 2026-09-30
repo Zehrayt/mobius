@@ -246,6 +246,24 @@ LEGACY_SWING_LEAD_MARGIN = 12.0
 # FallRiskMonitor -> trigger_emergency_step).
 FAZ_B_ENABLED = True
 
+# Adim 19b -- yakalama sonrasi kinetik sok emilimi. Yakalama ayagi kalcanin
+# altina indiginde anchor-kalca cubugu (ARM_LENGTH, compliance 0.85) cok
+# sikismis haldedir; tam boyuna tek-iki karede yaylanip kalcayi 57 px/kare
+# firlatiyordu. SADECE yakalama inisinden sonra (anchor o bacaga gectiginde)
+# cubugun dinlenme boyu bir YUKSELIS HIZI SINIRLAYICISIYLA ARM_LENGTH'e doner:
+#   rest_k = min(ARM, max(rest_{k-1}, d_now) + SHOCK_RISE_CAP_PX)
+# (monoton -- destek asla gevsemez, kalca sarkmaz). Kalca SHOCK_FLOOR_PX'in
+# altindaysa sonumleme birakilir (tam rijit boy): -500 px geri itki taramasinda
+# yumusaklik cokusu buyutuyordu. compliance DEGISMIYOR (13. tur eki 3), normal
+# adimlarda HIC devreye girmez (11. tur Rest Length Lerping'in reddedilme
+# sebebi normal handoff'lari bozmasiydi; itkisiz yuruyus bit-bit ayni).
+# Denenip reddedilen: birinci derece low-pass (rate 0.1-0.5) -- -500 px'te
+# HER oranda dustu.
+SHOCK_ABSORB_ENABLED = True
+SHOCK_RISE_CAP_PX = 15.0
+SHOCK_FLOOR_PX = 90.0
+SHOCK_ABSORB_DONE_PX = 0.5
+
 # -- Sahne olaylari: bir kucuk (ABSORBE EDILEN) ve bir buyuk (GERCEK
 #    DUSMEYE yol acan) darbe.
 #    DURUST BULGU (izole harness_preserve.py taramasi ile bulundu):
@@ -363,7 +381,8 @@ class ActiveBipedSim:
     def __init__(self, stumble_t: float | None = None, stumble_kick_px: float | None = None,
                  big_push_t: float | None = None, big_push_kick_px: float | None = None,
                  fps: int = FPS, support_margin: float | None = None,
-                 swing_lead_margin: float | None = None, faz_b: bool | None = None):
+                 swing_lead_margin: float | None = None, faz_b: bool | None = None,
+                 shock_absorb: bool | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -371,7 +390,11 @@ class ActiveBipedSim:
         self.fps = fps
         self.dt = 1.0 / fps
         self.faz_b = FAZ_B_ENABLED if faz_b is None else faz_b
-        self.fazb_events = []   # (kare, bacak, 'compress'|'launch', bacak_acisi)
+        self.fazb_events = []   # (kare, bacak, 'compress'|'launch', 'toe'|'heel', bacak_acisi)
+        self.shock_absorb = SHOCK_ABSORB_ENABLED if shock_absorb is None else shock_absorb
+        self.shock_pending = None   # yakalama inisi yapan bacak (anchor ona gecince baslar)
+        self.shock_rest = None      # None: sok emilimi aktif degil
+        self.shock_events = []      # (kare, baslangic_dinlenme_boyu)
 
         self.body, self.idx = build_body()
         self.terrain_static = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC,
@@ -524,6 +547,33 @@ class ActiveBipedSim:
             body.set_pinned_position(anchor, [stance_leg.planted[0], GROUND_Y])
             body.prev_points[hip][0] -= applied_thrust
 
+        # Adim 19b -- yakalama sonrasi sok emilimi (bkz. SHOCK_ABSORB_* notu)
+        # anchor'in GERCEKTEN yakalama bacagina gectigi karede baslar (iki bacak
+        # da stance iken anchor diger bacakta kalabiliyor -- o durumda bekle)
+        if stance_leg is not None and self.shock_pending is not None and stance_leg is self.shock_pending:
+            d = float(np.linalg.norm(body.points[hip] - np.array([stance_leg.planted[0], GROUND_Y])))
+            self.shock_rest = min(ARM_LENGTH, d)
+            self.shock_pending = None
+            self.shock_events.append((f, round(self.shock_rest, 1)))
+        if self.shock_rest is not None:
+            i0, j0, _, c0 = body.sticks[0]
+            if stance_leg is not None:
+                # hiz siniri: dinlenme boyu, cubugun SU ANKI boyunun en fazla
+                # SHOCK_RISE_CAP_PX fazlasi olabilir -- kalca asla gevsemis bir
+                # destekle sarkmaz (cokus onlenir), sadece yukselis hizi sinirlanir.
+                d_now = float(np.linalg.norm(body.points[hip] - body.points[anchor]))
+                self.shock_rest = min(ARM_LENGTH, max(self.shock_rest, d_now) + SHOCK_RISE_CAP_PX)
+                if GROUND_Y - body.points[hip][1] < SHOCK_FLOOR_PX:
+                    # kalca tehlikeli alcaklikta: sonumleme birakilir, tam rijit
+                    # boy -- yumusaklik cokusu buyutmesin (-500 px taramasi)
+                    self.shock_rest = ARM_LENGTH
+            body.sticks[0] = (i0, j0, self.shock_rest, c0)
+            if ARM_LENGTH - self.shock_rest < SHOCK_ABSORB_DONE_PX:
+                self.shock_rest = None
+        elif body.sticks[0][2] != ARM_LENGTH:
+            i0, j0, _, c0 = body.sticks[0]
+            body.sticks[0] = (i0, j0, ARM_LENGTH, c0)
+
         # 13. tur eki 3 -- dinamik-compliance ("muz kabugu") hilesi TAMAMEN
         # KALDIRILDI; anchor-kalca cubugu HER ZAMAN sabit
         # ANCHOR_HIP_COMPLIANCE_BASE ile kurulur (bkz. build_body()).
@@ -545,7 +595,10 @@ class ActiveBipedSim:
             other = right_leg if leg is left_leg else left_leg
             was_stance = leg.state == "stance"
             was_swing = leg.state == "swing"
+            was_catch = leg.catch_active
             leg.update(hip_pos, hip_vx=hip_vx, other_leg_swinging=(other.state == "swing"))
+            if was_swing and was_catch and leg.state == "stance" and self.shock_absorb:
+                self.shock_pending = leg
             if was_stance and leg.state == "swing":
                 self.step_events.append((f, "l" if leg is left_leg else "r"))
             if was_swing and leg.state == "stance":
@@ -553,6 +606,8 @@ class ActiveBipedSim:
                 # sansiyla baslar.
                 leg.is_slipping = False
                 leg.slip_velocity = 0.0
+        if self.shock_pending is not None and self.shock_pending.state != "stance":
+            self.shock_pending = None   # anchor ona hic gecmeden tekrar kalkti -- bekleyen emilim iptal
 
         if not self.fell and hip_pos[1] > FALL_HIP_Y_THRESHOLD:
             self.fell = True
@@ -636,6 +691,8 @@ def main() -> None:
     print(f"acil kurtarma adimi (FallRiskMonitor/COM-vs-destek-araligi) tetiklemeleri: {len(sim.emergency_step_events)}  -> {sim.emergency_step_events}")
     print(f"Faz B yakalama adimlari (toe_off tetikli): {len(sim.fazb_events)}  -> {sim.fazb_events}")
     print(f"en dusuk kalca yuksekligi (buyuk itkiden sonra): {GROUND_Y - max(sim.hip_y_log[bp:]):.1f}px")
+    rise = -np.diff(np.array(sim.hip_y_log))[bp:]
+    print(f"itki sonrasi en hizli kalca yukselisi: {rise.max():.1f}px/kare  (sok emilimi: {sim.shock_events})")
 
 
 if __name__ == "__main__":

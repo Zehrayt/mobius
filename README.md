@@ -3435,6 +3435,49 @@ zaten hız işaretine duyarlıydı, geri tarafta ek kod gerekmedi.
 İleri itki sonuçları Adım 18 ile aynı. İtkisiz 60 saniyede Faz B açık ve
 kapalı bit-bit aynı, 0 tetik.
 
+
+### 19b. Kinetik şok emilimi (yakalama sonrası dikilme)
+**Kaynak:** Yakalama ayağı kalçanın altına indiğinde anchor–kalça çubuğu
+(184 px, compliance 0.85) çok sıkışmış durumda. Tam boyuna tek iki karede
+yaylanıp kalçayı 57 px/kare fırlatıyordu.
+
+**İlk hata:** Geri itkide yakalama ayağı indiği karede iki bacak birden
+stance'ta olabiliyor ve anchor, "döngüdeki son stance bacağı" kuralı yüzünden
+öbür (uzaktaki) ayakta kalıyor. Emilim anchor'ın yakalama bacağına
+**gerçekten geçtiği** karede başlatılıyor. Anchor ona hiç geçmeden bacak
+tekrar kalkarsa bekleyen emilim iptal ediliyor.
+
+**Mekanizma (`step14`, SADECE yakalama inişinden sonra):**
+`rest_k = min(ARM, max(rest_{k−1}, d_now) + SHOCK_RISE_CAP_PX)`. Bu bir
+yükseliş hızı sınırlayıcı ve monoton: dinlenme boyu hiç kısalmıyor, yani
+destek asla gevşemiyor. Kalça `SHOCK_FLOOR_PX = 90` altındaysa sönümleme
+bırakılıyor, çubuk tam rijit boyuna dönüyor. `compliance` değişmiyor (13. tur
+eki 3 dersi). Normal adımlarda devreye girmiyor (11. turdaki Rest Length
+Lerping'in reddedilme sebebi buydu). İtkisiz 60 saniye emilim açık ve kapalı
+bit-bit aynı.
+
+**Tarama** (±150/300/500 px itki + ±150 px itkinin 12'şer farklı gait anı,
+toplam 30 koşu):
+
+| Yöntem | En hızlı yükseliş (maks / medyan) | ±150 en alçak kalça | −500 en alçak kalça | Düşme |
+|---|---|---|---|---|
+| Kapalı (Adım 19a) | 65 / 42 px/kare | 92 / 93 | 52 | 0 |
+| Birinci derece low-pass (oran 0.1–0.5) | 13–35 / 9–29 | 83 / 84 | **düştü** | 1 (her oranda) |
+| Hız sınırı, taban yok (cap 10 / 15 / 20) | 16 / 22 / 27 maks. | 89–93 | düştü / 26 / 33 | 1 / 0 / 0 |
+| **Hız sınırı cap 15 + taban 90 (seçilen)** | 65 / **20** | **92 / 93** | **52** | **0** |
+
+Low-pass bu yüzden reddedildi. Seçilen ayarda tipik yakalamada yükseliş
+57 → 21 px/kare. Görselde çömelmeden 5–6 karede doğrulma. En aşırı
+senaryoda (−500 px, kalça < 90 px) bilinçli olarak eski rijit davranışa
+dönülüyor, bu yüzden tabloda en yüksek yükseliş hâlâ 65. Yumuşaklığın kalçayı
+daha da çöktürmesine izin vermiyoruz.
+
+**Yan düzeltme:** Diz tohumu artık bir önceki karenin zincir ucuna değil, bu
+karenin hedefine (stance'ta `planted`, swing'de `swing_target`) bakıyor.
+Sıkıştırılmış yakalama salınımında eski uç kalçanın üstünde kalabiliyor ve
+bir karede dizi geriye atıyordu. Gövde noktaları tohumdan bağımsız, bit-bit
+aynı.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

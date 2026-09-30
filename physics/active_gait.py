@@ -413,7 +413,12 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         if self.knee_forward_seed is None:
             return
         chain = self.chain
-        d = chain.points[-1] - hip_pos
+        # Adim 19: yon, bir onceki karenin zincir ucundan DEGIL, bu karenin
+        # gercek hedefinden (stance: planted, swing: swing_target) alinir --
+        # sikistirilmis yakalama saliniminda eski uc kalcanin USTUNDE
+        # kalabiliyor ve tohum dizi yanlis dala atiyordu.
+        aim = self.planted if self.state == "stance" else self.swing_target
+        d = aim - hip_pos
         n = float(np.linalg.norm(d))
         u = d / n if n > 1e-6 else np.array([0.0, 1.0])
         perp = np.array([-u[1], u[0]])

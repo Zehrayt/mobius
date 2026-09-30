@@ -52,12 +52,12 @@ class Step14RegressionTest(unittest.TestCase):
         sim = self.sim
         self.assertFalse(sim.nan)
         self.assertFalse(sim.fell)
-        # Adim 18: 60/-15 geometrisi + Faz B (Adim 17'de 27/36/89/147.51 idi)
+        # Adim 19b: sok emilimi dahil (Adim 18: 26/0/14/1/146.62; Adim 17: 27/36/89/147.51)
         self.assertEqual(len(sim.step_events), 26)
         self.assertEqual(len(sim.emergency_step_events), 0)
-        self.assertEqual(len(sim.slip_events), 14)
+        self.assertEqual(len(sim.slip_events), 5)
         self.assertEqual(len(sim.fazb_events), 1)
-        self.assertAlmostEqual(sim.hip_y_log[-1], 146.62, places=2)
+        self.assertAlmostEqual(sim.hip_y_log[-1], 146.42, places=2)
 
     def test_knees_bend_forward(self):
         self.assertEqual(sum(o < -1.0 for o in self.knee_offsets["swing"]), 0)
@@ -103,6 +103,20 @@ class FazBTest(unittest.TestCase):
             self.assertEqual(len(sim.emergency_step_events), 0, push)
             self.assertTrue(any(e[3] == "heel" for e in sim.fazb_events), push)
             self.assertGreater(s14.GROUND_Y - max(sim.hip_y_log[210:]), 60.0, push)
+
+    def test_catch_shock_absorption_limits_rise(self):
+        """Adim 19b: yakalama sonrasi kalca yukselisi sinirli; itkisiz yuruyus degismez."""
+        for push in (150.0, -150.0):
+            on, _, _ = self.run_sim(420, big_push_kick_px=push)
+            off, _, _ = self.run_sim(420, big_push_kick_px=push, shock_absorb=False)
+            rise_on = max(-np.diff(np.array(on.hip_y_log))[210:])
+            rise_off = max(-np.diff(np.array(off.hip_y_log))[210:])
+            self.assertLess(rise_on, 25.0, push)
+            self.assertGreater(rise_off, 45.0, push)
+            self.assertFalse(on.fell, push)
+        a, _, pa = self.run_sim(900, stumble_kick_px=0.0, big_push_kick_px=0.0)
+        b, _, pb = self.run_sim(900, stumble_kick_px=0.0, big_push_kick_px=0.0, shock_absorb=False)
+        self.assertTrue(np.array_equal(pa, pb))
 
     def test_compress_swing_keeps_position_continuous(self):
         leg = s14.make_leg(np.array([0.0, s14.HIP_Y]), 0.0)
