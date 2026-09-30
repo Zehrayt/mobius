@@ -1,4 +1,7 @@
 outputs/*.mp4
+outputs/
+.DS_Store
+.venv/
 __pycache__/
 *.mp4
 .verify_tmp/

@@ -3,12 +3,15 @@
 Karakterleri elle kare kare çizmek yerine; iskeletleri **Verlet integration**
 (yerçekimi + mesafe kısıtlamalı nokta-çubuk fiziği) ve **FABRIK** (Inverse
 Kinematics) ile prosedürel olarak hareket ettirip, sahneyi kare kare
-`OpenCV` ile `.mp4` olarak render eden bir motor. Hiçbir kare elle
-çizilmez / keyframe kullanılmaz — hareket tamamen fizik ve hedef-tabanlı
-matematikten doğar.
+`OpenCV` ile `.mp4` olarak render eden bir motor. Fizik demolarında hareket fizik ve hedef-tabanlı matematikten doğar.
+Yeni `scene/` katmanı ise üretim sahnelerine saniye tabanlı mizansen ve
+tween kontrolü ekler; fizik çekirdeğinin davranışını değiştirmez.
 
 **Yol haritası maddesi ↔ dosya eşlemesi netleşmemişse (ör. neden
-`step6`/`step11` diye bir dosya yok) önce [`INDEX.md`](INDEX.md)'e bakın.**
+`step11` diye bir dosya yok) önce [`INDEX.md`](INDEX.md)'e bakın.**
+
+Yeni sahne ve Bilge yürüyüşü için [Zehra'ya inceleme notları](docs/ZEHRA_DEGISIKLIK_NOTLARI.md):
+dosya bazında açıklamalar, önizlemeler, çalıştırma komutları ve mevcut sınırlar.
 
 ## Kurulum
 
@@ -20,6 +23,8 @@ GPU gerekmez — bütün hesaplama numpy tabanlı skaler/vektör matematiği,
 normal bir CPU'da gerçek zamanlıdan çok daha hızlı çalışır.
 
 ## Çalıştırma
+
+### Physics Demos (steps 1–5, 7–16)
 
 ```bash
 python3 demo/step1_verlet_chain.py   # -> outputs/step1_verlet_vs_robotic.mp4
@@ -33,17 +38,85 @@ python3 demo/step7_squash_stretch.py  # -> outputs/step7_squash_stretch.mp4
 python3 demo/step9_ragdoll_blend.py   # -> outputs/step9_ragdoll_blend.mp4
 python3 demo/step12_balance.py        # -> outputs/step12_balance.mp4
 python3 demo/step13_full_integration_test.py # -> outputs/step13_full_integration_test.mp4
+python3 demo/step14_active_biped.py # -> outputs/step14_active_biped.mp4
+python3 demo/step15_segment_foot.py # -> outputs/step15_segment_foot.mp4
+python3 demo/step16_segment_foot_lab.py # -> outputs/step16_segment_foot_lab.mp4
 ```
 
-## Mimari: çekirdek (`physics/`) vs. sahne (`demo/`)
+### Bilge: bağımsız iskelet yürüyüş testi
 
-`physics/` altı **jenerik, sahneden bağımsız** mekanizmalardan oluşur —
-hiçbiri belirli bir karakter/sahne bilmez. `demo/` altındaki her `stepN_*.py`
-ise bunları belirli sabitlerle (kalça yüksekliği, rüzgar gücü, buz bölgesi
-x aralığı, ...) somut bir SAHNEYE bağlayan, kendi kendine çalışan bir
-script'tir. Bu ayrım kullanıcı geri bildirimi üzerine eklendi — daha önce
-çarpışma/ragdoll/denge mantığının bir kısmı `demo/` dosyalarında hardcode
-idi (bkz. `INDEX.md`'deki refactor notu).
+```bash
+python3 demo/bilge_walk_validation.py
+python3 -m unittest discover -s tests -p 'test_bilge_walk_validation.py' -v
+```
+
+`outputs/bilge_walk_validation.mp4`: 1280×720, 30 FPS, 8 saniye, sessiz.
+0–1 saniye bekleme; 1–6 saniye hızlanarak yürüyüş ve yavaşlama;
+6–8 saniye son basışın tamamlanması ve bekleme. Sabit kamera, sade zemin,
+çocuk oranlarında çizgi/eklem iskeleti. `bilge_walk_validation_preview.png`
+videodan çözülen bekleme, sol adım, sağ adım ve son duruş karelerini birleştirir.
+`bilge_walk_validation_report.json` tüm 240 karenin sayısal ölçümlerini içerir.
+
+Adımlar mevcut `physics.gait.FootPlantingLeg`, kol ve bacak eklemleri mevcut
+`FabrikChain2D` ile çözülür. Kalça sürücüsü step3/step4 yaklaşımındaki gibi
+kinematiktir; bu test dinamik denge simülasyonu değildir. Kol hedefleri karşı
+bacağın gerçek konumundan türetilir. `WalkConfig` oranları, adım mesafesini,
+kaldırma yüksekliğini, başlangıç/duruş zamanlarını ve IK toleransını toplar.
+Ayak basma mekanizması kare tabanlı olduğundan test 30 Hz için ayarlanmıştır.
+
+Kayma, her basışın ilk karesine göre **çözülmüş ayak ekleminin dünya x
+koordinatından** ölçülür. Zemin ihlali aynı eklemin zemin altına uzaklığıdır;
+ayaklar nokta temasıdır, ayakkabı/taban geometrisi yoktur. Kemik uzunlukları,
+diz yönü, erişilebilirlik, tek ayak desteği ve kadraj da denetlenir. Diz dalı
+başlangıçta seçilir; clamp sonrası ayağı zorla yerine koymak yerine FABRIK
+hassas yakınsatılır. Motor çekirdeği değişmez. Step15/16 kullanılmaz ve
+misafirlik sahnesine bağlanmaz.
+
+### Bilge: parçalı görselle yürüyüş
+
+```bash
+python3 demo/bilge_walk_skinned.py
+python3 demo/bilge_walk_skinned.py --debug
+```
+
+İlk komut `outputs/bilge_walk_skinned.mp4` ve
+`outputs/bilge_walk_skinned_preview.png` üretir: 1280×720, 30 FPS,
+8 saniye, sade zemin, normal videoda iskelet çizgileri yok.
+`--debug`, orijinal eklemleri, görsel bilekleri ve taban temaslarını ayrı
+`bilge_walk_skinned_debug.*` çıktılarında gösterir. `--preview-only`
+yalnızca dört pozluk PNG ve ölçüm raporu üretir.
+
+`bilge_walk_validation.simulate(WalkConfig())` aynı haliyle kullanılır;
+zamanlama ve eklem koordinatları değişmez. 16 parçanın bağlantıları
+`assets/characters/bilge_rig/rig.json` içindedir. Yüz, orijinal Bilge PNG'sinin
+pikselleridir. Diğer parçalar ve gizli eklem yüzeyleri referansa göre
+imagegen ile tamamlanmıştır; ayrıntılar [rig açıklamasında](assets/characters/bilge_rig/README.md).
+`scene/skinning.py` iki bağlantılı dönüşümleri ve alfa çizimini yapar;
+fizik motoru ve misafirlik sahnesi değiştirilmez.
+
+Çözülmüş eklemlerin ölçümleriyle birlikte parça örtüşmeleri, ayakkabı
+kayması ve görünür taban/zemin farkı `bilge_walk_skinned_report.json`
+dosyasına yazılır. Önizleme dört video karesinin büyütülmüş kesitidir;
+videoda kamera sabittir. Testler:
+`python3 -m unittest discover -s tests -p 'test_bilge_skinning.py' -v`.
+
+### Production Scene (Timeline + Assets)
+
+```bash
+python3 demo/step6_scenario_timeline.py # -> outputs/step6_misafiri_severiz.mp4
+```
+
+**İlk production scene: "Misafiri Severiz" (Türk çocuk şarkısı sahnesi, placeholder
+assets ile başlayıp gerçek PNG'ler konabilir).**
+
+## Mimari: physics, scene ve demo katmanları
+
+### Katman 1: Physics (`physics/`)
+
+**Jenerik, sahneden bağımsız.**
+
+Belirli karakterleri, şarkıları ve salon sahnesini BİLMEZ. Sadece nokta/çubuk
+fiziği, ters kinematik, çarpışma, ragdoll, denge gibi mekanizmalar sağlar.
 
 - `physics/verlet.py` — genel amaçlı nokta/çubuk Verlet integration sistemi
   (`VerletSystem`) + `clamp_direction()` yardımcı fonksiyonu (bir segmentin
@@ -278,6 +351,158 @@ bayrak gibi gerilme (ort. -118px, std 2.5 -- yani neredeyse tam gerili
 ve stabil) göstermesini sağladı. Görsel doğrulama: ffmpeg ile çıkarılan
 karelerde geçiş (rüzgar 0 -> tam güç) pürüzsüz, ani bir "sıçrama" yok.
 
+---
+
+## Adım 6: Production scene / timeline
+
+`scene/`, genel fizik motorunun yanında çalışan tekrar kullanılabilir üretim
+katmanıdır. `demo/step6_scenario_timeline.py` yalnızca sahneye özgü oyuncuları,
+asset eşlemelerini, placeholder çizimlerini ve saniye tabanlı mizanseni tanımlar.
+`physics/` ve önceki demolar bu eklemede değiştirilmedi.
+
+| Dosya | Sorumluluk |
+|---|---|
+| `scene/actions.py` | Eylem türleri, parametre doğrulama ve property bağlama |
+| `scene/timeline.py` | Saniye bazlı olay yürütme, sabit başlangıçlı tween ve easing |
+| `scene/actor.py` | Actor, expression, yerel anchor/prop ağacı, `RigAdapter` sözleşmesi |
+| `scene/sprite.py` | PNG/BGRA yükleme, önbellek, eksik/bozuk asset uyarısı ve placeholder |
+| `scene/camera.py` | Dünya/ekran koordinat dönüşümü, kamera merkezi ve zoom |
+| `scene/compositing.py` | Alpha compositing, kırpılmayan döndürme, global z-index sırası |
+| `scene/staging.py` | Görünür alfa sınırları, temas noktaları, ışık, yumuşak gölge ve mobilya maskeleri |
+| `scene/export.py` | Kontrol edilen MP4 yazımı, isteğe bağlı ffmpeg ses birleştirme |
+
+### Çalıştırma ve assetler
+
+```bash
+python3 demo/step6_scenario_timeline.py
+# outputs/step6_misafiri_severiz.mp4 — 1280×720, 30 FPS, 4 saniye
+python3 demo/step6_scenario_timeline.py --fps 24 --output outputs/step6_24fps.mp4
+```
+
+Varsayılan asset ve çıktı yolları dosyanın konumundan çözülür; komut başka
+çalışma dizininden de çalışır. `--assets-dir` ve `--output` ile değiştirilebilir.
+
+Beklenen dosyalar:
+
+```text
+assets/backgrounds/living_room.png
+assets/characters/bilge_smile.png
+assets/characters/bilge_happy.png
+assets/characters/bilge_brother_happy.png
+assets/characters/guest_1.png
+assets/characters/guest_2.png
+assets/props/tea_tray.png
+assets/props/dessert_tray.png
+assets/audio/turkuz_biz.mp3             # isteğe bağlı
+```
+
+PNG yoksa veya okunamıyorsa dosya başına bir uyarı ve isimli renkli placeholder
+kullanılır. Step6 için salon, insan ve tepsi biçimli geometrik placeholder'lar
+vardır. Gerçek PNG'leri aynı adlarla koyup yeniden çalıştırmak yeterlidir.
+Expression eşlemesi açık bir sözlüktür; oyuncu adından dosya adı tahmin edilmez.
+Kardeşin `smile` ifadesi ilk MVP'de mevcut `bilge_brother_happy.png` dosyasını
+kullanır. Kardeş Mete değildir; Mete bu sahnede yer almaz.
+
+Arka plan 1280×720 dünya tuvaline sığdırılır. `scene/staging.py` karakter ve
+tepsilerin alfa kanalındaki görünür sınırlarını bulur; şeffaf kenar boşlukları
+boyut hesabına katılmaz, figürler en-boy oranı korunarak ölçeklenir.
+Bilge 350, kardeşi 264, dede 330, nine 315 piksel görünür yüksekliğindedir.
+Kalça, ayak ve avuç temas noktaları; bağımsız boyutlar; sıcak ışık düzeltmesi;
+sehpa/koltuk örtüşme poligonları
+`assets/layouts/step6_misafiri_severiz.json` içinde ayarlanır.
+
+```bash
+python3 demo/step6_scenario_timeline.py --preview-only
+# outputs/step6_misafiri_severiz_preview.png — hareketsiz, 1280×720
+python3 demo/step6_scenario_timeline.py
+# Aynı yerleşimle 4 saniyelik, sesli MP4
+```
+
+`outputs/layout_debug/` altında temas işaretli görsel, alfa maskeleri ve
+ölçek/temas raporu üretilir. `--layout` ile başka bir ayar dosyası seçilebilir.
+Örtücü katmanlar gerçek arka plan piksellerinden çıkarılır; sehpa boşlukları
+şeffaf kalır. Kamera zoom'u arka plana, maskelere ve gölgelere birlikte uygulanır.
+Oturma temasını bozmamak için dede/nineye tüm-gövde dönüşü veya bob uygulanmaz.
+Çocuklar yerleşimdeki son konumlarına girer; ayak gölgeleri onları takip eder.
+Kaynak PNG'ler değiştirilmez. Maskeler mevcut salon için kalibre edilmiştir;
+arka plan değişirse poligonlar ve minder noktaları yeniden ayarlanmalıdır.
+Ayrıntılar: [assets/README.md](assets/README.md).
+
+Ses dosyası ve PATH üzerinde veya `.venv/bin/ffmpeg` konumunda `ffmpeg`
+varsa video render edildikten sonra şarkının 10–14. saniyeleri AAC sesle
+mux edilir. Başlangıç, kullanıcının verdiği “Misafiri severiz” zamanıdır. `--audio-start 12.5` gibi bir seçenekle
+şarkının başka bir bölümünü seçebilirsiniz. Kısa ses sessizlikle tamamlanır;
+video süresi 4 saniye kalır. Ses/ffmpeg yoksa veya mux başarısız olursa
+anlaşılır mesajla sessiz MP4 korunur. Speech recognition ve lip-sync yoktur.
+
+### Timeline kullanımı ve zaman sözleşmesi
+
+```python
+from scene import Actor, Camera, Timeline, ActionType as A
+
+bilge = Actor("bilge", position=(-100, 400), visible=False)
+camera = Camera(640, 360)
+timeline = Timeline(camera)
+timeline.at(0.7, A.SHOW_ACTOR, actor=bilge)
+timeline.tween(0.7, 2.5, A.MOVE_ACTOR, actor=bilge,
+               target=(480, 400), easing="ease_in_out")
+timeline.tween(0, 4, A.CAMERA_ZOOM, zoom_target=1.045)
+# Render döngüsünde timeline.update(frame_index / fps)
+```
+
+`at` ve `add_action` eşdeğerdir; `tween(start, end, ...)` saniye aralığı alır.
+`update(t)` eylemleri kendisi uygular, ayrıca o çağrıda başlayan eylemleri
+döndürür. Bunları render döngüsünde tekrar uygulamayın. Desteklenen eylemler:
+show/hide, move/scale/rotate, expression, attach/detach, look_at, camera
+move/zoom, fade_in/fade_out ve callback. Easing: `linear`, `ease_in_out`,
+`ease_out` veya bir fonksiyon. Fade mevcut alpha'dan hedefe gider; tam bir
+fade-in için actor'u `alpha=0` ile başlatın.
+
+Olaylar kare aralarına düşse de atlanmaz, callback bir kez çalışır, tween
+bitiş değeri tam uygulanır. Başlangıç değeri olayın gerçek başlangıç anında
+alınır; her karede yeniden alınmaz. Aynı property'ye gelen sonraki eylem
+öncekini keser; aynı zamandaki eylemlerde ekleme sırası geçerlidir.
+Tüm eylemleri oynatmadan önce ekleyin. Saat ileri yönlüdür; geri sarma için
+yeni bir sahne kurun. Callback'lerin dış yan etkileri otomatik geri alınmaz.
+
+### Koordinatlar, prop ve fizik adaptörü
+
+Dünya eksenleri sağa/aşağı, actor pivotu PNG merkezidir; dönüş derecedir ve
+pozitif yön ekranda saat yönünün tersidir. Kamera konumu ekranın baktığı
+dünya merkezidir. Zoom hem konum hem sprite boyutunu etkiler. Actor'un
+`parallax_depth` değeri step5 ile aynı uzak/yakın kayma mantığını kullanır;
+step6 katmanları sabit bir salon için varsayılan `1.0` kullanır.
+
+`actor.attach_prop(prop, anchor="hands", offset=(20, -4))` bir yerel bağlantı
+kurar. Bağlı prop'un position değeri ek yerel ofsettir; scale, rotation,
+alpha ve visible üst actor'dan miras alınır. Prop'lar global z-index ile
+bir kez çizilir. Detach dünya dönüşümünü korur; sonrasında görünmeye devam
+etmesi için prop'u sahnenin actor listesinde tutun. Döngüsel veya birden
+fazla ebeveynli bağlantılar reddedilir. `render_offset`/`render_rotation`
+ikincil hareket içindir; timeline konumuna kümülatif sapma eklemez.
+
+`SIMPLE_SPRITE` ilk sahnenin çalışan modudur. `walk_to(..., timeline=..., at=...)`
+sprite hareketini zamanlar; `look_at` tüm PNG'ye küçük bir eğim verir.
+`PROCEDURAL_RIG` için `RigAdapter` sözleşmesi hazırdır: `update(dt_seconds)`,
+`walk_to`, `reach`, `set_pose`, `look_at`, `anchor` ve `parts`. Renderer
+adaptörün yerel actor parçalarını çizebilir, prop bone anchor'ını kullanabilir.
+Henüz gerçek Verlet/FABRIK/active-gait adaptörü yazılmadı; adaptör gerektiren
+çağrılar sessizce hiçbir şey yapmak yerine açıklayıcı hata verir.
+Gelecekteki adaptör fizik adımlarını sabit adım biriktiricisiyle yönetmelidir.
+Mevcut fizik motorunun frame-count bağımlılığı bu görevde değiştirilmedi.
+
+### Doğrulama
+
+```bash
+python3 -m compileall -q scene demo physics tests
+python3 -m unittest discover -s tests -v
+python3 tests/smoke_demos.py
+```
+
+Smoke kontrolü önceki demoların tam simülasyon/render döngülerini çalıştırır;
+MP4'leri geçici klasöre yönlendirip son karelerinin okunabildiğini doğrular.
+Step16 sayısal laboratuvarını da çalıştırır. Mevcut çıktıların üzerine yazmaz.
+
 ## Yol haritası
 
 1. ~~Verlet zinciri (kuyruk/kol) — organik vs. robotik karşılaştırma~~ ✅
@@ -324,8 +549,9 @@ karelerde geçiş (rüzgar 0 -> tam güç) pürüzsüz, ani bir "sıçrama" yok.
        (min 8°) ile garanti altındaydı; bu, düzeltmeden önce de "tam düz"
        görünmeyi hafifçe yumuşatıyordu ama erişilemezlik sorununun kendisini
        çözmüyordu.
-6. Sahne kayıt/render pipeline'ının (bu depo zaten `cv2.VideoWriter`
-   kullanıyor) senaryo/diyalog sistemiyle genişletilmesi
+6. ✅ Senaryo/timeline üretim katmanı: `scene/` +
+   `demo/step6_scenario_timeline.py`; sprite, prop, kamera ve opsiyonel ses.
+   Diyalog/lip-sync bu MVP'nin kapsamında değil.
 7. 🔶 Momentum ve esneme (squash & stretch) — verlet zincirlerinin hıza/
    düşmeye tepki olarak uzayıp büzüşmesi. **Başlandı:**
    `physics/verlet.py`'ye `add_stick(..., compliance=...)` eklendi — bir
