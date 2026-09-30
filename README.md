@@ -3214,6 +3214,120 @@ mimari gerçeğin bir başka yüzü. `run_push_test()`, `demo/step16_segment_
 foot_lab.py`'ye eklendi. `active_gait.py`'ye tam entegrasyon SIRADA.
 
 
+## Adım 17 — Bilge derisi gerçek fizik iskeletinde + Faz A kinematik kontak-faz sensörü
+
+Kaynak: Gül Nihal'in `codex/bilge-yuruyus-ve-sahne` dalı Git LFS ile
+birleştirildi (medya ~21 MB, pointer olarak). Onun `bilge_walk_validation.py`
+/ `bilge_walk_skinned.py` demoları kalçayı kinematik bir eğriyle
+(`pelvis_at`) sürüyor; ana motor **değil**, render referansı olarak yerinde
+duruyor. Bu adım 16 parçalı deriyi `step14`'ün gerçek fiziğine giydirdi ve
+`active_gait.py`'ye mutlak açı tabanlı kontak-faz sensörünü (Faz A) ekledi.
+
+**Çalıştırma:** `python3 demo/step17_bilge_physics_skin.py` (normal video),
+`--debug` (iskelet + faz etiketleri + faz şeridi), `--roll-proposal`
+(kabul EDİLMEMİŞ deney, aşağıya bkz.), `--preview-only`.
+
+### 1. Refactor: `ActiveBipedSim` (davranış değişmedi)
+`step14`'ün `main()` içindeki fizik döngüsü, kare-kare adımlanabilen
+`ActiveBipedSim` sınıfına birebir taşındı; böylece çubuk-adam ve Bilge derisi
+AYNI fizik kodunu kopyalamadan kullanıyor. Doğrulama: `step14` konsol raporu
+satır satır aynı; 360 karenin tüm Verlet noktaları + iki bacağın FABRIK
+noktaları **bit-bit aynı** (`np.array_equal`).
+
+### 2. Faz A sensörü (`physics/active_gait.py`)
+`classify_contact_phase(leg_angle_deg)`: ayak→kalça vektörünün dikeyle açısı
+(`step14`'ün `leg_angle_deg` tanımı, yürüyüş yönü +x). `< -2°` → `heel_strike`,
+`> +2°` → `toe_off`, arası `flat_foot`; swing'de `swing`. Faz etiketleri
+`step16` laboratuvarınınkiyle aynı. **Saf gözlemci:** eklendikten sonra
+`step14` parmak izi bit-bit aynı; `step15`/`step16` çıktıları satır satır aynı.
+
+### 3. Bulunan ve düzeltilen hata: diz yönü (deri giydirilince göründü)
+`step14`'te `KNEE_BEND_SIGN=-1.0` idi. Karakter +x yönünde yürüdüğü için bu,
+FABRIK dizini **salınım karelerinin %100'ünde (384/384) geriye** (kuş dizi)
+büküyordu. Çubuk-adamda fark edilmemişti. Sadece işareti çevirmek yetmedi:
+`clamp_joint_angles()` yanlış daldaki çözümü uyluğu sabit tutarak aynaladığı
+için ayak Bezier hedefinden **116 px'e kadar geriye** savruldu. Arkadaşının
+render'ında görülen "adımların geride kalması" ile aynı mekanizma bu.
+Düzeltme: `ActiveFootPlantingLeg._seed_knee_branch()` çözümden önce dizi
+yürüyüş yönünde ~30° ileriye tohumluyor, `KNEE_BEND_SIGN=+1.0`. Sonuç: stance
+ve swing'de **0 geri diz karesi**. Zincir ucu gait hedefiyle çakışıyor
+(medyan 0.12 px). Tek istisna 45 swing karesi: bu karelerde hedef bacak
+boyunu (184 px) aşıyor, sapma en fazla 47 px. Bu sapma fiziğin geometrisinden
+geliyor, raporda ayrı gösteriliyor. Zincir noktaları kalça dinamiğine geri
+beslenmediği için (anchor = planted) Verlet noktaları bit-bit aynı kaldı.
+`step3`–`step13` kendi sabitlerini kullanıyor, **dokunulmadı**.
+
+### 4. Deri eşlemesi (fiziğe yazılmayan, sadece çizim uzayında)
+- Kalça, omuz ve baş Verlet noktalarından geliyor. Ayak konumu gait'in kendi
+  hedefinden alınıyor (stance'ta `planted`, swing'de Bezier noktası).
+- Gövde ve boyun **yönü** fizikten, **uzunluğu** rig'den geliyor (55 → 86 px).
+  COM hesabı gerçek 55 px'lik noktaları kullanıyor.
+- Kollar `step14`'te yok. Kol salınımı, iki ayağın fiziksel x-farkından
+  türetilen bir FABRIK hedefi. Fiziksel bir kol DEĞİL; Prosedürel Kol
+  Salınımı hâlâ yol haritasında.
+- Ayakkabı eğimi Faz A'ya bağlı. `heel_strike`'ta topuk pivotunda parmak ucu
+  kalkıyor, `toe_off`'ta parmak ucu pivotunda topuk kalkıyor, `flat_foot`'ta
+  eğim 0. Dönmüş kabuğun en alt noktası zemine oturtuluyor. Swing'in son
+  %40'ında eğim, iniş noktasının Faz A tahminine yumuşakça yaklaşıyor.
+- Diz, kalçadan görsel bileğe sabit kemik boylarıyla analitik 2-kemik IK ile
+  ve ileri bükülerek çözülüyor.
+
+### 5. Ölçümler (12 s standart senaryo: 15 px tökezleme + 150 px itki)
+| Metrik | Varsayılan gait (6/12) | `--roll-proposal` (60/−15) |
+|---|---|---|
+| Düştü mü / adım / acil adım | hayır / 27 / 36 | hayır / 25 / 7 |
+| Görünür taban gömülmesi | 0 px | 0 px |
+| Stance pivot kayması (fizik kayması hariç) | 1.15 px | 0.29 px |
+| En küçük parça örtüşmesi | 90 px | 90 px |
+| Monoton olmayan faz dizisi | 0 | 0 |
+| Tam HS→FF→TO yuvarlanması (≥5 karelik stance) | 3 / 28 | 22 / 26 |
+| Tek karelik stance ("dikiş makinesi" kurtarma adımı) | 33 | 6 |
+| İnişte eğim sıçraması (ort. / maks.) | 8.2° / 27.5° | 3.1° / 29.7° |
+| İncik gerilmesi p95 / maks. (aşırı uzanma) | 6.1 / 51 px | 1.6 / 61 px |
+| İtki sonrası en düşük kalça yüksekliği | 110 px | **60 px** (diz çökmesi) |
+
+### 6. Faz A'nın asıl bulgusu: varsayılan gait topuktan hiç çıkmıyor
+60 saniyelik rahatsız edilmemiş koşuda (varsayılan `SUPPORT_MARGIN=6`,
+`SWING_LEAD_MARGIN=12`) **171 stance'ın 0'ı** tam yuvarlanma yapıyor. Stance
+karelerinin **%99'u `heel_strike`**. Sebep capture-point eşiği:
+`xcp = hip + vx/ω0 ≈ hip + 44 px`, bu yüzden bacak kalça ayağın ~38 px
+GERİSİNDEYKEN bırakılıyor ve kalça ayağın önüne hiç geçmiyor. Görselde
+karakter geriye yaslanmış, topukları üzerinde yürüyor gibi duruyor.
+İzole tarama (commit edilen varsayılanlar değişmedi):
+
+| SUPPORT / LEAD | 12 s itki: en düşük kalça yüksekliği | 60 s itkisiz: acil adım | tam yuvarlanma | HS/FF/TO |
+|---|---|---|---|---|
+| 6 / 12 (mevcut) | 110 px | 0 | 0/171 | .99/.00/.01 |
+| 30 / 12 | 72 px | 55 | 25/135 | .68/.05/.27 |
+| 50 / 0 | 37 px | 0 | 110/112 | .68/.27/.05 |
+| 55 / −10 | **13 px** (neredeyse düşme) | 0 | 122/123 | .50/.34/.16 |
+| **60 / −15** | **60 px** (diz çökmesi) | **0** | **123/124** | **.32/.37/.32** |
+
+Uyarı: `step14`'ün "düştü" eşiği (`hip_y > 320`, yani kalça yerden 10 px)
+çok gevşek; tablodaki bütün satırlar bu eşiğe göre "ayakta". Ama 60/−15'te
+150 px itkiden sonra kalça 60 px'e iniyor ve görselde karakter dizlerinin
+üzerine çöküyor (önizlemedeki "İTKİ SONRASI" karesi). Yuvarlanmayı kazanmanın
+bedeli itki dayanıklılığı. Bu yüzden bu satır tek başına "çözüm" değil, bir
+sonraki turun başlangıç noktası.
+
+60/−15 ile NaN yok, ort. hız 1.89 px/kare. Ancak adımlar hâlâ kısa
+(`vx≈2 px/kare`) ve eğim açıları küçük (±5°), bu yüzden yuvarlanma
+görselde ince kalıyor. Bu bir gait değişikliği: `step14` kanaryalarını
+değiştirir, onay olmadan varsayılan yapılmadı. `--roll-proposal` bayrağıyla
+yan yana izlenebiliyor.
+
+Önizlemeler: [varsayılan](docs/previews/step17_bilge_physics_skin.png),
+[roll-proposal](docs/previews/step17_bilge_physics_skin_rollprop.png); tam
+ölçüm raporları `docs/validation/step17_*_report.json`.
+
+### 7. Faz B durumu: BAŞLATILMADI
+Koşul "görsel doğal akıyorsa" idi. Varsayılan gait'te sensör doğru çalışıyor
+ama ortaya çıkardığı yürüyüş doğal değil (topukta yürüme, itki sonrası 33
+tek karelik stance). Push altındaki opportunistic override bu tabanın üstüne
+kurulursa, override'ın etkisi gait'in kendi kusurundan ayrıştırılamaz. Bu,
+Adım 16'daki "hatanın kaynağını izole edebilmek" ilkesinin aynısı. Önce
+6.'daki gait kararı verilmeli.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

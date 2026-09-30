@@ -1,4 +1,7 @@
-"""Dress the UNCHANGED bilge_walk_validation poses in articulated cutouts.
+"""[REFERANS -- ana motor DEGIL] Kalca kinematik bir egriyle suruluyor; fizik
+tabanli karsiligi: demo/step17_bilge_physics_skin.py (bkz. README "Adim 17").
+
+Dress the UNCHANGED bilge_walk_validation poses in articulated cutouts.
 
 python3 demo/bilge_walk_skinned.py
 python3 demo/bilge_walk_skinned.py --debug  # separate *_debug outputs

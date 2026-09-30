@@ -156,6 +156,32 @@ DST_SMOOTH_RATE = 0.15  # birinci-derece gecikme orani (0-1, kucuk=yumusak)
 MAR_MAX_STEP_PX = 8.0   # kare basina swing_target'in kayabilecegi azami piksel
 MAR_LOCK_IN_T = 0.5     # bu swing_t'den sonra hedef DONAR (inis kararliligi icin)
 
+# Adim 17 (Faz A) -- Kinematik Kontak-Faz Sensoru. step16 laboratuvarinin
+# (checkpoint 4/5) DOGRULANMIS uc-fazli etiket setini (heel_strike /
+# flat_foot / toe_off) AYNEN kullanir, ama faz, segment-ayak penetrasyonundan
+# (heel_pen/toe_pen -- bu motorda stance bacagi hala TEK noktali oldugu icin
+# yok) DEGIL, stance bacaginin MUTLAK acisindan okunur: ayak->kalca vektorunun
+# dikeyle yaptigi aci (step14'un `leg_angle_deg` tanimiyla ayni: atan2(dx, -dy),
+# yuruyus yonu +x). Kalca ayagin GERISINDEYSE (aci < -olu_bant) bacak one
+# yatik -> yuk topukta (heel_strike); ONUNDEYSE (aci > +olu_bant) yuk parmak
+# ucunda (toe_off); arada flat_foot. SAF GOZLEMCI: hicbir durum/konum/hiz
+# DEGISTIRMEZ -- step14'un 360 karelik parmak izi sensor eklendikten sonra
+# bit-bit ayni kaldi (bkz. README "Adim 17").
+CONTACT_DEADBAND_DEG = 2.0
+PHASE_SWING = "swing"
+PHASE_HEEL_STRIKE = "heel_strike"
+PHASE_FLAT_FOOT = "flat_foot"
+PHASE_TOE_OFF = "toe_off"
+
+
+def classify_contact_phase(leg_angle_deg: float, deadband_deg: float = CONTACT_DEADBAND_DEG) -> str:
+    """Faz A kinematik sensoru -- stance bacaginin mutlak acisindan faz."""
+    if leg_angle_deg < -deadband_deg:
+        return PHASE_HEEL_STRIKE
+    if leg_angle_deg > deadband_deg:
+        return PHASE_TOE_OFF
+    return PHASE_FLAT_FOOT
+
 
 class ActiveFootPlantingLeg(FootPlantingLeg):
     """`FootPlantingLeg`'in capture-point tabanli, dinamik-hizli varyanti.
@@ -174,8 +200,13 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         kendi basina g/L bilmiyor, sahne sabitlerine bagli olmasin diye)."""
 
     def __init__(self, *args, capture_gain: float = 1.0, support_margin: float = 6.0,
-                 swing_lead_margin: float = 12.0, omega0: float = 0.05, **kwargs):
+                 swing_lead_margin: float = 12.0, omega0: float = 0.05,
+                 knee_forward_seed: float | None = None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Adim 17 -- FABRIK diz dali tohumu (None = eski davranis). +1/-1:
+        # yuruyus yonu. Bkz. `_seed_knee_branch()`.
+        self.knee_forward_seed = knee_forward_seed
+        self.foot_target = self.planted.copy()
         self.capture_gain = capture_gain
         self.support_margin = support_margin
         self.swing_lead_margin = swing_lead_margin
@@ -188,6 +219,24 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         # surer (bkz. demo/step14_active_biped.py).
         self.is_slipping = False
         self.slip_velocity = 0.0
+        # Adim 17 (Faz A) -- kinematik kontak-faz sensoru (saf gozlemci).
+        self.leg_angle_deg = 0.0
+        self.contact_phase = PHASE_FLAT_FOOT if self.state == "stance" else PHASE_SWING
+
+    def sense_contact_phase(self, hip_pos: np.ndarray) -> str:
+        """Faz A: `planted` (stance'ta anchor ile ayni nokta) -> kalca
+        vektorunun mutlak acisini olcup `contact_phase`'i gunceller. Swing
+        sirasinda faz 'swing'dir ve aci ayagin o anki konumuna gore
+        raporlanir (sadece log icin)."""
+        foot = self.planted if self.state == "stance" else self.chain.points[-1]
+        dx = float(hip_pos[0] - foot[0])
+        dy = float(hip_pos[1] - foot[1])
+        self.leg_angle_deg = float(np.degrees(np.arctan2(dx, -dy)))
+        if self.state == "stance":
+            self.contact_phase = classify_contact_phase(self.leg_angle_deg)
+        else:
+            self.contact_phase = PHASE_SWING
+        return self.contact_phase
 
     def update(self, hip_pos: np.ndarray, hip_vx: float = 0.0, hold_release: bool = False,
                other_leg_swinging: bool = False) -> np.ndarray:
@@ -236,7 +285,35 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         # hold_release=True HER ZAMAN gecirilir ki ebeveynin KENDI (sabit
         # esikli) stride_release kontrolu bu sinif icin ASLA devreye
         # girmesin -- release karari SADECE yukarida, capture-point'e gore.
-        return super().update(hip_pos, hold_release=True)
+        self._seed_knee_branch(hip_pos)
+        foot = super().update(hip_pos, hold_release=True)
+        self.foot_target = np.array(foot, dtype=float).copy()
+        self.sense_contact_phase(hip_pos)
+        return foot
+
+    def _seed_knee_branch(self, hip_pos: np.ndarray) -> None:
+        """Adim 17 -- FABRIK her karede bir onceki noktalardan baslar; bacak
+        duzlesip yeniden bukuldugunde dogal cozum dizin YANLIS tarafina
+        (yuruyus yonune gore geriye) dusebiliyor. `clamp_joint_angles()`
+        bunu buyuklugu koruyup ayna-yansitarak duzeltirken uyluk yonunu
+        sabit tuttugu icin AYAGI hedefinden 100+ px geriye savuruyordu
+        (bkz. README "Adim 17" -- Bilge derisi giydirilince goruldu). Cozum:
+        cozumden ONCE diz noktasini yuruyus yonunun ileri tarafina (~30
+        derece) tohumlamak -- FABRIK dogru dala yakinsar, clamp bir no-op
+        olur. Zincir noktalari kalca dinamigine geri beslenmez (anchor =
+        planted), bu yuzden Verlet noktalari bit-bit ayni kalir."""
+        if self.knee_forward_seed is None:
+            return
+        chain = self.chain
+        d = chain.points[-1] - hip_pos
+        n = float(np.linalg.norm(d))
+        u = d / n if n > 1e-6 else np.array([0.0, 1.0])
+        perp = np.array([-u[1], u[0]])
+        if perp[0] * self.knee_forward_seed < 0:
+            perp = -perp
+        l1 = chain.lengths[0]
+        chain.points[0] = hip_pos
+        chain.points[1] = hip_pos + u * l1 * 0.866 + perp * l1 * 0.5
 
     def apply_slip(self, delta_x: float) -> None:
         """13. tur -- Kinetik Sürtünme Sınırı (Slipping): itki üreten

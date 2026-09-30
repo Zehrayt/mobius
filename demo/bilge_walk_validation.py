@@ -1,4 +1,7 @@
-"""Bilge's isolated 30 Hz skeleton/foot-planting validation (no sprite assets).
+"""[REFERANS -- ana motor DEGIL] Kalca kinematik bir egriyle suruluyor; fizik
+tabanli karsiligi: demo/step17_bilge_physics_skin.py (bkz. README "Adim 17").
+
+Bilge's isolated 30 Hz skeleton/foot-planting validation (no sprite assets).
 
 Run: python3 demo/bilge_walk_validation.py
 

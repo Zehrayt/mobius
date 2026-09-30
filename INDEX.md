@@ -24,6 +24,10 @@ açıkça gösteriyor.
 | 11. Dinamik sürtünme/tutunma | `demo/step8_collision_friction.py` | 🔶 **madde 8 ile AYNI dosyada** — bilinçli: ikisi de aynı `collide_ground()` mekanizmasını kullanıyor, biri olmadan diğerini anlamlı göstermek zordu (bkz. o dosyanın kendi docstring'i) |
 | 12. Kütle merkezi (center of mass) dengesi | `demo/step12_balance.py` | 🔶 |
 | 13. Tam entegrasyon stres testi | `demo/step13_full_integration_test.py` | 🔶 (yol haritasında numaralı bir "madde" değil, ayrı bir doğrulama/stres testi — bkz. aşağıdaki not) |
+| 14. Serbest kalçalı dinamik biped (capture-point) | `demo/step14_active_biped.py` (`ActiveBipedSim`) | 🔶 Adım 17'de döngü sınıfa taşındı (bit-bit aynı), diz dalı düzeltildi |
+| 15–16. Segment ayak laboratuvarları | `demo/step15_segment_foot.py`, `demo/step16_segment_foot_lab.py` | 🔶 izole ölçüm |
+| 17. Bilge derisi fizik iskeletinde + Faz A kontak-faz sensörü | `demo/step17_bilge_physics_skin.py`, `physics/active_gait.py` | 🔶 Faz B başlatılmadı (README "Adım 17") |
+| — Bilge kinematik yürüyüş (REFERANS) | `demo/bilge_walk_validation.py`, `demo/bilge_walk_skinned.py` | render referansı: kalça kinematik eğriyle sürülür, ana motor DEĞİL |
 
 `step6` artık `scene/` üretim katmanının ilk sahnesidir. `step11` yok
 çünkü 11 numaralı iş `step8` ile aynı dosyada yaşıyor. Hiçbir demo dosyası

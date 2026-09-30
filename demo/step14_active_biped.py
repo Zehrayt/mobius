@@ -60,7 +60,14 @@ ARM_LENGTH = LEG_SEGMENT_LEN * 2.0  # chain.arm_length ile ayni (iki segment)
 SWING_DURATION_FRAMES = 10
 LIFT_HEIGHT = 22.0
 KNEE_LIMITS = (8.0, 150.0)
-KNEE_BEND_SIGN = -1.0
+# Adim 17 duzeltmesi: -1.0 idi. Bu sahne +x yonunde yurudugu icin -1.0,
+# FABRIK dizini SALINIMDA karelerin %100'unde GERIYE (kus/ters diz) bukuyordu
+# -- cubuk-adamda fark edilmemisti, Bilge derisi giydirilince gorundu (bkz.
+# README "Adim 17"). Zincir noktalari kalca dinamigine HIC geri beslenmiyor
+# (anchor = planted); isaret degisince 360 karenin tum Verlet noktalari
+# bit-bit ayni kaldi, sadece cizilen diz tarafi duzeldi. step3-13 KENDI
+# sabitlerini kullaniyor, DOKUNULMADI.
+KNEE_BEND_SIGN = 1.0
 
 UP = np.array([0.0, -1.0])
 TORSO_MAX_LEAN_DEG = 12.0
@@ -275,7 +282,8 @@ def build_body() -> tuple[VerletSystem, dict]:
     return sys_, idx
 
 
-def make_leg(hip_pos: np.ndarray, initial_planted_offset: float) -> ActiveFootPlantingLeg:
+def make_leg(hip_pos: np.ndarray, initial_planted_offset: float,
+             support_margin: float | None = None, swing_lead_margin: float | None = None) -> ActiveFootPlantingLeg:
     return ActiveFootPlantingLeg(
         hip_pos,
         segment_lengths=[LEG_SEGMENT_LEN, LEG_SEGMENT_LEN],
@@ -286,9 +294,10 @@ def make_leg(hip_pos: np.ndarray, initial_planted_offset: float) -> ActiveFootPl
         knee_limits=KNEE_LIMITS,
         knee_bend_sign=KNEE_BEND_SIGN,
         capture_gain=1.0,
-        support_margin=SUPPORT_MARGIN,
-        swing_lead_margin=SWING_LEAD_MARGIN,
+        support_margin=SUPPORT_MARGIN if support_margin is None else support_margin,
+        swing_lead_margin=SWING_LEAD_MARGIN if swing_lead_margin is None else swing_lead_margin,
         omega0=OMEGA0,
+        knee_forward_seed=KNEE_BEND_SIGN,  # Adim 17: +x yonunde ileri diz dali
     )
 
 
@@ -323,61 +332,92 @@ def draw_frame(body: VerletSystem, idx: dict, legs: list[ActiveFootPlantingLeg],
     return frame
 
 
-def main() -> None:
-    body, idx = build_body()
-    hip = idx["hip"]
-    anchor = idx["anchor"]
-    terrain_static = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC,
-                              zones=list(ICE_ZONES))
-    kinetic_zones = [(x0, x1, mu * KINETIC_RATIO) for (x0, x1, mu) in ICE_ZONES]
-    terrain_kinetic = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC * KINETIC_RATIO,
-                               zones=kinetic_zones)
+class ActiveBipedSim:
+    """Adim 14'un fizik dongusu, kare-kare adimlanabilen (stepable) bir
+    nesne olarak. Adim 17 (Bilge derisi) refactor'u: dongu govdesi
+    main()'den BIREBIR tasindi -- davranis DEGISMEDI (refactor oncesi/
+    sonrasi 360 karenin tum Verlet + FABRIK noktalari bit-bit ayni,
+    bkz. README "Adim 17"). Boylece ayni fizigi hem bu dosyanin cubuk-
+    adam cizimi hem de `demo/step17_bilge_physics_skin.py`'nin 16 parcali
+    Bilge derisi, fizik kodunu KOPYALAMADAN kullanabiliyor.
 
-    half = ARM_LENGTH * 0.15
-    left_leg = make_leg(body.points[hip].copy(), -half)
-    right_leg = make_leg(body.points[hip].copy(), +half)
-    # sag bacak baslangicta swing'de -- alternatif adimla baslamasi icin.
-    right_leg.state = "swing"
-    right_leg.swing_start = right_leg.planted.copy()
-    right_leg.swing_target = np.array([half + 20.0, GROUND_Y])
-    right_leg.swing_t = 0.0
+    Sahne olaylari (tokezleme/buyuk itki) ve capture-point marjlari
+    varsayilan olarak modul sabitlerinden gelir; test/sahne/deney icin
+    kwargs ile degistirilebilir (varsayilanlar step14'u DEGISTIRMEZ)."""
 
-    dt = 1.0 / FPS
-    stumbled = False
-    big_pushed = False
-    fell = False
-    fall_frame = None
-    step_events = []
-    slip_events = []
-    emergency_step_events = []  # 13. tur eki 3 -- FallRiskMonitor tabanli acil adim tetiklemeleri
-    risk_monitor = FallRiskMonitor(FALL_RISK_ENTER_PX, FALL_RISK_EXIT_PX)
+    def __init__(self, stumble_t: float | None = None, stumble_kick_px: float | None = None,
+                 big_push_t: float | None = None, big_push_kick_px: float | None = None,
+                 fps: int = FPS, support_margin: float | None = None,
+                 swing_lead_margin: float | None = None):
+        self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
+        self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
+        self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
+        self.big_push_kick_px = BIG_PUSH_KICK_PX if big_push_kick_px is None else big_push_kick_px
+        self.fps = fps
+        self.dt = 1.0 / fps
 
-    out_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                             "outputs", "step14_active_biped.mp4")
-    writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*"mp4v"), FPS, (W, H))
+        self.body, self.idx = build_body()
+        self.terrain_static = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC,
+                                      zones=list(ICE_ZONES))
+        kinetic_zones = [(x0, x1, mu * KINETIC_RATIO) for (x0, x1, mu) in ICE_ZONES]
+        self.terrain_kinetic = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC * KINETIC_RATIO,
+                                       zones=kinetic_zones)
 
-    hip_x_log = []
-    hip_y_log = []
-    hip_vx_log = []
+        hip = self.idx["hip"]
+        half = ARM_LENGTH * 0.15
+        self.left_leg = make_leg(self.body.points[hip].copy(), -half, support_margin, swing_lead_margin)
+        self.right_leg = make_leg(self.body.points[hip].copy(), +half, support_margin, swing_lead_margin)
+        # sag bacak baslangicta swing'de -- alternatif adimla baslamasi icin.
+        self.right_leg.state = "swing"
+        self.right_leg.swing_start = self.right_leg.planted.copy()
+        self.right_leg.swing_target = np.array([half + 20.0, GROUND_Y])
+        self.right_leg.swing_t = 0.0
 
-    for f in range(N_FRAMES):
-        t = f * dt
+        self.stumbled = False
+        self.big_pushed = False
+        self.fell = False
+        self.fall_frame = None
+        self.step_events = []
+        self.slip_events = []
+        self.emergency_step_events = []  # 13. tur eki 3 -- FallRiskMonitor tabanli acil adim tetiklemeleri
+        self.risk_monitor = FallRiskMonitor(FALL_RISK_ENTER_PX, FALL_RISK_EXIT_PX)
+        self.hip_x_log = []
+        self.hip_y_log = []
+        self.hip_vx_log = []
+        self.frame = 0
+        self.last_hip_vx = 0.0
+        self.last_in_danger = False
+        self.nan = False
+
+    @property
+    def legs(self) -> list:
+        return [self.left_leg, self.right_leg]
+
+    def step(self) -> float:
+        """Tek bir kare ilerlet; o karenin (itki ONCESI olculen) hip_vx'ini dondur."""
+        body, idx = self.body, self.idx
+        hip = idx["hip"]
+        anchor = idx["anchor"]
+        left_leg, right_leg = self.left_leg, self.right_leg
+        f = self.frame
+        t = f * self.dt
         hip_pos_before = body.points[hip].copy()
         hip_prev = body.prev_points[hip].copy()
         hip_vx = hip_pos_before[0] - hip_prev[0]
 
-        if not stumbled and t >= STUMBLE_T:
-            body.prev_points[hip][0] -= STUMBLE_KICK_PX
-            stumbled = True
-        if not big_pushed and t >= BIG_PUSH_T:
-            body.prev_points[hip][0] -= BIG_PUSH_KICK_PX
-            big_pushed = True
+        if not self.stumbled and t >= self.stumble_t:
+            body.prev_points[hip][0] -= self.stumble_kick_px
+            self.stumbled = True
+        if not self.big_pushed and t >= self.big_push_t:
+            body.prev_points[hip][0] -= self.big_push_kick_px
+            self.big_pushed = True
 
         stance_leg = None
         for leg in (left_leg, right_leg):
             if leg.state == "stance":
                 stance_leg = leg
-        if stance_leg is not None and not fell:
+        in_danger = False
+        if stance_leg is not None and not self.fell:
             desired_thrust = THRUST_GAIN * (TARGET_VX - hip_vx)
             desired_thrust = max(-THRUST_CAP, min(THRUST_CAP, desired_thrust))
 
@@ -396,8 +436,8 @@ def main() -> None:
 
             total_stress = desired_thrust + STRESS_GAIN * stress_vec[0]
 
-            mu_static = terrain_static.friction_fn(stance_leg.planted[0])
-            mu_kinetic = terrain_kinetic.friction_fn(stance_leg.planted[0])
+            mu_static = self.terrain_static.friction_fn(stance_leg.planted[0])
+            mu_kinetic = self.terrain_kinetic.friction_fn(stance_leg.planted[0])
             f_max_static = mu_static * f_n_effective
             f_max_kinetic = mu_kinetic * f_n_effective
 
@@ -417,8 +457,8 @@ def main() -> None:
                 stance_leg.slip_velocity += -excess * SLIP_ACCEL_GAIN
                 stance_leg.slip_velocity *= SLIP_DECAY
                 stance_leg.apply_slip(stance_leg.slip_velocity)
-                slip_events.append((f, "l" if stance_leg is left_leg else "r",
-                                     float(excess), float(stance_leg.slip_velocity)))
+                self.slip_events.append((f, "l" if stance_leg is left_leg else "r",
+                                         float(excess), float(stance_leg.slip_velocity)))
                 if abs(stance_leg.slip_velocity) < SLIP_STOP_VEL and abs(total_stress) <= f_max_kinetic:
                     stance_leg.is_slipping = False
                     stance_leg.slip_velocity = 0.0
@@ -426,111 +466,102 @@ def main() -> None:
                 applied_thrust = desired_thrust
 
             # 13. tur eki 3 -- eski SABIT-aci kriteri (MAX_SLIP_LEG_ANGLE_DEG)
-            # KALDIRILDI (bkz. yukaridaki eki-3 yorum bloğu): artik gercek
-            # COM-vs-destek-araligi (FallRiskMonitor) kullaniliyor. BILEREK
-            # `is_slipping`'e bagli DEGIL -- bir darbe, kaymayi hic
-            # tetiklemeden bile COM'u destek araliginin disina cikarabilir
-            # (bkz. dogrulama: 15px'lik kucuk bir tokezleme bile, hicbir
-            # kayma sinirina yaklasmadan, birkac acil-duzeltme adimi
-            # tetikleyebiliyor).
-            leg_angle_deg = math.degrees(math.atan2(stretch_dir[0], -stretch_dir[1]))  # artik SADECE raporlama/log icin
+            # KALDIRILDI: artik gercek COM-vs-destek-araligi (FallRiskMonitor)
+            # kullaniliyor. BILEREK `is_slipping`'e bagli DEGIL.
             com_x = upper_body_com_x(body.points, [hip, idx["shoulder"], idx["head"]])
             interval = support_interval([stance_leg.planted[0]], foot_half_len=FOOT_HALF_LEN,
                                          fallback_x=[left_leg.swing_target[0], right_leg.swing_target[0]])
             real_error = outside_interval_error(com_x, interval)
-            in_danger = risk_monitor.update(real_error)
+            in_danger = self.risk_monitor.update(real_error)
             if in_danger:
                 target_x = com_x + np.sign(real_error) * EMERGENCY_STEP_LEAD_PX
                 if stance_leg.trigger_emergency_step(target_x, speedup=EMERGENCY_SWING_SPEEDUP):
                     stance_leg.is_slipping = False
                     stance_leg.slip_velocity = 0.0
-                    emergency_step_events.append((f, "l" if stance_leg is left_leg else "r", round(float(real_error), 1)))
+                    self.emergency_step_events.append((f, "l" if stance_leg is left_leg else "r", round(float(real_error), 1)))
 
             body.set_pinned_position(anchor, [stance_leg.planted[0], GROUND_Y])
             body.prev_points[hip][0] -= applied_thrust
 
-        # 13. tur eki 3 -- eski dinamik-compliance ("muz kabugu") hilesi
-        # TAMAMEN KALDIRILDI (bkz. yukaridaki eki-3 yorum bloğu -- ablation
-        # dogrulamasi, dinamik compliance'in COM-kriteriyle birlikte bile
-        # net ZARARLI oldugunu gosterdi). Anchor-kalca cubugu artik HER
-        # ZAMAN sabit ANCHOR_HIP_COMPLIANCE_BASE ile kuruluyor (bkz.
-        # build_body()) ve bir daha ASLA degistirilmiyor.
+        # 13. tur eki 3 -- dinamik-compliance ("muz kabugu") hilesi TAMAMEN
+        # KALDIRILDI; anchor-kalca cubugu HER ZAMAN sabit
+        # ANCHOR_HIP_COMPLIANCE_BASE ile kurulur (bkz. build_body()).
 
         body.step(dt=1.0)
-        # DURUST BULGU (izole tanilama ile kesfedildi -- bkz. commit
-        # mesaji/README): clamp_direction()'i VARSAYILAN (preserve_
-        # momentum=False) cagirmak, govde/boyun uzerinden kalcanin
-        # KENDI hizina da dolayli bir "sifirlama" sizdiriyordu -- 150px'lik
-        # BIG_PUSH_KICK_PX bile ARTIK hicbir zaman dusmeye yol acmiyordu
-        # (400px'e kadar test edildi, hep hayatta kaldi) -- yani govde/bas
-        # eklenmeden ONCE gercek olan "60px+ dusme" bulgusu, bu eksik
-        # parametreyle SESSIZCE maskeleniyordu. `preserve_momentum=True`
-        # (5. turda ayni sinif sorun icin zaten kurulan duzeltme deseni)
-        # ile dusme esigi govdenin GERCEK ek eylemsizligini yansitan,
-        # daha fizik-tutarli bir araliga (~100px) geri donuyor.
+        # preserve_momentum=True -- bkz. modulun 8. tur notu: varsayilan
+        # (False) govde/boyun kelepcesi uzerinden kalcanin KENDI hizini da
+        # sessizce sifirlayip dusme esigini maskeliyordu.
         clamp_direction(body.points, body.prev_points, hip, idx["shoulder"], UP, TORSO_MAX_LEAN_DEG, preserve_momentum=True)
         torso_dir = body.points[idx["shoulder"]] - body.points[hip]
         clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, NECK_MAX_TILT_DEG, preserve_momentum=True)
 
         hip_pos = body.points[hip]
-        # NOT: bu dongu bilerek SIRALI (once sol, sonra sag) calisir --
-        # `other_leg_swinging` bayragi sag bacak icin SOL BACAGIN BU KAREDE
-        # ZATEN GUNCELLENMIS durumunu kullanir. Bunu "simetrik" hale getirip
-        # her iki bacaga da guncelleme-oncesi ayni anlik goruntuyu vermeyi
-        # denedim (bkz. git gecmisi) -- bu, iki bacagin da ayni karede stance
-        # oldugunu gorup AYNI ANDA swing'e gecmesine izin vererek çift-havada
-        # (double-swing) durumunu geri getirdi ve anlik dusmeye yol acti
-        # (dogrulama: frame 72'de ani dusme, buyuk itkiden -- t=7.0s/frame210
-        # -- COK once). Sirali degerlendirme, sag bacagin swing kararini HER
-        # ZAMAN sol bacagin bu karedeki nihai durumuna gore vermesini
-        # saglayarak tek-destek (single-support) kuralini garanti eder; bunun
-        # bedeli, bir tokezlemeden hemen sonra bir bacagin (planted noktasi
-        # capture-point tarafindan asiri ileri itilirse) birkac kare boyunca
-        # ust uste hizlica adim atmasi olabilir (asagidaki tokezleme testinde
-        # gozlemlendi) -- bu, cift-destek kaybından cok daha az tehlikeli bir
-        # gecici salinimdir, o yuzden duzeltilmedi.
+        # NOT: bu dongu bilerek SIRALI (once sol, sonra sag) calisir -- bkz.
+        # git gecmisi/README 8. tur: "simetrik" degerlendirme cift-havada
+        # (double-swing) durumunu geri getirip frame 72'de ani dusmeye yol
+        # acti. Sirali degerlendirme tek-destek kuralini garanti eder.
         for leg in (left_leg, right_leg):
             other = right_leg if leg is left_leg else left_leg
             was_stance = leg.state == "stance"
             was_swing = leg.state == "swing"
             leg.update(hip_pos, hip_vx=hip_vx, other_leg_swinging=(other.state == "swing"))
             if was_stance and leg.state == "swing":
-                step_events.append((f, "l" if leg is left_leg else "r"))
+                self.step_events.append((f, "l" if leg is left_leg else "r"))
             if was_swing and leg.state == "stance":
-                # 13. tur eki -- her yeni ayak basisi (heel-strike) TAZE bir
-                # statik-surtunme sansiyla baslar: bir onceki basisten kalma
-                # kayma durumu (is_slipping/slip_velocity) buraya TASINMAZ.
+                # 13. tur eki -- her yeni ayak basisi TAZE bir statik-surtunme
+                # sansiyla baslar.
                 leg.is_slipping = False
                 leg.slip_velocity = 0.0
 
-        if not fell and hip_pos[1] > FALL_HIP_Y_THRESHOLD:
-            fell = True
-            fall_frame = f
+        if not self.fell and hip_pos[1] > FALL_HIP_Y_THRESHOLD:
+            self.fell = True
+            self.fall_frame = f
 
-        hip_x_log.append(hip_pos[0])
-        hip_y_log.append(hip_pos[1])
-        hip_vx_log.append(hip_vx)
+        self.hip_x_log.append(hip_pos[0])
+        self.hip_y_log.append(hip_pos[1])
+        self.hip_vx_log.append(hip_vx)
+        self.last_hip_vx = hip_vx
+        self.last_in_danger = bool(in_danger)
+        if not np.all(np.isfinite(body.points)):
+            self.nan = True
+        self.frame += 1
+        return hip_vx
 
+
+def main() -> None:
+    sim = ActiveBipedSim()
+    body, idx = sim.body, sim.idx
+    hip = idx["hip"]
+    left_leg, right_leg = sim.left_leg, sim.right_leg
+
+    out_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             "outputs", "step14_active_biped.mp4")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    writer = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*"mp4v"), FPS, (W, H))
+
+    for f in range(N_FRAMES):
+        hip_vx = sim.step()
+        hip_pos = body.points[hip]
         camera_offset = W / 2 - hip_pos[0]
-        frame = draw_frame(body, idx, [left_leg, right_leg], camera_offset, hip_vx, fell)
+        frame = draw_frame(body, idx, [left_leg, right_leg], camera_offset, hip_vx, sim.fell)
         writer.write(frame)
 
-        if not np.all(np.isfinite(body.points)):
+        if sim.nan:
             print(f"UYARI: NaN/inf @ frame {f}")
             break
 
     writer.release()
     print(f"wrote {out_path}")
 
-    hip_x_log = np.array(hip_x_log)
-    hip_y_log = np.array(hip_y_log)
-    hip_vx_log = np.array(hip_vx_log)
+    hip_x_log = np.array(sim.hip_x_log)
+    hip_y_log = np.array(sim.hip_y_log)
+    hip_vx_log = np.array(sim.hip_vx_log)
 
     st = int(STUMBLE_T * FPS)
     bp = int(BIG_PUSH_T * FPS)
     print()
     print(f"=== Adim 14 -- dinamik biped raporu ({N_FRAMES} kare, {DURATION_S}s) ===")
-    print(f"toplam adim sayisi: {len(step_events)}  -> {step_events}")
+    print(f"toplam adim sayisi: {len(sim.step_events)}  -> {sim.step_events}")
     # DURUST DUZELTME: onceki kontrol "dusme karesi tokezlemeden >20
     # kare sonra ise EVET (absorbe edildi)" diyordu -- ama bu, buyuk
     # itkiden (t=BIG_PUSH_T) ONCE gerceklesen bir dusmeyi de yanlislikla
@@ -539,19 +570,19 @@ def main() -> None:
     # st+20=110'dan buyuk oldugu icin yanlislikla EVET yazdiriyordu).
     # Dogru mantik: dusme, buyuk itki karesinden (bp) ONCE olduysa bu
     # tokezlemenin kendisinden kaynaklanmis demektir -- absorbe edilmemis.
-    stumble_caused_fall = fell and fall_frame is not None and fall_frame < bp
+    stumble_caused_fall = sim.fell and sim.fall_frame is not None and sim.fall_frame < bp
     print(f"tokezleme (t={STUMBLE_T}s, {STUMBLE_KICK_PX:.0f}px): "
           f"frame {st}-{st+15} hip_vx araligi=[{hip_vx_log[st:st+15].min():.2f}, {hip_vx_log[st:st+15].max():.2f}]"
           f"  (absorbe edildi mi: {'HAYIR' if stumble_caused_fall else 'EVET'})")
-    print(f"buyuk itki (t={BIG_PUSH_T}s, {BIG_PUSH_KICK_PX:.0f}px) sonrasi: dustu={fell}"
-          f"  (dusme karesi: {fall_frame}, t={fall_frame/FPS if fall_frame else None})")
+    print(f"buyuk itki (t={BIG_PUSH_T}s, {BIG_PUSH_KICK_PX:.0f}px) sonrasi: dustu={sim.fell}"
+          f"  (dusme karesi: {sim.fall_frame}, t={sim.fall_frame/FPS if sim.fall_frame else None})")
     print(f"son hip_y: {hip_y_log[-1]:.2f} (GROUND_Y={GROUND_Y}, dusme esigi={FALL_HIP_Y_THRESHOLD})")
     print(f"ortalama hip_vx (buyuk itkiden ONCE, kararli yuruyus): {hip_vx_log[:bp].mean():.3f}px/kare (hedef={TARGET_VX})")
-    print(f"kayma (slip) olaylari (kare sayisi -- aktif kayma boyunca HER kare 1 olay): {len(slip_events)}")
-    if slip_events:
-        print(f"  ilk 8: {slip_events[:8]}")
-        print(f"  son 8: {slip_events[-8:]}")
-        slipping_frames = [s[0] for s in slip_events]
+    print(f"kayma (slip) olaylari (kare sayisi -- aktif kayma boyunca HER kare 1 olay): {len(sim.slip_events)}")
+    if sim.slip_events:
+        print(f"  ilk 8: {sim.slip_events[:8]}")
+        print(f"  son 8: {sim.slip_events[-8:]}")
+        slipping_frames = [s[0] for s in sim.slip_events]
         streaks, cur = [], 1
         for i in range(1, len(slipping_frames)):
             if slipping_frames[i] == slipping_frames[i - 1] + 1:
@@ -561,7 +592,7 @@ def main() -> None:
                 cur = 1
         streaks.append(cur)
         print(f"  en uzun ardisik kayma serisi (kare -- Stribeck suruklenme fazinin gercekten kalici oldugunun kaniti): {max(streaks)}")
-    print(f"acil kurtarma adimi (FallRiskMonitor/COM-vs-destek-araligi) tetiklemeleri: {len(emergency_step_events)}  -> {emergency_step_events}")
+    print(f"acil kurtarma adimi (FallRiskMonitor/COM-vs-destek-araligi) tetiklemeleri: {len(sim.emergency_step_events)}  -> {sim.emergency_step_events}")
 
 
 if __name__ == "__main__":
