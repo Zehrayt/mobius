@@ -94,6 +94,16 @@ class FazBTest(unittest.TestCase):
             self.assertEqual(ds, 0, push)
             self.assertGreater(s14.GROUND_Y - max(sim.hip_y_log[210:]), 75.0, push)
 
+    def test_backward_pushes_heel_side_catch(self):
+        """Adim 19: heel_strike aynasi -- geri itkide cift-havada yok, eski acil yol devreye girmez."""
+        for push in (-100.0, -150.0, -300.0):
+            sim, ds, _ = self.run_sim(420, big_push_kick_px=push)
+            self.assertFalse(sim.fell, push)
+            self.assertEqual(ds, 0, push)
+            self.assertEqual(len(sim.emergency_step_events), 0, push)
+            self.assertTrue(any(e[3] == "heel" for e in sim.fazb_events), push)
+            self.assertGreater(s14.GROUND_Y - max(sim.hip_y_log[210:]), 60.0, push)
+
     def test_compress_swing_keeps_position_continuous(self):
         leg = s14.make_leg(np.array([0.0, s14.HIP_Y]), 0.0)
         leg.state, leg.swing_t, leg._active_swing_duration = "swing", 0.4, 10.0

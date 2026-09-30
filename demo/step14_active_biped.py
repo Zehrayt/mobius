@@ -39,7 +39,7 @@ import numpy as np
 import cv2
 
 from physics.verlet import VerletSystem, clamp_direction
-from physics.active_gait import ActiveFootPlantingLeg, PHASE_TOE_OFF
+from physics.active_gait import ActiveFootPlantingLeg, PHASE_TOE_OFF, PHASE_HEEL_STRIKE
 from physics.environment import Terrain
 from physics.balance import support_interval, outside_interval_error, FallRiskMonitor, upper_body_com_x
 import math
@@ -497,16 +497,22 @@ class ActiveBipedSim:
             # bozmadan yakalama adimi: havadaki bacak varsa ONUN salinimini
             # sikistir, yoksa toe_off bacagini sikistirilmis salinimla birak.
             fazb_handled = False
-            if self.faz_b and (stance_leg.toe_off_overrun()
-                               or (in_danger and stance_leg.contact_phase == PHASE_TOE_OFF)):
+            front = stance_leg.catch_overrun() if self.faz_b else None
+            if self.faz_b and front is None and in_danger:
+                # tehlike + dogru cephe: COM onde & toe_off / COM geride & heel_strike
+                if real_error > 0 and stance_leg.contact_phase == PHASE_TOE_OFF:
+                    front = "toe"
+                elif real_error < 0 and stance_leg.contact_phase == PHASE_HEEL_STRIKE:
+                    front = "heel"
+            if front is not None:
                 other = right_leg if stance_leg is left_leg else left_leg
                 side = "l" if stance_leg is left_leg else "r"
                 if other.state == "swing":
                     if other.compress_swing(hip_pos_before[0], hip_vx):
-                        self.fazb_events.append((f, "r" if side == "l" else "l", "compress",
+                        self.fazb_events.append((f, "r" if side == "l" else "l", "compress", front,
                                                  round(stance_leg.leg_angle_deg, 1)))
                 elif stance_leg.launch_catch_step(hip_pos_before[0], hip_vx):
-                    self.fazb_events.append((f, side, "launch", round(stance_leg.leg_angle_deg, 1)))
+                    self.fazb_events.append((f, side, "launch", front, round(stance_leg.leg_angle_deg, 1)))
                 fazb_handled = True
             if in_danger and not fazb_handled:
                 target_x = com_x + np.sign(real_error) * EMERGENCY_STEP_LEAD_PX

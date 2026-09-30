@@ -183,6 +183,10 @@ PHASE_TOE_OFF = "toe_off"
 # sikistirilmis bir salinimla birak. Hedef her karede, inis anindaki tahmini
 # kalca konumuna dogru (kare basina sinirli) kayar.
 FAZB_TOE_OFF_OVERRUN_DEG = 20.0
+# Adim 19 -- heel_strike aynasi: geri itkide kalca ayagin GERISINE ivmelenir,
+# bacak acisi negatif buyur. Itkisiz 60 s kosuda stance acisi hic -7.8
+# derecenin altina inmiyor.
+FAZB_HEEL_STRIKE_OVERRUN_DEG = -20.0
 FAZB_CATCH_FRAMES = 3.0
 FAZB_TARGET_LEAD_PX = 10.0
 FAZB_MAX_PREDICT_PX = 60.0
@@ -341,6 +345,20 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         if not self.faz_b_enabled:
             return target_x
         return max(hip_x - FAZB_MAX_STEP_AHEAD_PX, min(hip_x + FAZB_MAX_STEP_AHEAD_PX, target_x))
+
+    def heel_strike_overrun(self) -> bool:
+        """Adim 19 -- toe_off_overrun'in aynasi: stance'ta, heel_strike'ta VE
+        kalca ayagin gerisine normal yuruyusun ulasamadigi acida kacmis."""
+        return (self.state == "stance" and self.contact_phase == PHASE_HEEL_STRIKE
+                and self.leg_angle_deg < FAZB_HEEL_STRIKE_OVERRUN_DEG)
+
+    def catch_overrun(self) -> str | None:
+        """'toe' / 'heel' / None -- hangi cephede yakalama gerekiyor."""
+        if self.toe_off_overrun():
+            return "toe"
+        if self.heel_strike_overrun():
+            return "heel"
+        return None
 
     def _catch_target_x(self, hip_x: float, hip_vx: float) -> float:
         remaining = max(0.0, (1.0 - self.swing_t) * self._active_swing_duration)

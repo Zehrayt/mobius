@@ -3411,6 +3411,30 @@ gömülmesi 0, en küçük parça örtüşmesi 90 px.
   kalabiliyor. Bacak zinciri bu hedefe erişemiyor (24 karede >5 px). Deri
   ayakkabıyı gait hedefine koyuyor, incik en fazla 14 px geriliyor.
 
+## Adım 19 — Faz B'nin heel_strike aynası, yakalama sonrası şok emilimi, prediktif sensör
+
+### 19a. Geri itki simetrisi (heel-side override)
+`ActiveFootPlantingLeg.heel_strike_overrun()`: stance'ta, `heel_strike`
+fazında ve açı `< FAZB_HEEL_STRIKE_OVERRUN_DEG = −20°`. İtkisiz 60 saniyede
+stance açısı hiç −7.8°'nin altına inmiyor. `catch_overrun()` `"toe"`,
+`"heel"` ya da `None` döndürüyor. Tehlike tetiği de artık cepheye duyarlı:
+COM öndeyse ve bacak `toe_off`'taysa ya da COM geride ve bacak
+`heel_strike`'taysa yakalama devreye giriyor. Faz B tetiklendiği karede eski
+`trigger_emergency_step` yolu çalışmıyor. Yakalama hedefi (`_catch_target_x`)
+zaten hız işaretine duyarlıydı, geri tarafta ek kod gerekmedi.
+
+| İtki | Adım 18 (sadece toe_off): en alçak kalça / çift-havada / acil | Adım 19 |
+|---|---|---|
+| −50 | 130 / 5 / 4 | 139 / 0 / 0 |
+| −100 | 95 / 5 / 3 | 117 / 0 / 0 |
+| −150 | 62 / 9 / 8 | 93 / 0 / 0 |
+| −200 / −300 / −500 | — | 78 / 68 / 52, 0 çift-havada, düşme yok |
+
+150 px itki yürüyüş döngüsünün 12 farklı anında: ileri itkide en alçak kalça
+90–155 px, geri itkide 73–129 px. Çift-havada 0, düşme 0, eski acil adım 0.
+İleri itki sonuçları Adım 18 ile aynı. İtkisiz 60 saniyede Faz B açık ve
+kapalı bit-bit aynı, 0 tetik.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
