@@ -3867,6 +3867,123 @@ sürtünme katsayısı ~0.17–0.20, yani μ=0.15 buzda insan da kayar.
 Varsayılanlar: `LEG_MASS_ENABLED=True`, `LEG_MASS_COM_CONTROL=True`,
 `THRUST_MODE="com"`, `POSTURE_K=0.2`, `POSTURE_C=0.8`, `ARMS_MODE="cancel"`.
 
+## Adım 23 — Yakalama adımının süresi kalça torkundan
+
+Adım 22'de kütleli bacaklar geldi, ama Faz B yakalaması hâlâ kütlesiz
+günlerin sabit zamanlayıcısıyla çalışıyordu: her yakalama 3 karede (100 ms)
+bitiyordu, gereken kuvvet ne olursa olsun.
+
+### 23.1 Ölçüm: sabit zamanlayıcı insanüstü tork istiyordu
+Tork birimi: toplam kütle 5.17 birim = 70 kg, 184 px = 0.9 m, 30 fps →
+1 birim ≈ **0.291 Nm**. Ters dinamik kalça torku (`physics/leg_mass.py`):
+
+| | kalça torku |
+|---|---|
+| Normal yürüyüş p99 | 122 birim ≈ **35 Nm** (insan: ~0.5–1 Nm/kg → 35–70 Nm) |
+| Sabit yakalama, 1 m/s itki | **358 Nm** |
+| Sabit yakalama, 2 m/s itki | **465 Nm** |
+| Sabit yakalama, 150 px test itkisi | 686 Nm |
+| Sabit yakalama, 500 px test itkisi | 921 Nm |
+| Sağlıklı yetişkin kalça fleksör tepe torku | ~140 Nm (~2 Nm/kg) |
+
+Normal yürüyüş gerçekçi. Yakalama, insan kalçasının 2.5–6.5 katı tork
+istiyordu.
+
+**Test itkilerinin ölçeği:** 150 px kalça itkisi, tüm-gövde COM'una
+**~4.2 m/s** hız değişimi veriyor (500 px ≈ 14 m/s). Kalça tek karede 71 px
+(500'de 145 px) sıçrıyor. Bunlar biyomekanik değil, sayısal stres testleri.
+İnsan tek adımla ~1–1.5 m/s'lik bir itkiyi toparlayabiliyor, daha büyüğünde
+çok adım gerekiyor. Bu yüzden m/s cinsinden gerçekçi bir itki takımı eklendi
+(`KICK_PER_MS = 5.18 · 184/0.9/30 ≈ 35.3 px` = 1 m/s).
+
+### 23.2 Tork sınırlı ayak servosu (`CATCH_TIMING="torque"`, varsayılan)
+İlk deneme: "planlanan Bézier yolunun torku sınırı aşmayacak en kısa süre".
+**Çalışmadı.** Plan anında tork 480 altındaydı, gerçekleşen tork 3000–4500
+oldu. Sebep: yakalama hedefi her kare kalçanın peşinden kayıyor, ikinci
+dereceden Bézier'de hedefin kayması ayağı tek karede `t²·Δ` kadar
+ışınlıyordu (+150'de ayak 418 → 519, 100 px/kare). Plan anındaki sınır
+gerçeği bağlamıyor.
+
+Yerine yakalamada ayak, ivmesi kalça torkuyla sınırlı bir servo oldu:
+
+- `|a| ≤ (τ_max − |τ_yerçekimi|) / (J · |kalça→ayak|)`, burada
+  `J = Σ m_i f_i² = 0.198` (pergel ekseni, Adım 22 ile aynı model).
+- Yatayda zaman-optimal (bang-bang) frenleme eğrisi kullanılıyor (ayrık
+  zamanda: `v = √(a²/4 + 2a|e|) − a/2`). Dikeyde 14 px kalkış, hedefe
+  yaklaşınca iniş. Hedefe ≤3 px ve yerdeyse basıyor. 24 karede varamazsa
+  olduğu yere basıyor.
+- Hedef hâlâ kalçanın peşinden kayıyor (Faz B mantığı aynı), ama ayak artık
+  sıçrayamıyor; hedef kaçarsa süre uzuyor.
+- `HIP_TORQUE_MAX = 480` birim ≈ 140 Nm.
+
+Gerçekleşen tepe tork ±1/±2 m/s itkilerde 445–480 birim (139–140 Nm).
+Sınır tutuluyor (test). Yakalama süresi artık sonuç: 1 m/s'de 4 kare
+(133 ms), 2 m/s'de 9 kare (300 ms), geri itkilerde 5–10 kare. İnsan koruyucu
+adımı ~150–400 ms.
+
+### 23.3 Sonuçlar
+**Gerçekçi itkiler** (6 faz, en alçak kalça ort/en kötü, px; ayakta 184):
+
+| COM Δv | +0.5 | −0.5 | +1.0 | −1.0 | +1.5 | −1.5 | +2.0 | −2.0 | +2.5 | −2.5 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| sabit 3 kare (358–465 Nm) | 179/178 | 172/167 | 173/168 | 155/139 | 169/164 | 151/149 | 169/166 | 147/129 | 164/155 | 144/137 |
+| **tork sınırlı (140 Nm)** | 180/178 | 174/158 | 172/166 | 148/127 | 158/148 | 134/130 | 139/110 | 141/125 | 121/104 | 127/119 |
+
+Hiçbir koşuda düşme yok. 1 m/s'ye kadar fark gürültü düzeyinde. 2–2.5
+m/s'de insan torkuyla daha derin çöküş var (+2.5'te 164 → 121): ağır bacağı
+öne taşımak zaman alıyor ve COM bu sürede düşmeye devam ediyor.
+
+**Sayısal stres itkileri** (±150/300/500 px, 36 koşu): tork sınırlıyken
+**14 düşme var** (+500 ve −500'ün hepsi, +300'ün bir kısmı). ±150 (4.2 m/s)
+ayakta kalıyor: en alçak kalça 85/78 ve 79/71. Bu sayısal itkilerin sabit
+zamanlayıcıyla "kurtarılması", 600–900 Nm'lik bir kalça sayesindeydi. Bu
+testler artık `catch_timing="fixed"` ile Adım 22 davranışını ölçüyor.
+
+**Varsayılan senaryo** (150 px itki): ayakta, 22 adım, 6 Faz B, yakalama
+süreleri 6/12/5/6 kare, en alçak kalça 79 px (Adım 22: 131). Görselde derin
+bir öne hamle var (render 212–216).
+
+### 23.4 Yan bulgular
+- **Diz dalı koruması:** Yavaş yakalama sırasında stance bacağı kalçanın
+  ~130 px gerisinde, ~45°'de kalabiliyor. Bu durumda FABRIK dizi kalça→ayak
+  çizgisinin ters tarafında bıraktı (kare 217, −10.7 px). İki kemikli
+  zincirde diz bu çizgiye göre aynalanınca kemik boyları aynen korunuyor
+  (`_guard_knee_branch`). Zincir fiziğe geri beslenmiyor.
+- **Kollar büyük itkide başın üstüne çıkıyor:** `cancel` kolları 1 m/s'de en
+  fazla 49° salınıyor. 2 m/s'de yakalama adımının büyük yaw momentumunu
+  karşılamak için 7–8 kare omuz konisinin sınırında (100°), 150 px'te 20 kare
+  kalıyor. Koruyucu kol kaldırma refleksine benziyor, ama sınıra dayanmak
+  momentum iptalinin doyduğu anlamına geliyor.
+- **Sıfır karelik "yakalama":** Hedef zaten ayağın 3 px yakınındaysa servo
+  aynı karede basıyor (yerinde adım). Zararsız, ama `catch_frames_log`'da
+  0 olarak görünüyor.
+- Eski acil adım yolu (`trigger_emergency_step`, 4 kare) hâlâ sabit
+  zamanlı. Faz B açıkken itki testlerinde tetiklenmedi.
+
+### 23.5 Gerileme ve kanaryalar
+- İtkisiz yürüyüşte yakalama tetiklenmiyor. Tork modu sabit modla **bit-bit
+  aynı** (test).
+- Yeni kanaryalar: 22 adım, 0 acil, 157 kayma karesi, 6 Faz B, son `hip_y`
+  145.97. `catch_timing="fixed"` Adım 22'yi aynen veriyor
+  (25/0/122/2/146.20), `LEGACY_21` Adım 21'i aynen veriyor.
+- Testler 65/65 geçti (yeni `tests/test_step23_torque_catch.py`: frenleme
+  eğrisi, tork sınırı, büyük itkide uzun yakalama, ±0.5…2.5 m/s toparlanma,
+  itkisiz eşitlik). step1–16 smoke geçti.
+
+### 23.6 Dürüst sınırlar
+1. Tork sınırı yalnızca kalça fleksiyon/ekstansiyon torku. Bacak boyunca
+   (radyal, diz) ivme ayrı sınırlanmıyor, toplam ivme vektörü kalça
+   sınırına göre kısılıyor (tutucu).
+2. 140 Nm sabit. Gerçek kas torku açısal hıza bağlı (kuvvet–hız eğrisi),
+   hızlı hareketlerde daha düşük. Bu model iyimser.
+3. Kalça ivmesinin moment terimi hâlâ dışarıda (Adım 22.8/3). İtki karesinde
+   kalça 35–145 px sıçradığı için o karelerdeki tork tahmini kaba.
+4. Prediktif sensör ve şok emilimi parametreleri sabit zamanlayıcıya göre
+   ayarlanmıştı, yeniden ayarlanmadı.
+
+Varsayılanlar: `CATCH_TIMING="torque"`, `HIP_TORQUE_MAX=480`
+(`ActiveBipedSim(catch_timing=..., hip_torque_max=...)` ile değiştirilebilir).
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

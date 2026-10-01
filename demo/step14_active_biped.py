@@ -447,7 +447,8 @@ class ActiveBipedSim:
                  arms_mode: str | None = None, arm_reflex: bool | None = None,
                  arm_gains: ArmGains | None = None, torso_clamp_mode=None,
                  posture_k: float | None = None, posture_c: float | None = None,
-                 leg_mass: bool | None = None, thrust_mode: str | None = None):
+                 leg_mass: bool | None = None, thrust_mode: str | None = None,
+                 catch_timing: str | None = None, hip_torque_max: float | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -462,6 +463,7 @@ class ActiveBipedSim:
         self.leg_mass = LegMassModel(TUNED_GRAVITY) if use_lm else None
         self.predictive_sensor = PREDICTIVE_SENSOR_ENABLED if predictive_sensor is None else predictive_sensor
         self.fazb_events = []   # (kare, bacak, 'compress'|'launch', 'toe'|'heel', bacak_acisi)
+        self.catch_frames_log = []   # Adim 23: (inis karesi, bacak, kalkistan inise kare)
         self.shock_absorb = SHOCK_ABSORB_ENABLED if shock_absorb is None else shock_absorb
         self.shock_pending = None   # yakalama inisi yapan bacak (anchor ona gecince baslar)
         self.shock_rest = None      # None: sok emilimi aktif degil
@@ -493,6 +495,8 @@ class ActiveBipedSim:
         for leg in (self.left_leg, self.right_leg):
             leg.faz_b_enabled = self.faz_b
             leg.predictive_sensor = self.predictive_sensor
+            leg.catch_timing = catch_timing          # None: physics.active_gait.CATCH_TIMING
+            leg.hip_torque_max = hip_torque_max      # None: physics.active_gait.HIP_TORQUE_MAX
         # sag bacak baslangicta swing'de -- alternatif adimla baslamasi icin.
         self.right_leg.state = "swing"
         self.right_leg.swing_start = self.right_leg.planted.copy()
@@ -714,9 +718,11 @@ class ActiveBipedSim:
                 side = "l" if stance_leg is left_leg else "r"
                 if other.state == "swing":
                     if other.compress_swing(hip_pos_before[0], ctrl_vx):
+                        other.catch_start_frame = f
                         self.fazb_events.append((f, "r" if side == "l" else "l", "compress", front,
                                                  round(stance_leg.leg_angle_deg, 1)))
                 elif stance_leg.launch_catch_step(hip_pos_before[0], ctrl_vx):
+                    stance_leg.catch_start_frame = f
                     self.fazb_events.append((f, side, "launch", front, round(stance_leg.leg_angle_deg, 1)))
                 fazb_handled = True
             other_swinging = (right_leg if stance_leg is left_leg else left_leg).state == "swing"
@@ -822,8 +828,12 @@ class ActiveBipedSim:
             was_swing = leg.state == "swing"
             was_catch = leg.catch_active
             leg.update(hip_pos, hip_vx=ctrl_vx, other_leg_swinging=(other.state == "swing"))
-            if was_swing and was_catch and leg.state == "stance" and self.shock_absorb:
-                self.shock_pending = leg
+            if was_swing and was_catch and leg.state == "stance":
+                # Adim 23: yakalama adiminin gercek suresi (kalkistan inise)
+                self.catch_frames_log.append((f, "l" if leg is left_leg else "r",
+                                              f - getattr(leg, "catch_start_frame", f)))
+                if self.shock_absorb:
+                    self.shock_pending = leg
             if was_stance and leg.state == "swing":
                 self.step_events.append((f, "l" if leg is left_leg else "r"))
             if was_swing and leg.state == "stance":

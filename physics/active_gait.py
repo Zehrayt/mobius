@@ -144,6 +144,7 @@ from __future__ import annotations
 import numpy as np
 
 from physics.gait import FootPlantingLeg
+from physics.leg_mass import THIGH_MASS, SHANK_MASS, THIGH_AXIS_FRAC, SHANK_AXIS_FRAC
 
 # 12. tur -- Dinamik Salinim Suresi v2 parametreleri.
 DST_BASE_VX = 2.0       # referans hiz (demo/step14'teki TARGET_VX ile ayni)
@@ -188,6 +189,23 @@ FAZB_TOE_OFF_OVERRUN_DEG = 20.0
 # derecenin altina inmiyor.
 FAZB_HEEL_STRIKE_OVERRUN_DEG = -20.0
 FAZB_CATCH_FRAMES = 3.0
+# Adim 23 -- yakalama adiminin SURESI kalca torkundan. "fixed": Adim 18-22'nin
+# sabit zamanlayicisi (Bezier, FAZB_CATCH_FRAMES karede). "torque": ayak,
+# ivmesi kalca torkuyla sinirli bir servo -- bacagin kalcaya gore dik ivmesi
+#     |a| <= (HIP_TORQUE_MAX - |tau_yercekimi|) / (J * |kalca->ayak|),
+#     J = sum m_i f_i^2 (pergel ekseni, physics/leg_mass.py)
+# ile sinirli, zaman-optimal (bang-bang) frenleme egrisiyle hedefe gider ve
+# hedefe vardiginda basar. Sure sabit degil: kisa yakalama hizli, uzun
+# yakalama yavas; hedef kayarsa sure uzar.
+# Birim: 1 tork birimi = 13.5 kg * (0.9/184 m)^2 / (1/30 s)^2 ~= 0.291 Nm
+# (toplam kutle 5.17 birim = 70 kg, 184 px bacak = 0.9 m, 30 fps).
+CATCH_TIMING = "torque"
+HIP_TORQUE_MAX = 480.0          # ~140 Nm ~ 2 Nm/kg (saglikli yetiskin kalca fleksor tepe torku mertebesi)
+TORQUE_UNIT_NM = 0.291
+CATCH_SERVO_LIFT_PX = 14.0      # yakalama adiminda ayak yerden kalkisi
+CATCH_SERVO_LAND_PX = 3.0       # hedefe bu kadar yaklasinca (ve yavaslayinca) bas
+CATCH_SERVO_MAX_FRAMES = 24     # emniyet: bu kadar karede varamazsa oldugu yere bas
+LEG_INERTIA_J = THIGH_MASS * THIGH_AXIS_FRAC ** 2 + SHANK_MASS * SHANK_AXIS_FRAC ** 2
 FAZB_TARGET_LEAD_PX = 10.0
 FAZB_MAX_PREDICT_PX = 60.0
 FAZB_MAX_RETARGET_PX = 25.0
@@ -295,7 +313,8 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
             # Adim 18 (Faz B): yakalama salinimi -- hedef, INIS anindaki
             # tahmini kalca konumuna dogru her karede sinirli hizla kayar
             # (sikistirilmis salinimda kalca ayagi gecmeye devam ediyor).
-            desired = self._catch_target_x(hip_pos[0], hip_vx)
+            eta = self._servo_eta(hip_pos) if getattr(self, "catch_servo", False) else None
+            desired = self._catch_target_x(hip_pos[0], hip_vx, remaining=eta)
             delta = desired - self.swing_target[0]
             cap = FAZB_MAX_RETARGET_PX + abs(hip_vx)   # kalcanin kendi hizindan geri kalmasin
             self.swing_target[0] += max(-cap, min(cap, delta))
@@ -329,9 +348,15 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         # esikli) stride_release kontrolu bu sinif icin ASLA devreye
         # girmesin -- release karari SADECE yukarida, capture-point'e gore.
         self._seed_knee_branch(hip_pos)
-        foot = super().update(hip_pos, hold_release=True)
+        if self.state == "swing" and getattr(self, "catch_servo", False):
+            foot = self._servo_step(hip_pos)
+            self._finish_chain(hip_pos, foot)
+        else:
+            foot = super().update(hip_pos, hold_release=True)
         if self.state == "stance":
             self.catch_active = False
+        self._guard_knee_branch()
+        self._prev_foot = getattr(self, "foot_target", None)
         self.foot_target = np.array(foot, dtype=float).copy()
         self.sense_contact_phase(hip_pos)
         return foot
@@ -388,8 +413,9 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
             return "heel"
         return None
 
-    def _catch_target_x(self, hip_x: float, hip_vx: float) -> float:
-        remaining = max(0.0, (1.0 - self.swing_t) * self._active_swing_duration)
+    def _catch_target_x(self, hip_x: float, hip_vx: float, remaining: float | None = None) -> float:
+        if remaining is None:
+            remaining = max(0.0, (1.0 - self.swing_t) * self._active_swing_duration)
         ahead = max(-FAZB_MAX_PREDICT_PX, min(FAZB_MAX_PREDICT_PX, hip_vx * remaining))
         lead = FAZB_TARGET_LEAD_PX if hip_vx >= 0 else -FAZB_TARGET_LEAD_PX
         return hip_x + ahead + lead
@@ -404,6 +430,14 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
             frames = FAZB_CATCH_FRAMES
         if self.state != "swing" or self.swing_t >= 1.0:
             return False
+        if self._catch_timing() == "torque":
+            if getattr(self, "catch_servo", False):
+                return False
+            prev = getattr(self, "_prev_foot", None)
+            cur = np.asarray(self.foot_target, float)
+            self._start_servo(cur, cur - prev if prev is not None else np.zeros(2))
+            self.swing_target = np.array([self._catch_target_x(hip_x, hip_vx, remaining=2.0), self.ground_y])
+            return True
         remaining = (1.0 - self.swing_t) * self._active_swing_duration
         if remaining <= frames + 1e-9 and self.catch_active:
             return False
@@ -429,7 +463,86 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         self.is_slipping = False
         self.slip_velocity = 0.0
         self.swing_target = np.array([self._catch_target_x(hip_x, hip_vx), self.ground_y])
+        if self._catch_timing() == "torque":
+            self._start_servo(self.planted.copy(), np.zeros(2))
         return True
+
+    # -- Adim 23: tork sinirli yakalama servosu ------------------------------
+    def _start_servo(self, pos: np.ndarray, vel: np.ndarray) -> None:
+        self.catch_servo = True
+        self.servo_pos = np.asarray(pos, float).copy()
+        self.servo_vel = np.asarray(vel, float).copy()
+        self.servo_frames = 0
+        self.catch_active = True
+        self.emergency_step_active = True
+        self.servo_log = []   # (|a|, a_max, tork)
+
+    def _catch_timing(self) -> str:
+        return getattr(self, "catch_timing", None) or CATCH_TIMING
+
+    def _hip_torque_max(self) -> float:
+        v = getattr(self, "hip_torque_max", None)
+        return HIP_TORQUE_MAX if v is None else v
+
+    def servo_accel_limit(self, hip_pos: np.ndarray) -> float:
+        d = self.servo_pos - np.asarray(hip_pos, float)
+        L = max(float(np.linalg.norm(d)), 1.0)
+        g = 0.065
+        tau_g = abs(d[0]) * g * (THIGH_MASS * THIGH_AXIS_FRAC + SHANK_MASS * SHANK_AXIS_FRAC)
+        return max(self._hip_torque_max() - tau_g, 0.0) / (LEG_INERTIA_J * L)
+
+    def _servo_eta(self, hip_pos: np.ndarray) -> float:
+        a = max(self.servo_accel_limit(hip_pos), 1e-6)
+        e = abs(float(self.swing_target[0] - self.servo_pos[0]))
+        return 2.0 * float(np.sqrt(e / a)) + 1.0
+
+    @staticmethod
+    def _brake_velocity(err: float, a: float) -> float:
+        """Ayrik zamanda, `a` ivme sinirli zaman-optimal yaklasma hizi."""
+        if a <= 0.0:
+            return 0.0
+        mag = float(np.sqrt(a * a / 4.0 + 2.0 * a * abs(err)) - a / 2.0)
+        return float(np.copysign(min(mag, abs(err)), err))
+
+    def _servo_step(self, hip_pos: np.ndarray) -> np.ndarray:
+        a_max = self.servo_accel_limit(hip_pos)
+        ex = float(self.swing_target[0] - self.servo_pos[0])
+        near = abs(ex) <= max(CATCH_SERVO_LIFT_PX, CATCH_SERVO_LAND_PX)
+        y_des = self.ground_y if near else self.ground_y - CATCH_SERVO_LIFT_PX
+        ey = float(y_des - self.servo_pos[1])
+        a_cmd = np.array([self._brake_velocity(ex, a_max) - self.servo_vel[0],
+                          self._brake_velocity(ey, a_max) - self.servo_vel[1]])
+        n = float(np.linalg.norm(a_cmd))
+        if n > a_max:
+            a_cmd *= a_max / n
+        self.servo_vel = self.servo_vel + a_cmd
+        self.servo_pos = self.servo_pos + self.servo_vel
+        if self.servo_pos[1] > self.ground_y:
+            self.servo_pos[1] = self.ground_y
+            self.servo_vel[1] = 0.0
+        self.servo_frames += 1
+        self.servo_log.append((float(np.linalg.norm(a_cmd)), a_max))
+        landed = (near and abs(float(self.swing_target[0] - self.servo_pos[0])) <= CATCH_SERVO_LAND_PX
+                  and self.servo_pos[1] >= self.ground_y - 0.5)
+        if landed or self.servo_frames >= CATCH_SERVO_MAX_FRAMES:
+            self.planted = np.array([self.servo_pos[0], self.ground_y])
+            self.state = "stance"
+            self.swing_t = 1.0
+            self.emergency_step_active = False
+            self.catch_servo = False
+            self.last_catch_frames = float(self.servo_frames)
+            return self.planted.copy()
+        return self.servo_pos.copy()
+
+    def _finish_chain(self, hip_pos: np.ndarray, foot: np.ndarray) -> None:
+        """FootPlantingLeg.update'in son kismi (zincir cozumu) -- servo karesi icin."""
+        self.chain.set_base(hip_pos)
+        self.last_overrun_px = max(0.0, float(np.linalg.norm(foot - hip_pos)) - self.chain.arm_length)
+        self.chain.solve(foot)
+        if self.knee_limits is not None:
+            self.chain.clamp_joint_angles(*self.knee_limits, bend_sign=self.knee_bend_sign)
+            if self.state == "stance":
+                self.chain.points[-1] = self.planted.copy()
 
     def _seed_knee_branch(self, hip_pos: np.ndarray) -> None:
         """Adim 17 -- FABRIK her karede bir onceki noktalardan baslar; bacak
@@ -459,6 +572,27 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         l1 = chain.lengths[0]
         chain.points[0] = hip_pos
         chain.points[1] = hip_pos + u * l1 * 0.866 + perp * l1 * 0.5
+
+    def _guard_knee_branch(self) -> None:
+        """Adim 23 -- tohum yetmediginde (or. tork sinirli yavas yakalama
+        sirasinda stance bacagi kalcanin 130 px gerisinde, ~45 derece kalirken)
+        FABRIK dizi kalca->ayak cizgisinin ters tarafinda birakabiliyor. Iki
+        kemikli zincirde diz bu cizgiye gore AYNALANIRSA iki kemik boyu da
+        aynen korunur; kalca ve ayak yerinde kalir. Zincir noktalari fizige
+        geri beslenmez (kutle modeli pergel eksenini kullanir)."""
+        if self.knee_forward_seed is None or len(self.chain.points) != 3:
+            return
+        hip, knee, foot = self.chain.points
+        d = foot - hip
+        n = float(np.linalg.norm(d))
+        if n < 1e-6:
+            return
+        v = knee - hip
+        if -(d[0] * v[1] - d[1] * v[0]) / n >= 0.0:
+            return
+        u = d / n
+        along = hip + u * float(np.dot(v, u))
+        self.chain.points[1] = 2.0 * along - knee
 
     def apply_slip(self, delta_x: float) -> None:
         """13. tur -- Kinetik Sürtünme Sınırı (Slipping): itki üreten

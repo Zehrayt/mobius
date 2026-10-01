@@ -32,6 +32,7 @@ açıkça gösteriyor.
 | 20. Fiziksel (Verlet) kollar: kütle, momentum dengeleme torku, itki refleksi | `physics/arms.py`, `demo/step14_active_biped.py` (`ARMS_MODE`, `ARM_REFLEX`) | 🔶 README "Adım 20" |
 | 21. Esnek olmayan eklem sınırı (hayalet hız kökü), refleks çıkış sönümü | `physics/verlet.py`, `physics/fabrik.py`, `physics/arms.py`, `demo/step14_active_biped.py` | 🔶 README "Adım 21" (kollu çalkantı Adım 22'de tersine döndü) |
 | 22. Anatomik bacak kütlesi (ters dinamik), COM itkisi, duruş kuvvet çifti, 2.5B gövde yaw + kol yaw iptali | `physics/leg_mass.py`, `physics/trunk_yaw.py`, `physics/arms.py` (`drive_cancel`), `demo/step14_active_biped.py` | 🔶 ileri itkide daha derin çökme — README "Adım 22" |
+| 23. Tork sınırlı yakalama adımı (süre kalça torkundan, ~140 Nm), m/s cinsinden gerçekçi itki takımı | `physics/active_gait.py` (`_servo_step`, `CATCH_TIMING`), `demo/step14_active_biped.py` | 🔶 ±300/500 px sayısal itkiler insan torkuyla düşüyor — README "Adım 23" |
 | — Bilge kinematik yürüyüş (REFERANS) | `demo/bilge_walk_validation.py`, `demo/bilge_walk_skinned.py` | render referansı: kalça kinematik eğriyle sürülür, ana motor DEĞİL |
 
 `step6` artık `scene/` üretim katmanının ilk sahnesidir. `step11` yok

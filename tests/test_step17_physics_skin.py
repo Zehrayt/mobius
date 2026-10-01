@@ -14,11 +14,15 @@ from demo import step14_active_biped as s14
 from demo.step17_bilge_physics_skin import simulate, inspect, phase_report, stance_pitch_deg
 
 
-CANARY = (25, 0, 122, 2, 146.20)  # varsayilan senaryo, Adim 22 (kutleli bacak + yaw iptali)
+CANARY = (22, 0, 157, 6, 145.97)  # varsayilan senaryo, Adim 23 (tork sinirli yakalama)
+CANARY_22 = (25, 0, 122, 2, 146.20)  # Adim 22 (catch_timing="fixed")
 CANARY_21 = (23, 0, 63, 9, 146.32)  # Adim 21 fizigi (LEGACY_21 bayraklariyla birebir)
 # Adim 22 oncesi govde: kutlesiz bacak, kalcadan itki, durus kontrolu yok, PD kol
-LEGACY_21 = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, arms_mode="drive")
-LEGACY_PHYS = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0)
+LEGACY_21 = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, arms_mode="drive",
+                 catch_timing="fixed")
+LEGACY_PHYS = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, catch_timing="fixed")
+# Adim 23 oncesi yakalama: sabit 3 karelik zamanlayici (Faz B testleri bu davranisi olcer)
+FIXED_CATCH = dict(catch_timing="fixed")
 
 
 class ContactPhaseSensorTest(unittest.TestCase):
@@ -59,6 +63,7 @@ class Step14RegressionTest(unittest.TestCase):
         sim = self.sim
         self.assertFalse(sim.nan)
         self.assertFalse(sim.fell)
+        # Adim 23: 150 px itki (COM ~4 m/s) insan torkuyla 4-12 karelik yakalamalarla karsilaniyor
         # Adim 22: kutleli bacak (buzda mikro kaymalar: 122 kayma karesi, hepsi buz bolgesinde)
         # Adim 21: esnek olmayan govde kelepcesi + kollar (20: 25/0/4/2/146.69;
         # 19c: 26/0/2/1/146.60; 18: 26/0/14/1/146.62; 17: 27/36/89/147.51)
@@ -67,6 +72,14 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertEqual(len(sim.slip_events), CANARY[2])
         self.assertEqual(len(sim.fazb_events), CANARY[3])
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY[4], places=2)
+
+    def test_fixed_catch_reproduces_step22(self):
+        sim = s14.ActiveBipedSim(catch_timing="fixed")
+        for _ in range(s14.N_FRAMES):
+            sim.step()
+        self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
+                          len(sim.fazb_events)), CANARY_22[:4])
+        self.assertAlmostEqual(sim.hip_y_log[-1], CANARY_22[4], places=2)
 
     def test_legacy_flags_reproduce_step21(self):
         sim = s14.ActiveBipedSim(**LEGACY_21)
@@ -119,7 +132,7 @@ class FazBTest(unittest.TestCase):
 
     def test_forward_pushes_single_support_and_no_collapse(self):
         for push in (100.0, 150.0, 300.0):
-            sim, ds, _ = self.run_sim(420, big_push_kick_px=push)
+            sim, ds, _ = self.run_sim(420, big_push_kick_px=push, **FIXED_CATCH)
             self.assertFalse(sim.fell, push)
             self.assertEqual(ds, 0, push)
             self.assertGreater(s14.GROUND_Y - max(sim.hip_y_log[210:]), 75.0, push)
@@ -127,7 +140,7 @@ class FazBTest(unittest.TestCase):
     def test_backward_pushes_heel_side_catch(self):
         """Adim 19: heel_strike aynasi -- geri itkide cift-havada yok, eski acil yol devreye girmez."""
         for push in (-100.0, -150.0, -300.0):
-            sim, ds, _ = self.run_sim(420, big_push_kick_px=push)
+            sim, ds, _ = self.run_sim(420, big_push_kick_px=push, **FIXED_CATCH)
             self.assertFalse(sim.fell, push)
             self.assertEqual(ds, 0, push)
             self.assertEqual(len(sim.emergency_step_events), 0, push)
@@ -171,6 +184,7 @@ class FazBTest(unittest.TestCase):
 
     def test_compress_swing_keeps_position_continuous(self):
         leg = s14.make_leg(np.array([0.0, s14.HIP_Y]), 0.0)
+        leg.catch_timing = "fixed"
         leg.state, leg.swing_t, leg._active_swing_duration = "swing", 0.4, 10.0
         leg.swing_start, leg.swing_target = np.array([-20.0, s14.GROUND_Y]), np.array([30.0, s14.GROUND_Y])
         self.assertTrue(leg.compress_swing(0.0, 2.0, frames=3.0))
@@ -223,7 +237,7 @@ class PhysicalArmsTest(unittest.TestCase):
 
     def test_pushes_with_arms(self):
         for push in (150.0, -150.0, 500.0, -500.0):
-            sim = s14.ActiveBipedSim(big_push_kick_px=push)
+            sim = s14.ActiveBipedSim(big_push_kick_px=push, **FIXED_CATCH)
             double = 0
             for _ in range(420):
                 sim.step()
