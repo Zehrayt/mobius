@@ -16,6 +16,7 @@ PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch", prea
 
 
 def run(push_ms, t=7.0, n=420, **kw):
+    kw.setdefault("shock_mode", "servo")   # Adim 24 sok servosu (Adim 27: "force")
     sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
     for _ in range(n):
         sim.step()

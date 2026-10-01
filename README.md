@@ -4273,6 +4273,89 @@ Bunu sadeleştirmeden uygulamak üç karar istiyor:
    çöker" için bacak kuvvet sınırlı bir elemana dönmeli.
 3. İki ayak yerdeyken yük paylaşımı modelde yok, tek anchor var.
 
+## Adım 27 — Kuvvet sınırlı bacak: gerçek ağırlığa karşı diz torku
+
+Karar: motorun Verlet yerçekimi (`TUNED_GRAVITY`) değişmedi. Bacağın
+taşıyabildiği yük ise **gerçek ağırlıkla** karşılaştırılıyor (70 kg,
+g = 9.81 m/s² ≈ 2.23 px/kare²). Bacak ivmeleri zaten gerçek zaman
+ölçeğinde (Adım 22.8/5).
+
+### 27.1 Model (`SHOCK_MODE = "force"`)
+Şok emilimi sırasında (temas sıkışması > 8 px) anchor–kalça çubuğunun
+dinlenme boyu r artık bir hız/ivme tavanıyla değil, kuvvetle hareket ediyor.
+
+- **Bacak kapasitesi:** İki kemikli bacakta diz torku τ, kalça–ayak
+  doğrultusunda `F = τ / (l · sin β)` kuvveti verir (`cos β = d / 2l`). Dik
+  bacakta F sonsuza gittiği için ağırlığın 6 katıyla sınırlandı.
+  `TAU_KNEE_MAX_NM = 200` (tek bacak, ~2.9 Nm/kg).
+- **Bacak ivmesi:** `a = (Σ F − M·g_gerçek) / M`. İki ayak da yerdeyse iki
+  bacağın kuvveti toplanıyor.
+- **Hareket:** Uzatma ivmesi en fazla `a`. Kas gevşerse gövde `g_gerçek`
+  ile yavaşlıyor; frenleme eğrisi bu. a < 0 ise bacak ağırlığı taşıyamıyor
+  ve zorla bükülüyor.
+- **Temas anı:** r'nin hızı kalçanın bacak boyunca gerçek hızı. Yani iniş
+  hızı artık rijit çubukla tek karede durmuyor, kuvvetle sönümleniyor.
+- **Kas aktivasyonu:** Hazırlıksız temasta 0.2'den başlıyor, kare başına
+  `(1 − act) · 0.57` artıyor (~40 ms). Adım 25'in hazırlık refleksi artık
+  bu aktivasyonu temastan önce yükseltiyor.
+- **Çökme:** Diz 150°'ye bükülünce (kalça–ayak 48 px) bacak çökmüş
+  sayılıyor. Bu terminal bir durum: adım yok, gövde zeminin altına
+  geçemiyor.
+- 3 px/kare ve 1 px/kare² tavanları kaldırıldı (eski "servo" modu
+  bayrakla duruyor).
+
+Bacağın vücudu taşıyabildiği oran (F/W), kalça–ayak mesafesine göre:
+
+| mesafe (px) | 184 | 170 | 160 | 140 | 120 | 100 | 60 |
+|---|---|---|---|---|---|---|---|
+| F/W | 6 (tavan) | 1.69 | 1.31 | **1.00** | 0.85 | 0.77 | 0.68 |
+
+### 27.2 Sonuç
+6 faz × 10 itki = 60 koşu. Hücreler: en alçak kalça ortalama / en kötü (px);
+C = çöken koşu sayısı (6 fazda).
+
+| | +1.0 | −1.0 | +1.5 | −1.5 | +2.0 | −2.0 | +2.5 | −2.5 | ±4.2 | çökme |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Adım 26 (servo) | 178/175 | 160/146 | 177/174 | 154/143 | 165/153 | 150/136 | 149/127 | 136/120 | 92 / 93 | 0/60 |
+| **200 Nm, hazırlıklı** | 178/175 | 159/146 | 177/174 | 141/82 | C2 | 117/76 | C6 | C2 | C6 / C6 | **22/60** |
+| 250 Nm | 178/175 | 159/146 | 177/174 | 154/144 | C1 | 130/79 | C5 | C1 | C6 / C6 | 19/60 |
+| 200 Nm, hazırlıksız | 178/175 | 158/144 | 177/174 | 141/108 | C5 | C3 | C6 | C5 | C6 / C6 | 31/60 |
+
+- **±1.5 m/s'ye kadar** hiçbir koşu çökmüyor.
+- **2–2.5 m/s'de** çökmeler başlıyor. Bu aralık, insanın tek adımla
+  toparlanabildiği sınırın (~1.5–2 m/s) hemen üstü.
+- **±4.2 m/s'nin (150 px) hepsi** çöküyor.
+- **Hazırlık refleksi (Adım 25) artık belirleyici:** Kapatılınca çökme
+  22'den 31'e çıkıyor. Adım 25'te sadece 1 px kazandırıyordu; kuvvet
+  modelinde kas aktivasyonu fark yaratıyor.
+- **Diz torkuna duyarlılık:** 200 → 250 Nm çökmeyi 22'den 19'a indiriyor.
+
+### 27.3 Yan bulgu: aşırı hızlı kalkış (Hill eksikliği)
+Dikleşen bacakta kapasite hızla büyüyor (170 px'te F/W 1.7, dik bacakta
+tavan 6). Kalkış bazı koşularda **27 px/kare'ye** kadar ivmeleniyor. Örnek:
+−2.5 m/s'de kalça 55 px'ten 193 px'e 8 karede çıkıyor ve dik boyu aşıyor,
+yani kısa bir sıçrama. Kuvvet hızdan bağımsız olduğu için bu bekleniyor;
+kuvvet–hız eğrisi (Adım 28) bunu sınırlamalı.
+
+### 27.4 Gerileme
+- İtkisiz yürüyüşte şok hiç tetiklenmiyor; Adım 26 ile bit-bit aynı (test).
+  15 px tökezleme + 60 s yürüyüş ayakta.
+- **Varsayılan sahne değişti:** 150 px itki (~4.2 m/s) artık kare 222'de
+  çöküşle bitiyor. Kanarya 16/0/89/1, son `hip_y` 328.73 (kalça yerde).
+  `shock_mode="servo"` Adım 26'yı aynen veriyor.
+- Adım 23–26'nın itki testleri `shock_mode="servo"` ile kendi
+  davranışlarını ölçüyor.
+- Testler 85/85 geçti (yeni `tests/test_step27_force_limited_leg.py`).
+  step1–16 smoke geçti.
+
+### 27.5 Sınırlar
+1. Kapasite yalnızca diz torkundan. Kalça ve ayak bileği ekstansörlerinin
+   katkısı yok, yani model tutucu.
+2. İki ayak yerdeyken diğer bacak fiziksel olarak bağlı değil. Yalnızca
+   kuvvet kapasitesi toplanıyor.
+3. Çöküş sonrası bir "yerde oturma" pozu yok. Yalnızca zemin kelepçesi
+   var; render'da gövde yere yığılıyor.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

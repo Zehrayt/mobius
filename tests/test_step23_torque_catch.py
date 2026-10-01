@@ -58,8 +58,10 @@ class TorqueCatchTest(unittest.TestCase):
 
     def test_realistic_pushes_recover(self):
         """0.5-2.5 m/s COM itkileri (insan tek/cok adimli toparlanma araligi)."""
+        # Adim 27'den beri 2-2.5 m/s'de kuvvet sinirli bacak cokebiliyor; bu test
+        # Adim 23-26 sok servosuyla tork sinirli yakalamayi olcer.
         for dv in (0.5, -0.5, 1.0, -1.0, 1.5, -1.5, 2.0, -2.0, 2.5, -2.5):
-            sim, double = run(dv)
+            sim, double = run(dv, shock_mode="servo")
             self.assertFalse(sim.fell or sim.nan, dv)
             self.assertEqual(double, 0, dv)
             self.assertGreater(s14.GROUND_Y - max(sim.hip_y_log[210:]), 90.0, dv)

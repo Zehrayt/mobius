@@ -14,7 +14,8 @@ from demo import step14_active_biped as s14
 from demo.step17_bilge_physics_skin import simulate, inspect, phase_report, stance_pitch_deg
 
 
-CANARY = (25, 0, 89, 1, 145.95)  # varsayilan senaryo, Adim 26 (rocker + kalca stratejisi; Adim 25: 25/0/104/1/145.53)
+CANARY = (16, 0, 89, 1, 328.73)  # varsayilan senaryo, Adim 27: 150 px (~4.2 m/s) itkide bacak COKUYOR (kare 222)
+CANARY_26 = (25, 0, 89, 1, 145.95)  # Adim 26 (shock_mode="servo")
 CANARY_23 = (22, 0, 165, 7, 145.99)  # Adim 23 + servo baslangic duzeltmesi (PRE24 bayraklariyla; duzeltme oncesi 22/0/157/6/145.97)
 CANARY_22 = (25, 0, 122, 2, 146.20)  # Adim 22 (catch_timing="fixed")
 CANARY_21 = (23, 0, 63, 9, 146.32)  # Adim 21 fizigi (LEGACY_21 bayraklariyla birebir)
@@ -66,7 +67,8 @@ class Step14RegressionTest(unittest.TestCase):
     def test_documented_canaries(self):
         sim = self.sim
         self.assertFalse(sim.nan)
-        self.assertFalse(sim.fell)
+        self.assertTrue(sim.fell)              # Adim 27: kuvvet sinirli bacak cokuyor
+        self.assertEqual(sim.collapse_frame, 222)
         # Adim 23: 150 px itki (COM ~4 m/s) insan torkuyla 4-12 karelik yakalamalarla karsilaniyor
         # Adim 22: kutleli bacak (buzda mikro kaymalar: 122 kayma karesi, hepsi buz bolgesinde)
         # Adim 21: esnek olmayan govde kelepcesi + kollar (20: 25/0/4/2/146.69;
@@ -76,6 +78,15 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertEqual(len(sim.slip_events), CANARY[2])
         self.assertEqual(len(sim.fazb_events), CANARY[3])
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY[4], places=2)
+
+    def test_servo_shock_reproduces_step26(self):
+        sim = s14.ActiveBipedSim(shock_mode="servo")
+        for _ in range(s14.N_FRAMES):
+            sim.step()
+        self.assertFalse(sim.fell)
+        self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
+                          len(sim.fazb_events)), CANARY_26[:4])
+        self.assertAlmostEqual(sim.hip_y_log[-1], CANARY_26[4], places=2)
 
     def test_pre24_flags_reproduce_step23(self):
         sim = s14.ActiveBipedSim(**PRE24)

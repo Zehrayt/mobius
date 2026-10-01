@@ -328,7 +328,26 @@ SHOCK_ABSORB_DONE_PX = 0.5
 #   anindaki sikisma (ARM_LENGTH - |kalca-ayak|) SHOCK_CONTACT_MIN_PX'i
 #   asiyorsa. Normal yuruyuste sikisma <= 1.3 px (60 s olcum), yani itkisiz
 #   yuruyus bit-bit ayni.
-SHOCK_MODE = "servo"
+SHOCK_MODE = "force"
+# Adim 27 -- "force": kuvvet sinirli bacak aktuatoru. Sok emilimi sirasinda
+# bacak (anchor-kalca cubugunun dinlenme boyu r) gercek AGIRLIGA karsi diz
+# torkunun uretebildigi kuvvetle hareket eder:
+#   F_max(d) = act * TAU_KNEE / (l * sin(beta)),  cos(beta) = d / 2l
+#   a = (sum F_max - M g_gercek) / M      (iki ayak yerdeyse kuvvetler toplanir)
+# Uzatma ivmesi <= a; kas gevserse govde g_gercek ile yavaslar (fren). a < 0
+# ise bacak agirligi tasiyamaz ve zorla bukulur (cokme). Temas aninda r'nin
+# hizi kalcanin bacak boyunca gercek hizidir (inis hizi kuvvetle sonumlenir).
+# Motorun Verlet yercekimi (TUNED_GRAVITY) DEGISMEDI; gercek agirlik yalnizca
+# bu kas-kapasite dengesinde kullanilir (ayni zaman olceginde bacak ivmeleri
+# gercekci, bkz. README Adim 22.8/5).
+TAU_KNEE_MAX_NM = 200.0              # tek bacak diz ekstansoru (~2.9 Nm/kg, 70 kg)
+TORQUE_UNIT_NM = 0.291               # 1 tork birimi (bkz. physics/active_gait.py)
+G_REAL_PX = 9.81 * (184.0 / 0.9) / 30.0 ** 2   # ~2.23 px/kare^2
+BODY_MASS_TOTAL = 5.18               # govde+kollar 3.52 + iki bacak 1.66
+KNEE_FLEX_MIN_DIST = 2.0 * 92.0 * np.sin(np.radians(15.0))   # diz 150 der bukuk: kalca-ayak ~48 px
+ACT_RATE = 0.57                      # aktivasyon: kare basina (1 - act) * 0.57 (zaman sabiti ~1.2 kare, ~40 ms)
+ACT_INITIAL = 0.2                    # hazirliksiz temasta kas aktivasyonu
+LEG_FORCE_CAP_W = 6.0                # neredeyse duz bacakta F -> sonsuz; agirligin 6 kati ile sinirla
 SHOCK_TRIGGER = "contact"
 SHOCK_CONTACT_MIN_PX = 8.0
 SHOCK_EXT_ACCEL = 1.0
@@ -523,6 +542,10 @@ class ActiveBipedSim:
         self.hip_strategy_gain = hip_strategy_gain
         self.last_real_error = 0.0
         self.shock_pending_v0 = 0.0
+        self.shock_act = 1.0
+        self.collapsed = False
+        self.collapse_frame = None
+        self.leg_force_log = []     # Adim 27: (kare, d, F_toplam/W, a, r, v)
         self.preact_log = []        # Adim 25: (temas karesi, bacak, temastaki hazirlik hizi)
         self.shock_trigger = SHOCK_TRIGGER if shock_trigger is None else shock_trigger
         self.contact_log = []       # Adim 24: (kare, bacak, temas sikismasi px)
@@ -626,6 +649,16 @@ class ActiveBipedSim:
         self.last_leg_yaw = yaw_momentum(legs)
         self.last_arm_yaw = yaw_momentum(arms)
         self.trunk_yaw.update(self.last_leg_yaw, self.last_arm_yaw)
+
+    def leg_force_capacity(self, d: float) -> float:
+        """Adim 27 -- iki kemikli bacagin kalca-ayak dogrultusunda uretebildigi en
+        buyuk kuvvet (tork birimi / px): F = tau / (l sin beta), cos beta = d/2l."""
+        l = LEG_SEGMENT_LEN
+        c = min(max(d / (2.0 * l), 0.0), 1.0)
+        sinb = float(np.sqrt(max(1.0 - c * c, 0.0)))
+        tau = TAU_KNEE_MAX_NM / TORQUE_UNIT_NM
+        cap = LEG_FORCE_CAP_W * BODY_MASS_TOTAL * G_REAL_PX
+        return cap if sinb * l * cap <= tau else tau / (l * sinb)
 
     def _hip_strategy_deg(self) -> float:
         g = HIP_STRATEGY_GAIN if self.hip_strategy_gain is None else self.hip_strategy_gain
@@ -836,10 +869,57 @@ class ActiveBipedSim:
         if stance_leg is not None and self.shock_pending is not None and stance_leg is self.shock_pending:
             d = float(np.linalg.norm(body.points[hip] - np.array([stance_leg.planted[0], GROUND_Y])))
             self.shock_rest = min(ARM_LENGTH, d)
-            self.shock_vel = self.shock_pending_v0 if self.preact_frames > 0 else 0.0
+            if self.shock_mode == "force":
+                # temas: r'nin hizi kalcanin bacak boyunca gercek hizi; kas aktivasyonu
+                # hazirliga gore (Adim 25: TTC ile temastan once kasilma)
+                hp = body.points[hip] - body.prev_points[hip]
+                u = (body.points[hip] - np.array([stance_leg.planted[0], GROUND_Y])) / max(d, 1e-6)
+                self.shock_vel = float(np.dot(hp, u))
+                self.shock_act = (max(ACT_INITIAL, min(1.0, self.shock_pending_v0))
+                                  if self.preact_frames > 0 else ACT_INITIAL)
+            else:
+                self.shock_vel = self.shock_pending_v0 if self.preact_frames > 0 else 0.0
             self.shock_pending = None
             self.shock_events.append((f, round(self.shock_rest, 1)))
-        if self.shock_rest is not None and self.shock_mode == "servo":
+        if self.collapsed:
+            i0, j0, _, c0 = body.sticks[0]
+            body.sticks[0] = (i0, j0, KNEE_FLEX_MIN_DIST, c0)   # cokmus bacak: diz tam bukuk kalir
+        elif self.shock_rest is not None and self.shock_mode == "force":
+            i0, j0, _, c0 = body.sticks[0]
+            if stance_leg is not None:
+                d_now = float(np.linalg.norm(body.points[hip] - body.points[anchor]))
+                W = BODY_MASS_TOTAL * G_REAL_PX
+                f_tot = self.leg_force_capacity(d_now) * self.shock_act
+                other = right_leg if stance_leg is left_leg else left_leg
+                if other.state == "stance":
+                    d2 = float(np.linalg.norm(body.points[hip] - np.array([other.planted[0], GROUND_Y])))
+                    if d2 < ARM_LENGTH + 2.0:
+                        f_tot += self.leg_force_capacity(d2) * self.shock_act
+                a_up = (f_tot - W) / BODY_MASS_TOTAL
+                err = ARM_LENGTH - self.shock_rest
+                g = G_REAL_PX
+                v_des = float(np.sqrt(g * g / 4.0 + 2.0 * g * max(err, 0.0)) - g / 2.0)
+                v_des = min(v_des, err)
+                self.shock_vel += float(np.clip(v_des - self.shock_vel, -g, a_up))
+                self.shock_rest = min(ARM_LENGTH, self.shock_rest + self.shock_vel)
+                if self.shock_vel > 0.0:
+                    self.shock_rest = min(ARM_LENGTH, max(self.shock_rest, min(d_now, ARM_LENGTH)))
+                if self.shock_rest <= KNEE_FLEX_MIN_DIST:
+                    self.shock_rest = KNEE_FLEX_MIN_DIST
+                    self.shock_vel = 0.0
+                    if not self.collapsed:
+                        self.collapsed = True
+                        self.collapse_frame = f
+                        if not self.fell:
+                            self.fell = True
+                            self.fall_frame = f
+                self.shock_act += (1.0 - self.shock_act) * ACT_RATE
+                self.leg_force_log.append((f, round(d_now, 1), round(f_tot / W, 2), round(a_up, 2),
+                                           round(self.shock_rest, 1), round(self.shock_vel, 2)))
+            body.sticks[0] = (i0, j0, self.shock_rest, c0)
+            if ARM_LENGTH - self.shock_rest < SHOCK_ABSORB_DONE_PX and self.shock_vel >= 0.0:
+                self.shock_rest = None
+        elif self.shock_rest is not None and self.shock_mode == "servo":
             i0, j0, _, c0 = body.sticks[0]
             if stance_leg is not None:
                 d_now = float(np.linalg.norm(body.points[hip] - body.points[anchor]))
@@ -918,6 +998,12 @@ class ActiveBipedSim:
                         preserve_momentum=self.torso_clamp_mode)
         if self.arms is not None:
             self.arms.constrain()
+        if self.collapsed:
+            # Adim 27: yere yigilmis govde zeminin altina gecemez (esnek olmayan zemin)
+            pts, prv = body.points, body.prev_points
+            below = pts[:, 1] > GROUND_Y
+            pts[below, 1] = GROUND_Y
+            prv[below, 1] = GROUND_Y
 
         hip_pos = body.points[hip]
         # NOT: bu dongu bilerek SIRALI (once sol, sonra sag) calisir -- bkz.
@@ -929,6 +1015,10 @@ class ActiveBipedSim:
             was_stance = leg.state == "stance"
             was_swing = leg.state == "swing"
             was_catch = leg.catch_active
+            if self.collapsed:
+                # Adim 27: bacak cokmus (diz tam bukuk) -- terminal durum, adim yok
+                leg.chain.set_base(hip_pos)
+                continue
             leg.update(hip_pos, hip_vx=ctrl_vx, other_leg_swinging=(other.state == "swing"))
             if was_swing and was_catch and leg.state == "stance":
                 # Adim 23: yakalama adiminin gercek suresi (kalkistan inise)
@@ -948,7 +1038,12 @@ class ActiveBipedSim:
             if leg.state == "swing" and self.preact_frames > 0:
                 ttc = leg.time_to_contact(hip_pos)
                 if ttc is not None and ttc <= self.preact_frames:
-                    leg.preact_v = min(SHOCK_EXT_VMAX, getattr(leg, "preact_v", 0.0) + SHOCK_EXT_ACCEL)
+                    if self.shock_mode == "force":
+                        # kas aktivasyonu temastan once yukselir (ACT_RATE ile)
+                        a0 = getattr(leg, "preact_v", 0.0) or ACT_INITIAL
+                        leg.preact_v = a0 + (1.0 - a0) * ACT_RATE
+                    else:
+                        leg.preact_v = min(SHOCK_EXT_VMAX, getattr(leg, "preact_v", 0.0) + SHOCK_EXT_ACCEL)
                 else:
                     leg.preact_v = 0.0
             else:

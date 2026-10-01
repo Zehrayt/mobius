@@ -15,6 +15,7 @@ OFF = dict(rocker=False, hip_strategy_gain=0.0)
 
 
 def min_height(push_ms, t=7.0, n=420, **kw):
+    kw.setdefault("shock_mode", "servo")   # Adim 26 olcumu sok servosuyla (Adim 27: "force")
     sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
     for _ in range(n):
         sim.step()
