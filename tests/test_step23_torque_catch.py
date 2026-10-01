@@ -17,6 +17,7 @@ KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
 
 
 def run(push_ms, n=420, **kw):
+    kw.setdefault("hill", False)   # Adim 23 olcumu: sabit (hizdan bagimsiz) tork tavani
     sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=7.0, **kw)
     double = 0
     for _ in range(n):

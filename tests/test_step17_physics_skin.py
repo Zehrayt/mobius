@@ -14,7 +14,7 @@ from demo import step14_active_biped as s14
 from demo.step17_bilge_physics_skin import simulate, inspect, phase_report, stance_pitch_deg
 
 
-CANARY = (16, 0, 89, 1, 328.73)  # varsayilan senaryo, Adim 27: 150 px (~4.2 m/s) itkide bacak COKUYOR (kare 222)
+CANARY = (16, 0, 92, 1, 327.21)  # varsayilan senaryo, Adim 28 (Hill): 150 px (~4.2 m/s) itkide bacak COKUYOR (kare 222)
 CANARY_26 = (25, 0, 89, 1, 145.95)  # Adim 26 (shock_mode="servo")
 CANARY_23 = (22, 0, 165, 7, 145.99)  # Adim 23 + servo baslangic duzeltmesi (PRE24 bayraklariyla; duzeltme oncesi 22/0/157/6/145.97)
 CANARY_22 = (25, 0, 122, 2, 146.20)  # Adim 22 (catch_timing="fixed")
@@ -22,7 +22,7 @@ CANARY_21 = (23, 0, 63, 9, 146.32)  # Adim 21 fizigi (LEGACY_21 bayraklariyla bi
 # Adim 22 oncesi govde: kutlesiz bacak, kalcadan itki, durus kontrolu yok, PD kol
 # Adim 24 oncesi sok/tetik davranisi (sabit hiz sinirli sok emici, kapanma kapisi yok)
 PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch", preactivation=0,
-             rocker=False, hip_strategy_gain=0.0)
+             rocker=False, hip_strategy_gain=0.0, hill=False)
 LEGACY_21 = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, arms_mode="drive",
                  catch_timing="fixed", **PRE24)
 LEGACY_PHYS = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, catch_timing="fixed", **PRE24)
@@ -80,7 +80,7 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY[4], places=2)
 
     def test_servo_shock_reproduces_step26(self):
-        sim = s14.ActiveBipedSim(shock_mode="servo")
+        sim = s14.ActiveBipedSim(shock_mode="servo", hill=False)
         for _ in range(s14.N_FRAMES):
             sim.step()
         self.assertFalse(sim.fell)

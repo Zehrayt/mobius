@@ -12,11 +12,12 @@ from demo import step14_active_biped as s14
 
 KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
 PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch", preactivation=0,
-             rocker=False, hip_strategy_gain=0.0)
+             rocker=False, hip_strategy_gain=0.0, hill=False)
 
 
 def run(push_ms, t=7.0, n=420, **kw):
     kw.setdefault("shock_mode", "servo")   # Adim 24 sok servosu (Adim 27: "force")
+    kw.setdefault("hill", False)          # Adim 28 oncesi kas modeli
     sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
     for _ in range(n):
         sim.step()

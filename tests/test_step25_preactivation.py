@@ -15,6 +15,7 @@ KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
 
 def run(push_ms, t=7.0, n=420, **kw):
     kw.setdefault("shock_mode", "servo")   # Adim 24-26 sok servosu (Adim 27: "force")
+    kw.setdefault("hill", False)          # Adim 28 oncesi kas modeli
     sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
     for _ in range(n):
         sim.step()

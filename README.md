@@ -4356,6 +4356,76 @@ kuvvet–hız eğrisi (Adım 28) bunu sınırlamalı.
 3. Çöküş sonrası bir "yerde oturma" pozu yok. Yalnızca zemin kelepçesi
    var; render'da gövde yere yığılıyor.
 
+## Adım 28 — Hill kas modeli (kuvvet–hız)
+
+### 28.1 Model (`physics/hill.py`)
+Kuvvet, eklemin açısal hızı s'ye göre ölçekleniyor (f(0) = 1):
+
+| durum | formül | davranış |
+|---|---|---|
+| Konsantrik (kas kısalıyor, s ≥ 0) | `f = (1 − s/vmax) / (1 + s/(k·vmax))`, k = 0.25 | s = vmax'ta 0 |
+| Eksantrik (kas zorla uzuyor) | van Soest–Bobbert formu | ~1.5'te platolanıyor |
+
+`vmax = 0.4 rad/kare` (≈12 rad/s, insan diz/kalça üst sınırı).
+
+Uygulandığı iki yer:
+- **Diz ekstansörü (kuvvet sınırlı bacak, Adım 27):** Diz açısal hızı
+  `ω = ṙ / (l · sin β)`. Bacak uzarken kuvvet düşüyor, zorla bükülürken
+  artıyor.
+- **Kalça torku (yakalama servosu, Adım 23):** Ayağın istenen ivme
+  yönündeki hızı, kalça etrafında açısal hıza çevriliyor. Aynı yönde
+  hareket konsantrik (tork düşer), frenleme eksantrik (tork 1.5 katına
+  kadar çıkar). Gerçekleşen tepe tork ±1/±2 m/s'de 680–700 birim
+  (eksantrik tavan 720). Hill kapalıyken tavan 480.
+
+### 28.2 Adım 27'de bulunan hata: düz bacağın yük paylaşımı
+Adım 27'de iki ayak yerdeyken diğer bacak, **düz olsa bile** kapasitesini
+ekliyordu. Dik bacakta kapasite tavanı ağırlığın 6 katı; bu, tek karede
+a = 18 px/kare² ve 15 px/kare'lik bir fırlatma üretti (−2.5 m/s, kare
+244). Düz bacağın uzama payı olmadığı için kalçayı yukarı ivmelendiremez.
+Artık diğer bacak yalnızca bükükse (sıkışma > 8 px) yük paylaşıyor.
+
+**README 27.3'teki "27 px/kare'lik kalkış"ın çoğu Hill eksikliği değil, bu
+hataydı.** Düzeltmeden sonra Hill kapalıyken en büyük yükseliş 12 px/kare,
+çökme 22 → 29.
+
+### 28.3 Sonuç
+6 faz × 10 itki = 60 koşu. Hücreler: çökmeyen koşularda en alçak kalça
+ortalama / en kötü (px); C = çöken koşu sayısı (6 fazda).
+
+| | +1.0 | −1.0 | +1.5 | −1.5 | +2.0 | −2.0 | +2.5 | −2.5 | ±4.2 | çökme | en büyük yükseliş |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Adım 27 (düzeltilmiş), Hill yok | 178/175 | 157/136 | 177/174 | 142/82 C1 | 152/135 C2 | 133/111 C2 | C6 | C6 | C6/C6 | 29 | 12 px/kare |
+| **Hill** | 178/176 | 158/144 | 175/168 | 150/127 | 155/145 C1 | 145/126 | 121/114 C4 | 86/67 C2 | C6/C6 | **19** | **6 px/kare** |
+| Hill, hazırlıksız | 178/176 | 153/134 | 173/156 | 138/118 C1 | 127/122 C4 | 93/52 C1 | C6 | 69/69 C5 | C6/C6 | 29 | 7 px/kare |
+
+- **Kalkış artık fizikten geliyor.** En büyük yükseliş 6 px/kare
+  (≈0.9 m/s). Toparlanma medyanı 8 kare (en alçaktan 170 px'e).
+- **Çökme 29'dan 19'a indi.** Eksantrik güç (iniş sırasında zorla
+  bükülen kas ~1.5 kat kuvvet üretir) inişleri tutuyor.
+- ±1.5 m/s'ye kadar çökme yok. 2–2.5 m/s'de 7/24, ±4.2 m/s'de 12/12.
+- Hazırlık refleksi (Adım 25) hâlâ belirleyici: kapatılınca çökme 29.
+- Yakalama süresi medyanı 7 → 5 kare. Eksantrik frenleme ayağı daha erken
+  durduruyor.
+
+### 28.4 Gerileme
+- İtkisiz yürüyüş Adım 26 ile bit-bit aynı (Hill yalnızca şok ve yakalama
+  sırasında çalışıyor).
+- 15 px tökezleme + 60 s ayakta, 124 adım.
+- Kanarya 16/0/92/1/327.21; varsayılan 150 px itki kare 222'de çöküyor.
+- Önceki adımların testleri kendi davranışlarını ölçüyor:
+  - Adım 23–26 testleri `hill=False` ile çalışıyor.
+  - `PRE24` bayraklarına `hill=False` eklendi.
+- Testler 90/90 geçti (yeni `tests/test_step28_hill.py`). step1–16 smoke
+  geçti.
+
+### 28.5 Açık: çöküş sonrası görüntü
+Çöküş terminal bir durum, ama yere düşme pozu yok. Bacaklar donuyor,
+kalça ilerliyor. Arkada kalan ayak kalçanın çok gerisinde kaldığı için deri
+bacağı aşırı uzuyor (spagat görüntüsü). Kare 224'te bir bacak bir kare
+zeminin altına geçiyor (render). Varsayılan sahnenin 150 px itkisi
+(~4.2 m/s) artık bu görüntüyle bitiyor.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

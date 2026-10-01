@@ -145,6 +145,7 @@ import numpy as np
 
 from physics.gait import FootPlantingLeg
 from physics.leg_mass import THIGH_MASS, SHANK_MASS, THIGH_AXIS_FRAC, SHANK_AXIS_FRAC
+from physics.hill import force_velocity
 
 # 12. tur -- Dinamik Salinim Suresi v2 parametreleri.
 DST_BASE_VX = 2.0       # referans hiz (demo/step14'teki TARGET_VX ile ayni)
@@ -215,6 +216,9 @@ TORQUE_UNIT_NM = 0.291
 CATCH_SERVO_LIFT_PX = 14.0      # yakalama adiminda ayak yerden kalkisi
 CATCH_SERVO_LAND_PX = 3.0       # hedefe bu kadar yaklasinca (ve yavaslayinca) bas
 CATCH_SERVO_MAX_FRAMES = 24     # emniyet: bu kadar karede varamazsa oldugu yere bas
+# Adim 28 -- Hill kuvvet-hiz: kalca torku eklemin acisal hizina gore olceklenir
+# (konsantrikte duser, eksantrikte ~1.5'e cikar). Bkz. physics/hill.py.
+HILL_ENABLED = True
 LEG_INERTIA_J = THIGH_MASS * THIGH_AXIS_FRAC ** 2 + SHANK_MASS * SHANK_AXIS_FRAC ** 2
 FAZB_TARGET_LEAD_PX = 10.0
 FAZB_MAX_PREDICT_PX = 60.0
@@ -537,7 +541,11 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         mag = float(np.sqrt(a * a / 4.0 + 2.0 * a * abs(err)) - a / 2.0)
         return float(np.copysign(min(mag, abs(err)), err))
 
-    def _servo_kin(self, pos: np.ndarray, vel: np.ndarray, a_max: float):
+    def _hill(self) -> bool:
+        v = getattr(self, "hill", None)
+        return HILL_ENABLED if v is None else v
+
+    def _servo_kin(self, pos: np.ndarray, vel: np.ndarray, a_max: float, hip_pos=None):
         """Servonun tek karelik kinematigi (durum degistirmez): (pos, vel, |a|, basti_mi)."""
         ex = float(self.swing_target[0] - pos[0])
         near = abs(ex) <= max(CATCH_SERVO_LIFT_PX, CATCH_SERVO_LAND_PX)
@@ -546,8 +554,15 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         a_cmd = np.array([self._brake_velocity(ex, a_max) - vel[0],
                           self._brake_velocity(ey, a_max) - vel[1]])
         n = float(np.linalg.norm(a_cmd))
+        if hip_pos is not None and n > 1e-9 and self._hill():
+            # Adim 28: kas hizi = ayagin istenen ivme yonundeki hizinin kalca etrafindaki
+            # acisal karsiligi; ayni yonde hareket = konsantrik (tork duser),
+            # ters yonde (frenleme) = eksantrik (tork artar)
+            L = max(float(np.linalg.norm(pos - np.asarray(hip_pos, float))), 1.0)
+            s_ang = float(np.dot(vel, a_cmd / n)) / L
+            a_max = a_max * force_velocity(s_ang)
         if n > a_max:
-            a_cmd *= a_max / n
+            a_cmd *= a_max / max(n, 1e-12)
         vel = vel + a_cmd
         pos = pos + vel
         if pos[1] > self.ground_y:
@@ -567,7 +582,7 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
             a_max = self.servo_accel_limit(hip_pos)
             pos, vel = self.servo_pos.copy(), self.servo_vel.copy()
             for k in range(1, horizon + 1):
-                pos, vel, _, landed = self._servo_kin(pos, vel, a_max)
+                pos, vel, _, landed = self._servo_kin(pos, vel, a_max, hip_pos)
                 if landed:
                     return float(k)
             return None
@@ -575,7 +590,7 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
 
     def _servo_step(self, hip_pos: np.ndarray) -> np.ndarray:
         a_max = self.servo_accel_limit(hip_pos)
-        self.servo_pos, self.servo_vel, a_norm, landed = self._servo_kin(self.servo_pos, self.servo_vel, a_max)
+        self.servo_pos, self.servo_vel, a_norm, landed = self._servo_kin(self.servo_pos, self.servo_vel, a_max, hip_pos)
         self.servo_frames += 1
         self.servo_log.append((a_norm, a_max))
         if landed or self.servo_frames >= CATCH_SERVO_MAX_FRAMES:

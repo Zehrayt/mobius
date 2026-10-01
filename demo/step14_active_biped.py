@@ -41,6 +41,7 @@ import cv2
 from physics.verlet import VerletSystem, clamp_direction, apply_angular_spring, apply_angular_couple
 from physics.trunk_yaw import (TrunkYaw, yaw_momentum, side_sign, HIP_HALF_WIDTH,
                                SHOULDER_HALF_WIDTH)
+from physics.hill import force_velocity
 from physics.leg_mass import (LegMassModel, THIGH_MASS, SHANK_MASS,
                               THIGH_AXIS_FRAC, SHANK_AXIS_FRAC)
 from physics.active_gait import ActiveFootPlantingLeg, PHASE_TOE_OFF, PHASE_HEEL_STRIKE
@@ -347,7 +348,8 @@ BODY_MASS_TOTAL = 5.18               # govde+kollar 3.52 + iki bacak 1.66
 KNEE_FLEX_MIN_DIST = 2.0 * 92.0 * np.sin(np.radians(15.0))   # diz 150 der bukuk: kalca-ayak ~48 px
 ACT_RATE = 0.57                      # aktivasyon: kare basina (1 - act) * 0.57 (zaman sabiti ~1.2 kare, ~40 ms)
 ACT_INITIAL = 0.2                    # hazirliksiz temasta kas aktivasyonu
-LEG_FORCE_CAP_W = 6.0                # neredeyse duz bacakta F -> sonsuz; agirligin 6 kati ile sinirla
+LEG_FORCE_CAP_W = 6.0
+HILL_ENABLED = True                  # Adim 28: kuvvet-hiz iliskisi (physics/hill.py)                # neredeyse duz bacakta F -> sonsuz; agirligin 6 kati ile sinirla
 SHOCK_TRIGGER = "contact"
 SHOCK_CONTACT_MIN_PX = 8.0
 SHOCK_EXT_ACCEL = 1.0
@@ -514,7 +516,8 @@ class ActiveBipedSim:
                  catch_timing: str | None = None, hip_torque_max: float | None = None,
                  closing_ttc: float | None = None, shock_mode: str | None = None,
                  shock_trigger: str | None = None, preactivation: int | None = None,
-                 rocker: bool | None = None, hip_strategy_gain: float | None = None):
+                 rocker: bool | None = None, hip_strategy_gain: float | None = None,
+                 hill: bool | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -544,6 +547,7 @@ class ActiveBipedSim:
         self.shock_pending_v0 = 0.0
         self.shock_act = 1.0
         self.collapsed = False
+        self.hill = HILL_ENABLED if hill is None else hill
         self.collapse_frame = None
         self.leg_force_log = []     # Adim 27: (kare, d, F_toplam/W, a, r, v)
         self.preact_log = []        # Adim 25: (temas karesi, bacak, temastaki hazirlik hizi)
@@ -579,6 +583,7 @@ class ActiveBipedSim:
             leg.catch_timing = catch_timing          # None: physics.active_gait.CATCH_TIMING
             leg.hip_torque_max = hip_torque_max      # None: physics.active_gait.HIP_TORQUE_MAX
             leg.closing_ttc_frames = closing_ttc     # None: physics.active_gait.FAZB_CLOSING_TTC_FRAMES
+            leg.hill = hill                          # None: physics.active_gait.HILL_ENABLED
         # sag bacak baslangicta swing'de -- alternatif adimla baslamasi icin.
         self.right_leg.state = "swing"
         self.right_leg.swing_start = self.right_leg.planted.copy()
@@ -889,12 +894,23 @@ class ActiveBipedSim:
             if stance_leg is not None:
                 d_now = float(np.linalg.norm(body.points[hip] - body.points[anchor]))
                 W = BODY_MASS_TOTAL * G_REAL_PX
-                f_tot = self.leg_force_capacity(d_now) * self.shock_act
+                # Adim 28: Hill kuvvet-hiz -- diz acisal hizi w = r_hizi / (l sin beta);
+                # bacak uzarken (konsantrik) kuvvet duser, zorla bukulurken (eksantrik) artar
+                def hill_factor(d_leg: float) -> float:
+                    if not self.hill:
+                        return 1.0
+                    c = min(max(d_leg / (2.0 * LEG_SEGMENT_LEN), 0.0), 1.0)
+                    sinb = max(float(np.sqrt(1.0 - c * c)), 0.05)
+                    return force_velocity(self.shock_vel / (LEG_SEGMENT_LEN * sinb))
+                f_tot = self.leg_force_capacity(d_now) * self.shock_act * hill_factor(self.shock_rest)
                 other = right_leg if stance_leg is left_leg else left_leg
                 if other.state == "stance":
                     d2 = float(np.linalg.norm(body.points[hip] - np.array([other.planted[0], GROUND_Y])))
-                    if d2 < ARM_LENGTH + 2.0:
-                        f_tot += self.leg_force_capacity(d2) * self.shock_act
+                    # Adim 28: diger bacak yalnizca BUKUKSE yuk paylasir -- duz bacagin
+                    # uzama payi yok, kalcayi yukari ivmelendiremez (olculdu: duz bacagin
+                    # 6W tavani tek karede 15 px/kare firlatma uretiyordu)
+                    if d2 < ARM_LENGTH - SHOCK_CONTACT_MIN_PX:
+                        f_tot += self.leg_force_capacity(d2) * self.shock_act * hill_factor(d2)
                 a_up = (f_tot - W) / BODY_MASS_TOTAL
                 err = ARM_LENGTH - self.shock_rest
                 g = G_REAL_PX
