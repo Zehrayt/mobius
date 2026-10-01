@@ -339,6 +339,27 @@ SHOCK_EXT_VMAX = 3.0
 # SHOCK_EXT_ACCEL artar (VMAX tavanli). Temas sok servosunu tetiklerse servo
 # sifirdan degil bu hizla baslar. 0 = kapali (Adim 24).
 PREACT_FRAMES = 3
+# Adim 26 -- ayak rocker'i (ayak bilegi stratejisi, buyuk hareket formu).
+# Durus bacaginin pivotu ayak bilegine sabitti: kalca ayagin 150 px onune
+# gectiginde bacak uzunlugu sabit oldugu icin kalca h = sqrt(L^2 - dx^2)
+# yayina iniyordu (150 px itkide dususun cogu bu geometri). Gercek ayakta
+# topuk kalkar ve govde parmak ucu uzerinden yuvarlanir (forefoot rocker,
+# plantar fleksiyon); geri tarafta topuk uzerinden (heel rocker). Pivot,
+# kalca normal yuruyusun hic ulasmadigi bir mesafeyi (ROCKER_START_*) gectikten
+# sonra kalcayla birlikte, en fazla ayak uzunlugu kadar kayar.
+# Ayak: 0.26 m ~ 53 px; bilekten parmak ucuna ~40 px, topuga ~13 px.
+# Normal yuruyuste kalca-pivot dx -18.4 ... +29.4 px (60 s olcum).
+ROCKER_ENABLED = True
+ROCKER_TOE_PX = 40.0
+ROCKER_HEEL_PX = 13.0
+ROCKER_START_FWD_PX = 35.0
+ROCKER_START_BACK_PX = 25.0
+# Adim 26 -- kalca stratejisi: COM destek araliginin disina ciktiginda govde
+# durus hedefi kayar (derece / px hata), kuvvet cifti (apply_angular_couple)
+# govdeyi dondururken tepkisi kalcayi ters yone iter. Isaret: + = COM ondeyken
+# govde ONE egilir (kalca geri itilir). Tavan: govde kelepcesi 12 derecenin altinda.
+HIP_STRATEGY_GAIN = 0.3
+HIP_STRATEGY_MAX_DEG = 9.0
 
 # -- Sahne olaylari: bir kucuk (ABSORBE EDILEN) ve bir buyuk (GERCEK
 #    DUSMEYE yol acan) darbe.
@@ -473,7 +494,8 @@ class ActiveBipedSim:
                  leg_mass: bool | None = None, thrust_mode: str | None = None,
                  catch_timing: str | None = None, hip_torque_max: float | None = None,
                  closing_ttc: float | None = None, shock_mode: str | None = None,
-                 shock_trigger: str | None = None, preactivation: int | None = None):
+                 shock_trigger: str | None = None, preactivation: int | None = None,
+                 rocker: bool | None = None, hip_strategy_gain: float | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -496,6 +518,10 @@ class ActiveBipedSim:
         self.shock_vel = 0.0
         self.shock_mode = SHOCK_MODE if shock_mode is None else shock_mode
         self.preact_frames = PREACT_FRAMES if preactivation is None else preactivation
+        self.rocker = ROCKER_ENABLED if rocker is None else rocker
+        self.rocker_log = []
+        self.hip_strategy_gain = hip_strategy_gain
+        self.last_real_error = 0.0
         self.shock_pending_v0 = 0.0
         self.preact_log = []        # Adim 25: (temas karesi, bacak, temastaki hazirlik hizi)
         self.shock_trigger = SHOCK_TRIGGER if shock_trigger is None else shock_trigger
@@ -601,6 +627,26 @@ class ActiveBipedSim:
         self.last_arm_yaw = yaw_momentum(arms)
         self.trunk_yaw.update(self.last_leg_yaw, self.last_arm_yaw)
 
+    def _hip_strategy_deg(self) -> float:
+        g = HIP_STRATEGY_GAIN if self.hip_strategy_gain is None else self.hip_strategy_gain
+        if g == 0.0:
+            return 0.0
+        return float(np.clip(g * self.last_real_error, -HIP_STRATEGY_MAX_DEG, HIP_STRATEGY_MAX_DEG))
+
+    def _rocker_shift(self, leg, hip_x: float) -> float:
+        """Adim 26 -- durus pivotunun ayak bileginden kaymasi (+ parmak ucu, - topuk)."""
+        if not self.rocker:
+            return 0.0
+        dx = hip_x - float(leg.planted[0])
+        if dx > ROCKER_START_FWD_PX:
+            shift = min(ROCKER_TOE_PX, dx - ROCKER_START_FWD_PX)
+        elif dx < -ROCKER_START_BACK_PX:
+            shift = -min(ROCKER_HEEL_PX, -ROCKER_START_BACK_PX - dx)
+        else:
+            shift = 0.0
+        self.rocker_log.append(shift)
+        return shift
+
     def system_com_vx(self) -> float:
         """Adim 22: govde + kollar + iki bacagin (pergel ekseni segmentleri)
         kutle-agirlikli yatay hizi. Bacak segmenti i: v = (1-f_i) v_kalca + f_i v_ayak."""
@@ -666,6 +712,7 @@ class ActiveBipedSim:
                     leg.is_slipping = False
                     leg.slip_velocity = 0.0
         in_danger = False
+        self.last_real_error = 0.0
         if stance_leg is not None and not self.fell:
             desired_thrust = THRUST_GAIN * (TARGET_VX - ctrl_vx)
             desired_thrust = max(-THRUST_CAP, min(THRUST_CAP, desired_thrust))
@@ -721,6 +768,7 @@ class ActiveBipedSim:
             interval = support_interval([stance_leg.planted[0]], foot_half_len=FOOT_HALF_LEN,
                                          fallback_x=[left_leg.swing_target[0], right_leg.swing_target[0]])
             real_error = outside_interval_error(com_x, interval)
+            self.last_real_error = float(real_error)
             in_danger = self.risk_monitor.update(real_error)
             # Adim 18 (Faz B): stance bacagi toe_off'ta ve kalca onu asiri
             # hizla geciyorsa (ya da tehlike + toe_off), tek-destek kuralini
@@ -775,7 +823,8 @@ class ActiveBipedSim:
                     stance_leg.slip_velocity = 0.0
                     self.emergency_step_events.append((f, "l" if stance_leg is left_leg else "r", round(float(real_error), 1)))
 
-            body.set_pinned_position(anchor, [stance_leg.planted[0], GROUND_Y])
+            body.set_pinned_position(anchor, [stance_leg.planted[0] + self._rocker_shift(stance_leg, hip_pos_before[0]),
+                                              GROUND_Y])
             if self.thrust_mode == "com":
                 body.prev_points[self.upper_ids, 0] -= applied_thrust
             else:
@@ -856,7 +905,7 @@ class ActiveBipedSim:
         # derecelik kelepce duvarinda duruyor ve momentum alisverisini duvar yutuyor.
         if self.posture_k > 0.0 or self.posture_c > 0.0:
             apply_angular_couple(body.points, body.prev_points, body.masses, hip, idx["shoulder"], UP,
-                                 POSTURE_TARGET_DEG, self.posture_k, self.posture_c)
+                                 POSTURE_TARGET_DEG + self._hip_strategy_deg(), self.posture_k, self.posture_c)
 
         body.step(dt=1.0)
         # preserve_momentum=True -- bkz. modulun 8. tur notu: varsayilan

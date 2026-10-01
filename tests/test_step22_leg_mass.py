@@ -117,7 +117,7 @@ class LegMassPushTest(unittest.TestCase):
             # sayisal stres itkileri (COM 4-14 m/s): Adim 22'nin sabit 3 karelik yakalamasiyla
             sim = s14.ActiveBipedSim(big_push_kick_px=push, big_push_t=7.0, catch_timing="fixed",
                                      closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch",
-                                     preactivation=0)
+                                     preactivation=0, rocker=False, hip_strategy_gain=0.0)
             double = 0
             for _ in range(480):
                 sim.step()

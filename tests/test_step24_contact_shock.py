@@ -11,7 +11,8 @@ sys.path.insert(0, str(ROOT))
 from demo import step14_active_biped as s14
 
 KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
-PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch", preactivation=0)
+PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch", preactivation=0,
+             rocker=False, hip_strategy_gain=0.0)
 
 
 def run(push_ms, t=7.0, n=420, **kw):
@@ -41,7 +42,8 @@ class ContactShockTest(unittest.TestCase):
         self.assertLessEqual(s14.SHOCK_EXT_VMAX, 3.0 + 1e-9)
 
     def test_undisturbed_walk_identical_to_step23(self):
-        a = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0)
+        # Adim 26'nin rocker/kalca stratejisi baslangic sarsintisinda devreye giriyor
+        a = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, rocker=False, hip_strategy_gain=0.0)
         b = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, **PRE24)
         for _ in range(900):
             a.step()

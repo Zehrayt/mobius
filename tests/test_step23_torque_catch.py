@@ -49,8 +49,10 @@ class TorqueCatchTest(unittest.TestCase):
             self.assertLessEqual(tau, ag.HIP_TORQUE_MAX * 1.01, dv)
 
     def test_bigger_push_takes_longer_catch(self):
-        small, _ = run(1.0, n=320)
-        big, _ = run(2.0, n=320)
+        # Adim 26'dan beri +1 m/s itkide cogu fazda yakalama gerekmiyor (ayak
+        # rocker'i karsiliyor); servo zamanlamasi Adim 25 govdesinde olculur.
+        small, _ = run(1.0, n=320, rocker=False, hip_strategy_gain=0.0)
+        big, _ = run(2.0, n=320, rocker=False, hip_strategy_gain=0.0)
         first = lambda s: next(x[2] for x in s.catch_frames_log if x[0] >= 210)
         self.assertGreater(first(big), first(small))
 

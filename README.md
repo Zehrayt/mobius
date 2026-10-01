@@ -4161,6 +4161,118 @@ devrilmesi. Bunu küçültmenin fiziksel yolları:
 - Diz ekstansör kuvvetini ters dinamikle hesaplayıp şok servosunun hız
   tavanını fiziğe bağlamak.
 
+## Adım 26 — Duruş bacağı: ayak rocker'ı ve kalça stratejisi
+
+### 26.1 Kalça neden düşüyordu: yerçekimi değil, geometri ve çeken bacak
+150 px itkide kalça yakalama sırasında kare başına ~17 px iniyor. Ayarlı
+yerçekimi (0.065 px/kare²) altı karede bunun küçük bir kesrini üretebilir.
+Düşüşün kaynağı geometri: kalça yatayda ~15 px/kare ilerliyor, duruş bacağı
+ise ayak bileğine sabit, 184 px'lik bir çubuk. Kalça ayağın dx önüne
+geçtikçe `h = √(L² − dx²)` yayına iniyor.
+
+Ölçüm: kare 210–214'te bu çubuk **11–22 px gerilmede**. Yani bacak kalçayı
+zemine doğru **çekiyor**. Gerçek bir bacak zemini iter, çekemez. Normal
+yürüyüşte gerilme ≤ 0.6 px.
+
+**Denenip reddedilen: tek yönlü (yalnız basınç) bacak.** İtkisiz
+yürüyüşte bile gövde 574 karede bacaktan ayrılıp süzüldü, adım sayısı
+61 → 42'ye düştü, kalça 150 px itkide 237 px'e yükseldi. Sebep, ayarlı
+yerçekiminin gerçek ölçeğin ~1/34'ü olması: gövdeyi bacağın üzerinde
+gerçekte yerçekimi tutar, bu motorda iki yönlü çubuk tutuyor. Gerçek
+yerçekimiyle (2.2 px/kare²) 15 px/kare'de gereken merkezcil ivme v²/L =
+1.2 < g olurdu ve bacak zaten basınçta kalırdı. Yani gerçekte de kalça
+yaya iner; düşüşü azaltacak şey pivotu değiştirmek.
+
+**Ayak bileği torkuyla frenleme (COP kaydırma) yetmez:** Yapılabilecek
+en büyük fren, ağırlık × ayak uzunluğu / kalça yüksekliği. Bu, gerçek
+ölçekte bile ~0.3 px/kare². 6 karede 15 px/kare'lik hızın ~2 px/kare'sini
+alır. Ayak bileği stratejisi küçük itkiler içindir.
+
+### 26.2 Ayak rocker'ı (büyük hareketteki ayak bileği stratejisi)
+Gerçek ayakta topuk kalkar ve gövde parmak ucu üzerinden yuvarlanır
+(forefoot rocker, plantar fleksiyon); geri tarafta topuk üzerinden yuvarlanır
+(heel rocker). Model: kalça normal yürüyüşün hiç ulaşmadığı bir mesafeyi
+geçince duruş pivotu kalçayla birlikte kayıyor. Normal yürüyüşte kalça–pivot
+mesafesi −18.4…+29.4 px arasında.
+
+| | eşik | en büyük kayma |
+|---|---|---|
+| Öne (parmak ucu) | +35 px | 40 px |
+| Geriye (topuk) | −25 px | 13 px |
+
+Ayak 0.26 m ≈ 53 px; bilekten parmak ucuna ~40 px, topuğa ~13 px.
+
+- **Gereken plantar fleksör torku:** En büyük kayma (40 px) gerçek ölçekte
+  70 kg × 9.81 × 0.196 m ≈ **134 Nm**. İnsan kapasitesi ~150–250 Nm,
+  yani karşılanabilir.
+- **Görsel:** Render'daki Faz A ayakkabı eğimi (topuk kalkışı) bununla
+  tutarlı (kare 211).
+- **Normal yürüyüş:** Rocker yalnızca başlangıç sarsıntısında (kare
+  2–11) devreye giriyor. Bu yüzden itkisiz yürüyüş bit-bit aynı değil, ama
+  ölçütler aynı: 122 ve 123 adım, vx 1.90, eğim 3.5° ± 1.1 ve 3.2° ± 0.9.
+
+### 26.3 Kalça stratejisi (`HIP_STRATEGY_GAIN = 0.3` derece/px, tavan 9°)
+COM destek aralığının dışına çıkınca gövde duruş hedefi kayıyor. Kuvvet
+çifti gövdeyi döndürürken tepkisi kalçayı ters yöne itiyor. İşaret
+ölçümle seçildi: COM öndeyken gövde **öne** eğiliyor ve kalça geri
+itiliyor. Ters işaret her senaryoda daha kötü (−0.3'te +2.5 m/s en kötü:
+74 px).
+
+### 26.4 Sonuç
+6 faz × 8 itki = 48 koşu. Hücreler: en alçak kalça ortalama / en kötü (px).
+
+| | +1.0 | −1.0 | +2.0 | −2.0 | +2.5 | −2.5 | +4.2 | −4.2 |
+|---|---|---|---|---|---|---|---|---|
+| Adım 25 (bilek pivotu) | 172/166 | 155/137 | 138/107 | 140/129 | 122/99 | 127/108 | 81/70 | 76/58 |
+| yalnız rocker | 179/177 | 165/147 | 163/155 | 145/135 | 140/116 | 126/107 | 89/84 | 86/60 |
+| **rocker + kalça stratejisi** | **178/175** | **160/146** | **165/153** | **150/136** | **149/127** | **136/120** | **92/74** | **93/73** |
+
+- Hiçbir koşuda düşme, toparlanamama ya da çift-havada kare yok.
+- +1 m/s itkide 6 fazın 4'ünde yakalama adımı hiç gerekmiyor; rocker
+  karşılıyor. −1 m/s'de 6 fazın 5'inde hâlâ 2–3 yakalama var (topuk
+  rocker'ı yalnızca 13 px).
+- Toparlanma süresi (en alçaktan 170 px'e) +2 m/s'de 9 → 2 kare,
+  +4.2 m/s'de 25 → 22 kare.
+- ±300 px sayısal stres itkisinde düşme 12'de 7 → 2.
+- Varsayılan senaryonun en alçak kalçası 72 → 100.
+
+### 26.5 Gerileme
+- Kanarya: 25/0/89/1/145.95.
+- 60 s varsayılan senaryo ayakta, 122 adım, vx 2.03.
+- Testler 79/79 geçti (yeni `tests/test_step26_stance_strategy.py`).
+  `PRE24` bayrakları artık `rocker=False, hip_strategy_gain=0.0` da
+  içeriyor. Adım 23 servo-zamanlama testi Adım 25 gövdesinde ölçülüyor,
+  çünkü 1 m/s'de artık yakalama yok. step1–16 smoke geçti.
+
+### 26.6 Adım 27 (torka dayalı kalkış) için engel: yerçekimi ölçeği
+Şok servosunun 3 px/kare tavanını diz ekstansör torkuna bağlamak için
+bacağın üretebildiği dikey kuvvet gerekiyor. İki kemikli bacakta diz torku
+τ ile kalça–ayak doğrultusundaki kuvvet `F = τ / (l · sin β)`, burada
+`cos β = d / 2l`. Tek bacak, gerçek ağırlık (70 kg) için bacağın vücudu
+taşıyabildiği en kısa kalça–ayak mesafesi:
+
+| diz torku | taşıyabildiği en kısa mesafe |
+|---|---|
+| 200 Nm | 140 px |
+| 250 Nm | 107 px |
+| 300 Nm | 41 px |
+
+Ölçülen en kısa kalça–pivot mesafeleri:
+
+| itki | ort. | en kötü | o anda iki ayak yerde |
+|---|---|---|---|
+| ±2 m/s | 153–168 px | 137 px | — |
+| ±2.5 m/s | 139–151 px | 123 px | — |
+| ±4.2 m/s | 95 px | 73 px | geri itkilerde 5/6 |
+
+Bunu sadeleştirmeden uygulamak üç karar istiyor:
+1. Gerçek ağırlık mı, ayarlı yerçekimi mi? Ayarlı yerçekimiyle ağırlık
+   34 kat küçük; kalkış ~12 karede fırlatma olur. Gerçek ağırlıkla
+   200 Nm'lik tek bacak 140 px'in altında çöker.
+2. Destek bacağı rijit bir çubuk; sonsuz yük taşıyor. "Kaldıramıyorsa
+   çöker" için bacak kuvvet sınırlı bir elemana dönmeli.
+3. İki ayak yerdeyken yük paylaşımı modelde yok, tek anchor var.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

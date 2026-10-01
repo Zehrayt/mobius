@@ -35,6 +35,7 @@ açıkça gösteriyor.
 | 23. Tork sınırlı yakalama adımı (süre kalça torkundan, ~140 Nm), m/s cinsinden gerçekçi itki takımı | `physics/active_gait.py` (`_servo_step`, `CATCH_TIMING`), `demo/step14_active_biped.py` | 🔶 ±300/500 px sayısal itkiler insan torkuyla düşüyor — README "Adım 23" |
 | 24. Temas tabanlı, ivme sınırlı şok servosu + kapanma hızı (TTC) kapısı | `demo/step14_active_biped.py` (`SHOCK_MODE`, `SHOCK_TRIGGER`), `physics/active_gait.py` (`predict_contact`, `_closing_soon`) | 🔶 4.2 m/s'de daha derin çömelme — README "Adım 24" |
 | 25. İnişe hazırlık (pre-activation): servo `time_to_contact`, temastan 3 kare önce ekstansör kasılması | `physics/active_gait.py` (`time_to_contact`, `_servo_kin`), `demo/step14_active_biped.py` (`PREACT_FRAMES`) | 🔶 etki küçük: çömelmenin %93–95'i temastan önce — README "Adım 25" |
+| 26. Duruş bacağı: ayak rocker'ı (parmak ucu/topuk pivotu) + kalça stratejisi | `demo/step14_active_biped.py` (`ROCKER_*`, `HIP_STRATEGY_*`) | 🔶 Adım 27 yerçekimi ölçeği kararına bağlı — README "Adım 26" |
 | — Bilge kinematik yürüyüş (REFERANS) | `demo/bilge_walk_validation.py`, `demo/bilge_walk_skinned.py` | render referansı: kalça kinematik eğriyle sürülür, ana motor DEĞİL |
 
 `step6` artık `scene/` üretim katmanının ilk sahnesidir. `step11` yok
