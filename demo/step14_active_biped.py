@@ -316,6 +316,23 @@ SHOCK_ABSORB_ENABLED = True
 SHOCK_RISE_CAP_PX = 15.0
 SHOCK_FLOOR_PX = 90.0
 SHOCK_ABSORB_DONE_PX = 0.5
+# Adim 24 -- temas tabanli, ivme sinirli bacak uzatma servosu.
+# "rate_cap" (Adim 19b): dinlenme boyu kare basina en fazla SHOCK_RISE_CAP_PX
+#   (15 px/kare ~ 2.2 m/s!) uzar; kalca SHOCK_FLOOR_PX altindaysa sonumleme
+#   birakilir -> tam rijit boy, tek karede 49-60 px "yay" sicramasi (olculdu,
+#   150 px itki, kare 217).
+# "servo": dinlenme boyu bir hiz+ivme sinirli servoyla ARM_LENGTH'e uzar
+#   (diz ekstansorlerinin sinirli kuvveti); asla mevcut boydan kisa degil
+#   (destek gevsemez). Taban kurali yok.
+# Tetik: "catch" = yalnizca Faz B yakalama inisi; "contact" = HER inis, temas
+#   anindaki sikisma (ARM_LENGTH - |kalca-ayak|) SHOCK_CONTACT_MIN_PX'i
+#   asiyorsa. Normal yuruyuste sikisma <= 1.3 px (60 s olcum), yani itkisiz
+#   yuruyus bit-bit ayni.
+SHOCK_MODE = "servo"
+SHOCK_TRIGGER = "contact"
+SHOCK_CONTACT_MIN_PX = 8.0
+SHOCK_EXT_ACCEL = 1.0
+SHOCK_EXT_VMAX = 3.0
 
 # -- Sahne olaylari: bir kucuk (ABSORBE EDILEN) ve bir buyuk (GERCEK
 #    DUSMEYE yol acan) darbe.
@@ -448,7 +465,9 @@ class ActiveBipedSim:
                  arm_gains: ArmGains | None = None, torso_clamp_mode=None,
                  posture_k: float | None = None, posture_c: float | None = None,
                  leg_mass: bool | None = None, thrust_mode: str | None = None,
-                 catch_timing: str | None = None, hip_torque_max: float | None = None):
+                 catch_timing: str | None = None, hip_torque_max: float | None = None,
+                 closing_ttc: float | None = None, shock_mode: str | None = None,
+                 shock_trigger: str | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -468,6 +487,10 @@ class ActiveBipedSim:
         self.shock_pending = None   # yakalama inisi yapan bacak (anchor ona gecince baslar)
         self.shock_rest = None      # None: sok emilimi aktif degil
         self.shock_events = []      # (kare, baslangic_dinlenme_boyu)
+        self.shock_vel = 0.0
+        self.shock_mode = SHOCK_MODE if shock_mode is None else shock_mode
+        self.shock_trigger = SHOCK_TRIGGER if shock_trigger is None else shock_trigger
+        self.contact_log = []       # Adim 24: (kare, bacak, temas sikismasi px)
 
         self.body, self.idx = build_body()
         self.hip_base_mass = float(self.body.masses[self.idx["hip"]])
@@ -497,6 +520,7 @@ class ActiveBipedSim:
             leg.predictive_sensor = self.predictive_sensor
             leg.catch_timing = catch_timing          # None: physics.active_gait.CATCH_TIMING
             leg.hip_torque_max = hip_torque_max      # None: physics.active_gait.HIP_TORQUE_MAX
+            leg.closing_ttc_frames = closing_ttc     # None: physics.active_gait.FAZB_CLOSING_TTC_FRAMES
         # sag bacak baslangicta swing'de -- alternatif adimla baslamasi icin.
         self.right_leg.state = "swing"
         self.right_leg.swing_start = self.right_leg.planted.copy()
@@ -696,9 +720,15 @@ class ActiveBipedSim:
             fazb_handled = False
             # Adim 19c -- prediktif sensor: bu karenin itkisi prev_points'te,
             # kalcanin bir sonraki konumu Verlet kuraliyla tahmin edilir.
-            stance_leg.predict_contact(body.points[hip], body.prev_points[hip])
+            stance_leg.predict_contact(body.points[hip], body.prev_points[hip], com_vx=ctrl_vx)
             front = stance_leg.catch_overrun() if self.faz_b else None
-            if self.faz_b and front is None and in_danger:
+            # Adim 24 -- kapanma hizi kapisi tehlike yolunu da kapsar: COM destek
+            # araliginin disinda ama ona TTC <= FAZB_CLOSING_TTC_FRAMES icinde
+            # varacaksa (or. yakalama ayagi bilerek onune basildi) adim atilmaz.
+            closing_soon = self.faz_b and stance_leg._closing_soon()
+            if closing_soon:
+                fazb_handled = True
+            if self.faz_b and front is None and in_danger and not closing_soon:
                 # tehlike + dogru cephe: COM onde & toe_off / COM geride & heel_strike
                 if real_error > 0 and stance_leg.contact_phase == PHASE_TOE_OFF:
                     front = "toe"
@@ -748,9 +778,23 @@ class ActiveBipedSim:
         if stance_leg is not None and self.shock_pending is not None and stance_leg is self.shock_pending:
             d = float(np.linalg.norm(body.points[hip] - np.array([stance_leg.planted[0], GROUND_Y])))
             self.shock_rest = min(ARM_LENGTH, d)
+            self.shock_vel = 0.0
             self.shock_pending = None
             self.shock_events.append((f, round(self.shock_rest, 1)))
-        if self.shock_rest is not None:
+        if self.shock_rest is not None and self.shock_mode == "servo":
+            i0, j0, _, c0 = body.sticks[0]
+            if stance_leg is not None:
+                d_now = float(np.linalg.norm(body.points[hip] - body.points[anchor]))
+                err = ARM_LENGTH - self.shock_rest
+                mag = float(np.sqrt(SHOCK_EXT_ACCEL ** 2 / 4.0 + 2.0 * SHOCK_EXT_ACCEL * max(err, 0.0))
+                            - SHOCK_EXT_ACCEL / 2.0)
+                v_des = min(mag, SHOCK_EXT_VMAX, err)
+                self.shock_vel += float(np.clip(v_des - self.shock_vel, -SHOCK_EXT_ACCEL, SHOCK_EXT_ACCEL))
+                self.shock_rest = min(ARM_LENGTH, max(self.shock_rest + self.shock_vel, d_now))
+            body.sticks[0] = (i0, j0, self.shock_rest, c0)
+            if ARM_LENGTH - self.shock_rest < SHOCK_ABSORB_DONE_PX:
+                self.shock_rest = None
+        elif self.shock_rest is not None:
             i0, j0, _, c0 = body.sticks[0]
             if stance_leg is not None:
                 # hiz siniri: dinlenme boyu, cubugun SU ANKI boyunun en fazla
@@ -830,9 +874,15 @@ class ActiveBipedSim:
             leg.update(hip_pos, hip_vx=ctrl_vx, other_leg_swinging=(other.state == "swing"))
             if was_swing and was_catch and leg.state == "stance":
                 # Adim 23: yakalama adiminin gercek suresi (kalkistan inise)
-                self.catch_frames_log.append((f, "l" if leg is left_leg else "r",
-                                              f - getattr(leg, "catch_start_frame", f)))
-                if self.shock_absorb:
+                dur = (leg.last_catch_frames if leg._catch_timing() == "torque"
+                       else f - getattr(leg, "catch_start_frame", f))
+                self.catch_frames_log.append((f, "l" if leg is left_leg else "r", dur))
+                if self.shock_absorb and self.shock_trigger == "catch":
+                    self.shock_pending = leg
+            if was_swing and leg.state == "stance" and self.shock_absorb and self.shock_trigger == "contact":
+                comp = ARM_LENGTH - float(np.linalg.norm(hip_pos - np.array([leg.planted[0], GROUND_Y])))
+                self.contact_log.append((f, "l" if leg is left_leg else "r", round(comp, 1)))
+                if comp > SHOCK_CONTACT_MIN_PX:
                     self.shock_pending = leg
             if was_stance and leg.state == "swing":
                 self.step_events.append((f, "l" if leg is left_leg else "r"))

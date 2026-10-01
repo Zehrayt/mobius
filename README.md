@@ -3984,6 +3984,106 @@ bir öne hamle var (render 212–216).
 Varsayılanlar: `CATCH_TIMING="torque"`, `HIP_TORQUE_MAX=480`
 (`ActiveBipedSim(catch_timing=..., hip_torque_max=...)` ile değiştirilebilir).
 
+## Adım 24 — Temas tabanlı şok servosu, kapanma hızı (TTC) kapısı
+
+### 24.1 Önce teşhis (kod okundu, ölçüldü)
+- Adım 19b şok emicisi 3 karelik bir zamanlayıcıya bağlı **değildi**. Yakalama
+  inişinde, anchor o bacağa geçtiği karede olay tetikli başlıyordu. Servo
+  yakalamalarında da devreye giriyordu.
+- Adım 19c prediktif sensörü iniş zamanını tahmin **etmiyor**. Duruş
+  bacağının bir sonraki karedeki açısını tahmin edip Faz B'yi tetikliyor.
+- Asıl sorunlar ölçümde başka çıktı:
+  1. **Yay fırlaması.** Eski emici dinlenme boyunu karede 15 px uzatıyordu
+     (≈2.2 m/s). Kalça 90 px'in altına inince sönümlemeyi tamamen bırakıyordu
+     (`SHOCK_FLOOR_PX`). 150 px itkide kalça 79 px'e iniyor, kare 217'de tek
+     karede 49 px fırlıyordu. Gerçekçi itkilerde (1–2.5 m/s) en büyük yükseliş
+     17–21 px/kare, 4.2 m/s'de 50–69 px/kare.
+  2. **Gereksiz yakalamalar.** Yakalama ayağı bilerek kalçanın önüne
+     basıyor. COM o ayağa 3–5 karede varacakken tehlike yolu (COM destek
+     aralığının gerisinde + heel_strike) aynı bacağı yeniden fırlatıyordu
+     (2 m/s itki, kare 220–221).
+- **Kendi ölçüm hatam:** Önce "yakalamaların yarısı 0 karelik" demiştim. Bu
+  sayı şişikti. Bacağın kendi içinden tetiklenen yakalamalar (`update()`
+  içindeki toe_off fırlatması) olayın başlangıç karesini kaydetmiyordu ve 0
+  olarak loglanıyordu. Düzeltildi: torque modunda süre servonun kendi kare
+  sayacından okunuyor. Gerçek 0 karelik yakalama yok. Buna karşı eklediğim
+  "önemsiz hedef" koruması ölçümde hiçbir şeyi değiştirmedi ve **kaldırıldı**.
+
+### 24.2 Şok servosu (`SHOCK_MODE="servo"`, `SHOCK_TRIGGER="contact"`)
+- **Tetik:** Artık sadece Faz B yakalamasında değil, **her inişte**.
+  Temas anındaki sıkışma (`ARM_LENGTH − |kalça−ayak|`) 8 px'i aşarsa
+  devreye giriyor. Normal yürüyüşte iniş sıkışması ≤ 1.3 px (60 s, 121
+  iniş). İtkisiz yürüyüş Adım 23 ile **bit-bit aynı** (test).
+- **Uzatma:** Anchor–kalça çubuğunun dinlenme boyu, hız ve ivmesi sınırlı
+  bir servoyla `ARM_LENGTH`'e uzuyor. Sınırlar 3 px/kare (≈0.44 m/s) ve
+  1 px/kare² (diz ekstansörlerinin sınırlı kuvveti). Boy hiçbir zaman
+  mevcut boydan kısa değil, yani destek gevşemiyor. 90 px taban kuralı
+  kaldırıldı.
+- **Tarama** (6 faz, gerçekçi itkiler): 0.3–2 px/kare² × 3–8 px/kare
+  denendi. Seçilen 1/3, en büyük yükselişi her itkide ≤10 px/kare tutuyor.
+
+### 24.3 Kapanma hızı kapısı (`FAZB_CLOSING_TTC_FRAMES = 8`)
+`predict_contact` artık COM hızıyla kalçanın duruş ayağına kapanma süresini
+de hesaplıyor: `TTC = |ayak − kalça| / kapanma hızı`. Kapanma hızı yalnızca
+kalça ayağa doğru gidiyorsa pozitif. TTC ≤ 8 kare ise COM o ayağa zaten
+varacak demektir. Bu durumda ne açı aşımı (toe/heel) ne de step14'teki
+tehlike yolu adım attırıyor, eski acil adım da tetiklenmiyor. Tarama: 4 kare
+etkisiz, 8 ve 12 aynı.
+
+### 24.4 Yol üstünde bulunan Adım 23 hatası
+Duruş ayağı kayarken (`apply_slip`) yakalama servoya **sıfır hız ve
+kaymış `planted`** konumundan başlıyordu. Bu konum/hız sıçraması sınırsız bir
+ivme demek: −1 m/s itkide kalça torku **582 birim** (sınır 480). Artık servo
+son çizilen ayak konumundan, son hızıyla başlıyor. Gerçekleşen tepe tork
+±1/2/2.5 m/s'de 470–479 birim. Bu düzeltme Adım 23 kanaryasını da değiştirdi
+(22/0/157/6/145.97 → 22/0/165/7/145.99).
+
+### 24.5 Sonuçlar
+6 faz × 8 itki = 48 koşu. Hücreler: en alçak kalça ortalama / en kötü /
+tek karede en büyük yükseliş (px).
+
+| | +1.0 | −1.0 | +2.0 | −2.0 | +2.5 | −2.5 | +4.2 (150 px) | −4.2 | yakalama |
+|---|---|---|---|---|---|---|---|---|---|
+| Adım 23 | 172/166/7 | 150/133/17 | 139/110/17 | 142/128/17 | 121/104/18 | 128/111/21 | 85/78/**52** | 82/71/**60** | 181 |
+| yalnız şok servosu | 172/166/4 | 155/136/5 | 136/104/5 | 139/120/5 | 116/94/5 | 122/107/7 | 72/60/8 | 73/67/7 | 190 |
+| yalnız TTC kapısı | 172/166/7 | 150/133/17 | 139/110/17 | 141/130/18 | 124/104/20 | 129/111/21 | 87/77/50 | 81/61/69 | 126 |
+| **Adım 24 (ikisi)** | 172/166/**4** | 155/136/5 | 137/106/5 | 139/128/6 | 121/98/6 | 127/107/7 | 80/69/**9** | 75/57/7 | **137** |
+| Adım 24, prediktif sensör yok | 172/166/4 | 155/136/5 | 136/115/5 | 136/120/5 | 118/99/6 | 120/103/6 | 72/53/8 | 73/64/10 | 130 |
+
+- Hiçbir koşuda düşme ya da çift-havada kare yok.
+- Kalçanın en büyük yükselişi 17–60 px/kareden **4–10 px/kareye** indi.
+- Yakalama sayısı %24 azaldı.
+- En alçak kalça ortalamada aynı mertebede kaldı. Bedel: 4.2 m/s'de daha
+  derin (85 → 80 ortalama, 78 → 69 en kötü). Yaylanma artık kalçayı yukarı
+  fırlatmıyor, yavaş kalkılıyor.
+- Prediktif sensör hâlâ küçük bir katkı veriyor, açık kaldı.
+- **Sayısal stres itkisi (±300 px ≈ 8.5 m/s):** Adım 24 ve `PRE24` (eski
+  şok emici, kapı yok) aynı sonucu veriyor: 12 koşunun 7'si düşüyor. Servo
+  başlangıç düzeltmesinden (24.4) önce eski şok emiciyle 2 düşme vardı. O
+  "kurtarma", sınırsız ivmeli başlangıç sıçramasından geliyordu.
+- **Görsel:** 150 px itkide öne hamleden sonra derin bir çömelme var
+  (render 220–241). Karakter yaklaşık 1 saniyede doğruluyor. Kollar artık
+  başın üstüne çıkmıyor.
+
+### 24.6 Gerileme
+- 60 s varsayılan senaryo: NaN yok, düşme yok, 121 adım, vx 1.96, en alçak
+  kalça 71, 1 Faz B, yakalama süreleri 7/9/4 kare.
+- 60 s itkisiz yürüyüş: Adım 23 ile bit-bit aynı.
+- Kanarya: 25/0/104/1/145.66. `PRE24` bayrakları Adım 23'ü (servo
+  düzeltmesi dahil) veriyor. `FIXED_CATCH` Adım 22'yi, `LEGACY_21` Adım 21'i
+  aynen veriyor.
+- Testler 71/71 geçti (yeni `tests/test_step24_contact_shock.py`). step1–16
+  smoke geçti.
+
+### 24.7 Dürüst sınırlar
+1. Şok servosu bir kinematik dinlenme boyu servosu. Diz ekstansör kuvveti
+   ters dinamikle hesaplanmıyor, 1 px/kare² ve 3 px/kare seçilmiş değerler.
+2. TTC kapısı COM hızının sabit kalacağını varsayıyor (ivmeyi hesaba
+   katmıyor).
+3. İtki karesinde kalça 35–150 px sıçradığı için o karedeki tork tahmini
+   kaba (tepe 536 birim, itki karesinde; Adım 23.6/3).
+4. Hill kuvvet–hız eğrisi ve kol doygunluğu açık kaldı.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

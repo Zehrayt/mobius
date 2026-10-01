@@ -14,15 +14,18 @@ from demo import step14_active_biped as s14
 from demo.step17_bilge_physics_skin import simulate, inspect, phase_report, stance_pitch_deg
 
 
-CANARY = (22, 0, 157, 6, 145.97)  # varsayilan senaryo, Adim 23 (tork sinirli yakalama)
+CANARY = (25, 0, 104, 1, 145.66)  # varsayilan senaryo, Adim 24 (temas tabanli sok servosu + TTC kapisi)
+CANARY_23 = (22, 0, 165, 7, 145.99)  # Adim 23 + servo baslangic duzeltmesi (PRE24 bayraklariyla; duzeltme oncesi 22/0/157/6/145.97)
 CANARY_22 = (25, 0, 122, 2, 146.20)  # Adim 22 (catch_timing="fixed")
 CANARY_21 = (23, 0, 63, 9, 146.32)  # Adim 21 fizigi (LEGACY_21 bayraklariyla birebir)
 # Adim 22 oncesi govde: kutlesiz bacak, kalcadan itki, durus kontrolu yok, PD kol
+# Adim 24 oncesi sok/tetik davranisi (sabit hiz sinirli sok emici, kapanma kapisi yok)
+PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch")
 LEGACY_21 = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, arms_mode="drive",
-                 catch_timing="fixed")
-LEGACY_PHYS = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, catch_timing="fixed")
+                 catch_timing="fixed", **PRE24)
+LEGACY_PHYS = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, catch_timing="fixed", **PRE24)
 # Adim 23 oncesi yakalama: sabit 3 karelik zamanlayici (Faz B testleri bu davranisi olcer)
-FIXED_CATCH = dict(catch_timing="fixed")
+FIXED_CATCH = dict(catch_timing="fixed", **PRE24)
 
 
 class ContactPhaseSensorTest(unittest.TestCase):
@@ -73,8 +76,16 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertEqual(len(sim.fazb_events), CANARY[3])
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY[4], places=2)
 
+    def test_pre24_flags_reproduce_step23(self):
+        sim = s14.ActiveBipedSim(**PRE24)
+        for _ in range(s14.N_FRAMES):
+            sim.step()
+        self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
+                          len(sim.fazb_events)), CANARY_23[:4])
+        self.assertAlmostEqual(sim.hip_y_log[-1], CANARY_23[4], places=2)
+
     def test_fixed_catch_reproduces_step22(self):
-        sim = s14.ActiveBipedSim(catch_timing="fixed")
+        sim = s14.ActiveBipedSim(**FIXED_CATCH)
         for _ in range(s14.N_FRAMES):
             sim.step()
         self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),

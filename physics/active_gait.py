@@ -189,6 +189,16 @@ FAZB_TOE_OFF_OVERRUN_DEG = 20.0
 # derecenin altina inmiyor.
 FAZB_HEEL_STRIKE_OVERRUN_DEG = -20.0
 FAZB_CATCH_FRAMES = 3.0
+# Adim 24 -- kapanma hizi (time-to-contact) kapisi. Asim acisi tek basina
+# "kalca ayagi gecti / gerisinde kaldi" der; ama kalca o ayaga DOGRU
+# hareket ediyorsa ve TTC = mesafe / kapanma hizi kisa ise bu bir asim degil,
+# yakalamanin kendisi (ayak bilerek kalcanin onune basildi). Olcum: 150 px
+# itkide yakalama ayagi kare 216'da basti; COM onun gerisinde kaldigi icin
+# tehlike yolu (heel cephesi) ayni bacagi 217 ve 218'de 0 karelik
+# "yakalamalara" firlatti -- COM o ayaga 3-5 karede varacakti.
+# Kapi hem asim acisi tetigini hem step14'teki tehlike yolunu kapsar.
+# 0 = kapali (Adim 19c davranisi).
+FAZB_CLOSING_TTC_FRAMES = 8.0
 # Adim 23 -- yakalama adiminin SURESI kalca torkundan. "fixed": Adim 18-22'nin
 # sabit zamanlayicisi (Bezier, FAZB_CATCH_FRAMES karede). "torque": ayak,
 # ivmesi kalca torkuyla sinirli bir servo -- bacagin kalcaya gore dik ivmesi
@@ -367,14 +377,14 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         ulasamadigi bir asim acisinda mi? (kalca ayagi hizla geciyor)"""
         ang = self._overrun_angle()
         return (self.state == "stance" and classify_contact_phase(ang) == PHASE_TOE_OFF
-                and ang > FAZB_TOE_OFF_OVERRUN_DEG)
+                and ang > FAZB_TOE_OFF_OVERRUN_DEG and not self._closing_soon())
 
     def _reach_clamp(self, target_x: float, hip_x: float) -> float:
         if not self.faz_b_enabled:
             return target_x
         return max(hip_x - FAZB_MAX_STEP_AHEAD_PX, min(hip_x + FAZB_MAX_STEP_AHEAD_PX, target_x))
 
-    def predict_contact(self, hip_pos: np.ndarray, hip_prev: np.ndarray) -> float:
+    def predict_contact(self, hip_pos: np.ndarray, hip_prev: np.ndarray, com_vx: float | None = None) -> float:
         """Adim 19c -- prediktif sensor. Konum-tabanli Faz A sensoru bir
         onceki karenin sonunu okur; itkinin geldigi karede kalca henuz
         hareket etmemistir (hiz prev_points'te). Bir sonraki karenin kalca
@@ -383,7 +393,13 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         Faz A'nin `contact_phase`'i (gorsel/olcum) DEGISMEZ."""
         if self.state != "stance":
             self.predicted_leg_angle_deg = None
+            self.closing_ttc = None
             return 0.0
+        # Adim 24: kalcanin bu ayaga kapanma suresi (COM hizi verildiyse onu kullan)
+        vx = float(hip_pos[0] - hip_prev[0]) if com_vx is None else float(com_vx)
+        gap = float(self.planted[0] - hip_pos[0])        # + : ayak kalcanin onunde
+        closing = vx if gap > 0 else -vx                 # + : kalca ayaga yaklasiyor
+        self.closing_ttc = abs(gap) / closing if closing > 1e-6 else None
         nxt = hip_pos + (hip_pos - hip_prev)
         dx = float(nxt[0] - self.planted[0])
         dy = float(nxt[1] - self.planted[1])
@@ -398,12 +414,20 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         # tahmin hatasina karsi taban olur
         return max(self.leg_angle_deg, p) if p >= 0 else min(self.leg_angle_deg, p)
 
+    def _closing_soon(self) -> bool:
+        """Adim 24: kalca bu ayaga FAZB_CLOSING_TTC_FRAMES icinde varacak mi?"""
+        ttc = getattr(self, "closing_ttc", None)
+        lim = getattr(self, "closing_ttc_frames", None)
+        lim = FAZB_CLOSING_TTC_FRAMES if lim is None else lim
+        return lim > 0.0 and ttc is not None and ttc <= lim
+
     def heel_strike_overrun(self) -> bool:
         """Adim 19 -- toe_off_overrun'in aynasi: stance'ta, heel_strike'ta VE
-        kalca ayagin gerisine normal yuruyusun ulasamadigi acida kacmis."""
+        kalca ayagin gerisine normal yuruyusun ulasamadigi acida kacmis.
+        Adim 24: kalca ayaga hizla kapaniyorsa (TTC kisa) asim sayilmaz."""
         ang = self._overrun_angle()
         return (self.state == "stance" and classify_contact_phase(ang) == PHASE_HEEL_STRIKE
-                and ang < FAZB_HEEL_STRIKE_OVERRUN_DEG)
+                and ang < FAZB_HEEL_STRIKE_OVERRUN_DEG and not self._closing_soon())
 
     def catch_overrun(self) -> str | None:
         """'toe' / 'heel' / None -- hangi cephede yakalama gerekiyor."""
@@ -464,7 +488,16 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         self.slip_velocity = 0.0
         self.swing_target = np.array([self._catch_target_x(hip_x, hip_vx), self.ground_y])
         if self._catch_timing() == "torque":
-            self._start_servo(self.planted.copy(), np.zeros(2))
+            # Adim 24: ayak kayiyorsa (stance slip) servo o konum ve hizla baslar --
+            # hiz/konum sicramasi sinirsiz bir ivme (tork) olurdu (olculdu: -1 m/s'de 582 birim)
+            prev = getattr(self, "_prev_foot", None)
+            cur = getattr(self, "foot_target", None)
+            if prev is not None and cur is not None:
+                # son cizilen ayak konumundan, son hiziyla (kayma bu karede
+                # planted'i oynatmis olabilir -- konum sicramasi da ivmedir)
+                self._start_servo(np.asarray(cur, float), np.asarray(cur, float) - np.asarray(prev, float))
+            else:
+                self._start_servo(self.planted.copy(), np.zeros(2))
         return True
 
     # -- Adim 23: tork sinirli yakalama servosu ------------------------------
