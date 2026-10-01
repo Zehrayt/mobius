@@ -88,7 +88,6 @@ class PhysicalArms:
         self.prev_leg_angle = {"l": None, "r": None}
         self.last_target = {"l": 0.0, "r": 0.0}
         self.last_torque = {"l": 0.0, "r": 0.0}
-        self.prev_arm_angle = {}
 
     def arm_angle(self, side: str) -> float:
         e, _ = self.idx[side]
@@ -96,24 +95,19 @@ class PhysicalArms:
         return _angle_from_down(p[e] - p[self.shoulder])
 
     def arm_angular_velocity(self, side: str) -> float:
-        """Kolun GERCEK acisal hizi: bir onceki karede KAYDEDILEN aciya gore.
-        prev_points'ten turetmek yanlis cikti: govde kelepcesi
-        (preserve_momentum=True) omzun prev_points'inde duvara dogru saklanan
-        bir hiz birakiyor (itki sonrasi ort. 14 px/kare) -- kol sabit
-        dururken -0.2 rad/kare "hiz" okunup PD'nin sonum terimi hedefe
-        dogru donusu tamamen iptal ediyordu (kollar 40 derecede asili kaldi)."""
-        a_now = self.arm_angle(side)
-        a_prev = self.prev_arm_angle.get(side)
-        if a_prev is None:
-            return 0.0
+        """Kolun acisal hizi -- govdeyle AYNI zaman cizelgesinden (points /
+        prev_points). Adim 20'de bu hiz ayri bir gecmisten okunuyordu, cunku
+        govde kelepcesi omzun prev_points'inde duvara dogru "hayalet hiz"
+        sakliyordu; Adim 21'de kok neden (esnek olmayan kelepce) duzeltildi
+        ve ayri gecmis kaldirildi."""
+        e, _ = self.idx[side]
+        p, q = self.body.points, self.body.prev_points
+        a_now = _angle_from_down(p[e] - p[self.shoulder])
+        a_prev = _angle_from_down(q[e] - q[self.shoulder])
         return float(np.arctan2(np.sin(a_now - a_prev), np.cos(a_now - a_prev)))
 
-    def record(self) -> None:
-        """Her karenin SONUNDA (constrain'den sonra) cagrilir."""
-        for side in ("l", "r"):
-            self.prev_arm_angle[side] = self.arm_angle(side)
-
-    def drive(self, leg_angles: dict, enabled: bool = True, reflex_target_deg: float | None = None) -> None:
+    def drive(self, leg_angles: dict, enabled: bool = True, reflex_target_deg: float | None = None,
+              reflex_weight: float = 1.0, exit_damping: float = 0.0) -> None:
         """Her kol icin PD omuz torku. `leg_angles[side]`: o taraftaki bacagin
         kalca->ayak acisi (radyan, asagiya gore, + ileri). Refleks verilirse
         hedef, bacaktan bagimsiz sabit bir aciya doner (hiz hedefi 0)."""
@@ -128,16 +122,21 @@ class PhysicalArms:
             if not enabled:
                 self.last_torque[side] = 0.0
                 continue
+            lw = float(np.clip(leg_w, -g.max_leg_rate, g.max_leg_rate))
+            target, target_w = -g.swing_gain * leg_a, -g.swing_gain * lw
             if reflex_target_deg is not None:
-                target, target_w = np.radians(reflex_target_deg), 0.0
-            else:
-                lw = float(np.clip(leg_w, -g.max_leg_rate, g.max_leg_rate))
-                target, target_w = -g.swing_gain * leg_a, -g.swing_gain * lw
+                # Adim 21: refleks hedefi, yuruyus hedefine reflex_weight ile
+                # karisir; agirlik ustel sondugunde kol yumusakca geri doner.
+                wr = float(np.clip(reflex_weight, 0.0, 1.0))
+                target = wr * np.radians(reflex_target_deg) + (1.0 - wr) * target
+                target_w = (1.0 - wr) * target_w
             self.last_target[side] = target
             a = self.arm_angle(side)
             w = self.arm_angular_velocity(side)
-            alpha = g.stiffness * (target - a) + g.damping * (target_w - w)
-            cap = g.reflex_max_accel if reflex_target_deg is not None else g.max_accel
+            alpha = g.stiffness * (target - a) + (g.damping + exit_damping) * (target_w - w)
+            cap = g.max_accel if exit_damping == 0.0 else g.reflex_max_accel
+            if reflex_target_deg is not None:
+                cap = g.max_accel + float(np.clip(reflex_weight, 0.0, 1.0)) * (g.reflex_max_accel - g.max_accel)
             alpha = float(np.clip(alpha, -cap, cap))
             self.last_torque[side] = alpha
             e, _ = self.idx[side]
@@ -168,12 +167,11 @@ class PhysicalArms:
                     if b_i == e:   # dirsek kayinca el de ayni miktar kayar
                         p[h] = p[h] + shift
                         q[h] = q[h] + shift
-            clamp_direction(p, q, self.shoulder, e, DOWN, SHOULDER_CONE_DEG, preserve_momentum=True)
+            clamp_direction(p, q, self.shoulder, e, DOWN, SHOULDER_CONE_DEG, preserve_momentum="inelastic")
             upper_dir = p[e] - p[self.shoulder]
             apply_angular_spring(p, q, e, h, upper_dir, ELBOW_REST_DEG, ELBOW_STIFFNESS, ELBOW_DAMPING)
             clamp_joint_angle_points(p, q, self.shoulder, e, h, ELBOW_MIN_BEND_DEG, ELBOW_MAX_BEND_DEG,
-                                     bend_sign=ELBOW_BEND_SIGN)
-        self.record()
+                                     bend_sign=ELBOW_BEND_SIGN, inelastic=True)
 
     def points_for(self, side: str) -> tuple[np.ndarray, np.ndarray]:
         e, h = self.idx[side]

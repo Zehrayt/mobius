@@ -3619,6 +3619,89 @@ step1–16 smoke geçti. `step14` çubuk-adam çizimi kolları da gösteriyor.
 görselde biraz uzun. Dikey eksen momentumu ancak 2.5B/3B bir gövdeyle
 ölçülebilir. Bacaklara gerçek kütle verilmesi ayrı ve büyük bir iş.
 
+## Adım 21 — Hayalet hızın kök nedeni, dirsek incelemesi, refleks çıkış sönümü
+
+### 21.1 "Flamingo dirseği" ölçüldü: menteşe ters değil
+214–217. karelerde dirsek açısı **−2°**, yani kollar dümdüz ve menteşenin
+düz-kol sınırına dayalı. Kol hızla öne savrulurken eylemsizlik ön kolu
+geriye itiyor, menteşe hiperekstansiyonu engelliyor. Ön kolun yukarı
+büküldüğü kareler 223–225 (−13° → −31°). Bu, kol yavaşlarken ön kolun
+eylemsizlikle devam etmesi. Yön anatomik fleksiyon: kol öne uzanmışken
+dirsek bükülünce el yüze doğru kalkar. Sınırları ters çevirmek asılı kolda
+gerçek hiperekstansiyon üretirdi, o yüzden **yapılmadı**. Yukarı kıvrılmanın
+asıl sebebi refleksin aniden kesilmesiydi; çıkış sönümü bunu azalttı (21.3).
+
+### 21.2 Hayalet hız: kök neden düzeltildi, Adım 20'deki ayrı geçmiş kaldırıldı
+`clamp_direction(..., preserve_momentum="inelastic")` ve
+`clamp_joint_angle_points(..., inelastic=True)` eklendi. Momentum korunuyor,
+ama eklem sınırı esnek olmayan bir duvar: sınırı aşan tanjantiyel göreli hız
+siliniyor. Sadece `step14`'ün gövde/boyun kelepçeleri (`TORSO_CLAMP_MODE`)
+ve kol eklemleri bunu kullanıyor; step9/13 dokunulmadı. Omuzdaki hayalet
+hız 2.15 → 0.00 px/kare, itki sonrası 14.5 → 0.1 px/kare. Kol açısal hızı
+yeniden gövdeyle aynı zaman çizelgesinden (`prev_points`) okunuyor.
+
+**Ölçülen yan bulgular:**
+- **Gövde her zaman sınırda:** Gövde normal yürüyüşte karelerin %100'ünde
+  −12° sınırında. İtki sadece kalça noktasına uygulanıyor, gövde geride
+  kalıyor. Hayalet hız bu duvara her kare çarpan hızdı. Gerçek çözüm,
+  kalça–gövde arasında aktif bir dikleştirici tork olur; açık iş.
+- **Eski mod sahte dayanıklılık veriyordu:** Eski (hayalet) mod 2500 px
+  ileri itkiyi "atlatıyordu". Esnek olmayan modda 2500 px düşüyor,
+  −1000/−1500 px ise artık ayakta (eskiden düşüyordu). Eski asimetri hayalet
+  hızın bir maskelemesiydi (9. turdaki "çarpıcı sonuca şüphe" dersi).
+- **Kolsuz gövdede itki dayanıklılığı arttı:** 24 gait anında en alçak kalça
+  ortalama 127 → 151, en kötü 91 → 128.
+- **Başlangıç sarsıntısı:** İlk karelerde gövde artık ters sınıra savruluyor.
+  Kare 9'da bir Faz B yakalaması ve 8 karelik kayma var. Testler ilk 30 kareyi
+  ayrı tutuyor.
+- **Bayat kayma durumu:** İki ayak da yerdeyken, anchor'ın bağlı olmadığı
+  ayağın kayma durumu donuk kalıyordu (`slip_velocity` −4 px/kare sabit).
+  Anchor o ayağa geçince kayma 50+ kare sürebiliyordu. `STALE_SLIP_RESET`
+  ile sıfırlanıyor. Etkisi küçük.
+
+### 21.3 Refleks: çıkış sönümü, varsayılan KAPALI
+Eskiden "12 kare sabit hedef, sonra ani kesinti" vardı. Artık hedef ağırlığı
+3 kare tam, sonra kare başına ×0.75 üstel sönüyor; sönme süresince omuza +2.0
+ek sönüm uygulanıyor. Kolun >45°'de kaldığı kare sayısı ±150 px itkide
+30–36'dan 3–4'e indi.
+
+24 gait anında (±150 px) en alçak kalça:
+
+| | ort. ± std | en kötü |
+|---|---|---|
+| Kolsuz | 151.3 ± 8.9 | 128 |
+| Drive, refleks yok | 152.0 ± 4.0 | **148** |
+| Drive + yel değirmeni | 152.7 ± 7.1 | 138 |
+| Drive + ters | 155.2 ± 4.6 | 148 |
+
+Refleksin ortalamaya katkısı 1–3 px, yani standart hatanın 1–2 katı. Yönün
+etkisi senaryoya göre değişiyor: ileri itkide kolların öne gitmesi, geri
+itkide geriye gitmesi daha iyi. Sabit yönlü (asimetrik) iki politika da
+denendi, ortalamalar 152 ve 155. Kör yel değirmeninin ileri itkide zarar
+verdiği iddiası doğrulanmadı: +150'deki düşüş (Adım 20) refleksiz kollarda da
+vardı, kolların varlığından geliyordu. Bu belirsizlik yüzünden refleks
+varsayılan **kapalı** (`ARM_REFLEX=False`). Kolların asıl katkısı varyansı
+yarıya indirmek (std 8.9 → 4.0) ve en kötü durumu 128 → 148'e çıkarmak.
+
+### 21.4 Açık sorun: kollar + esnek olmayan kelepçe = çalkantılı toparlanma
+İtkiden sonraki en uzun kayma serisi (24 anda medyan) şöyle: hayalet modda
+kollu 8 kare, esnek olmayan kolsuz 8, esnek olmayan kollu (drive) **27**,
+pasif 20. Kalça hızının 2 px/kare'den sapması da 3.4'ten 7.5'e çıkıyor.
+Varsayılan senaryoda bu, itkiden ~20 kare sonra görünür bir bacak açılması ve
+kayma olarak izleniyor. Pasif kollarda da olduğu için sebep kapalı döngü
+torku değil: kol kütlesi artık duvardan ayrılabilen gövdeyle bağlaşıyor.
+
+**Sol/sağ kol simetrisi:** 2B modelde iki kol aynı omuz noktasına asılı.
+Pasif kollar birbirinin **aynısı** hareket ediyor (sol–sağ korelasyonu
++1.000, en büyük fark 0.08°). Kalça ivmesine tepki veren pasif bir sarkaç bu
+modelde çapraz taraflı salınım **üretemez**. Çapraz salınım ya sürüş torkuyla
+ya da bacaklara kütle verilmesiyle gelir.
+
+Varsayılanlar: `TORSO_CLAMP_MODE="inelastic"`, `ARMS_MODE="drive"`,
+`ARM_REFLEX=False`. Kanaryalar: 23 adım, 0 acil, 63 kayma karesi, 9 Faz B,
+son `hip_y` 146.32, itki sonrası en alçak kalça 148.5. `arms_mode="off",
+torso_clamp_mode=True` Adım 19c'yi aynen veriyor. Testler 50/50.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

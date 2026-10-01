@@ -247,6 +247,7 @@ def clamp_joint_angle_points(
     min_bend_deg: float,
     max_bend_deg: float,
     bend_sign: float = 1.0,
+    inelastic: bool = False,
 ) -> None:
     """`clamp_joint_angles()` ile AYNI matematik, ama bir `FabrikChain2D`
     üzerinde değil, doğrudan bir `VerletSystem`'in ham `points`/`prev_points`
@@ -325,3 +326,12 @@ def clamp_joint_angle_points(
     # hiz (points-prev_points farki) bu duzeltmeden ONCEKI degeriyle
     # MATEMATIKSEL OLARAK AYNI kalir (momentum-koruyan kisitlama).
     prev_points[i_end] = prev_points[i_end] + correction
+    if inelastic:
+        # Adim 21: sinir esnek olmayan bir duvar -- uc noktanin orta noktaya
+        # gore, siniri ASAN yondeki tanjantiyel hizi silinir (bkz.
+        # verlet.clamp_direction(preserve_momentum="inelastic")).
+        tangent = np.array([-rotated_dir[1], rotated_dir[0]]) * np.sign(signed_angle - clamped)
+        v_rel = (points[i_end] - prev_points[i_end]) - (points[i_mid] - prev_points[i_mid])
+        into_wall = float(np.dot(v_rel, tangent))
+        if into_wall > 0.0:
+            prev_points[i_end] = prev_points[i_end] + tangent * into_wall

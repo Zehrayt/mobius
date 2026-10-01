@@ -260,13 +260,29 @@ FAZ_B_ENABLED = True
 # sebebi normal handoff'lari bozmasiydi; itkisiz yuruyus bit-bit ayni).
 # Denenip reddedilen: birinci derece low-pass (rate 0.1-0.5) -- -500 px'te
 # HER oranda dustu.
+# Adim 21 -- govde/boyun kelepcesi: True = Adim 8'deki momentum-koruyan
+# kelepce (siniri asan hiz prev_points'te SAKLANIR -> "hayalet hiz");
+# "inelastic" = momentum korunur ama siniri asan tanjantiyel bilesen silinir.
+TORSO_CLAMP_MODE = "inelastic"
+STALE_SLIP_RESET = True
+
 # Adim 20 -- fiziksel kollar (physics/arms.py). "off": Adim 19 govdesi (kol
 # yok, bit-bit ayni); "passive": sadece yercekimi/koni/dirsek yayi;
 # "drive": + bacaga ters PD omuz torku (momentum dengeleme).
 ARMS_MODE = "drive"
-ARM_REFLEX = True
+ARM_REFLEX = False   # Adim 21: varsayilan KAPALI -- etkisi gurultu bandinda (README Adim 21)
 ARM_REFLEX_DEG = 70.0      # refleks hedef acisi (asagiya gore); isaret reflex_dir'den
-ARM_REFLEX_FRAMES = 12
+# Adim 21: eski "12 kare sabit hedef, sonra ani kesinti" yerine: ARM_REFLEX_HOLD
+# kare tam agirlik, sonra agirlik kare basina ARM_REFLEX_DECAY ile ustel soner.
+ARM_REFLEX_HOLD = 3
+ARM_REFLEX_DECAY = 0.75
+ARM_REFLEX_OFF_LEVEL = 0.02
+ARM_EXIT_DAMPING = 2.0        # refleks sonerken ek omuz sonumu (kol yercekimiyle salinip arkaya savrulmasin)
+ARM_EXIT_LEVEL = 0.001
+# "signed": yon COM sapmasina gore (ARM_REFLEX_SIGN); "fixed": her itkide ayni
+# yon (ARM_REFLEX_FIXED_DIR, +1 = kollar ONE) -- asimetrik refleks.
+ARM_REFLEX_POLICY = "signed"
+ARM_REFLEX_FIXED_DIR = 1.0
 ARM_PASSIVE_DURING_CATCH = False   # Faz B yakalama salinimi surerken bacak-izleme torku kapali
 ARM_REFLEX_SIGN = 1.0      # +1: kollar COM sapmasi yonune savrulur (yel degirmeni) -- olculen en iyi; -1: tersine (COM.u geri cek)
 
@@ -406,7 +422,7 @@ class ActiveBipedSim:
                  swing_lead_margin: float | None = None, faz_b: bool | None = None,
                  shock_absorb: bool | None = None, predictive_sensor: bool | None = None,
                  arms_mode: str | None = None, arm_reflex: bool | None = None,
-                 arm_gains: ArmGains | None = None):
+                 arm_gains: ArmGains | None = None, torso_clamp_mode=None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -414,6 +430,7 @@ class ActiveBipedSim:
         self.fps = fps
         self.dt = 1.0 / fps
         self.faz_b = FAZ_B_ENABLED if faz_b is None else faz_b
+        self.torso_clamp_mode = TORSO_CLAMP_MODE if torso_clamp_mode is None else torso_clamp_mode
         self.predictive_sensor = PREDICTIVE_SENSOR_ENABLED if predictive_sensor is None else predictive_sensor
         self.fazb_events = []   # (kare, bacak, 'compress'|'launch', 'toe'|'heel', bacak_acisi)
         self.shock_absorb = SHOCK_ABSORB_ENABLED if shock_absorb is None else shock_absorb
@@ -426,7 +443,8 @@ class ActiveBipedSim:
         self.arm_reflex = ARM_REFLEX if arm_reflex is None else arm_reflex
         self.arms = (PhysicalArms(self.body, self.idx["shoulder"], arm_gains)
                      if self.arms_mode != "off" else None)
-        self.reflex_frames = 0
+        self.reflex_level = 0.0
+        self.reflex_hold = 0
         self.reflex_dir = 0.0
         self.terrain_static = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC,
                                       zones=list(ICE_ZONES))
@@ -500,6 +518,15 @@ class ActiveBipedSim:
         for leg in (left_leg, right_leg):
             if leg.state == "stance":
                 stance_leg = leg
+        if STALE_SLIP_RESET:
+            # Adim 21: anchor (yuk) yalnizca stance_leg'de. Iki ayak birden
+            # yerdeyken YUKSUZ ayagin kayma durumu donuk kaliyordu
+            # (is_slipping=True, slip_velocity sabit -4 px/kare) ve anchor
+            # o ayaga gectigi an kayma 50+ kare surup gidiyordu.
+            for leg in (left_leg, right_leg):
+                if leg is not stance_leg and leg.state == "stance" and leg.is_slipping:
+                    leg.is_slipping = False
+                    leg.slip_velocity = 0.0
         in_danger = False
         if stance_leg is not None and not self.fell:
             desired_thrust = THRUST_GAIN * (TARGET_VX - hip_vx)
@@ -577,8 +604,10 @@ class ActiveBipedSim:
             if self.arms is not None and self.arm_reflex and (in_danger or front is not None):
                 direction = (1.0 if front == "toe" else -1.0) if front is not None else float(np.sign(real_error))
                 if direction != 0.0:
-                    self.reflex_dir = ARM_REFLEX_SIGN * direction
-                    self.reflex_frames = ARM_REFLEX_FRAMES
+                    self.reflex_dir = (ARM_REFLEX_SIGN * direction if ARM_REFLEX_POLICY == "signed"
+                                       else ARM_REFLEX_FIXED_DIR)
+                    self.reflex_level = 1.0
+                    self.reflex_hold = ARM_REFLEX_HOLD
             if front is not None:
                 other = right_leg if stance_leg is left_leg else left_leg
                 side = "l" if stance_leg is left_leg else "r"
@@ -639,21 +668,29 @@ class ActiveBipedSim:
             leg_angles = {k: float(np.arctan2(leg.chain.points[-1][0] - hp[0], leg.chain.points[-1][1] - hp[1]))
                           for k, leg in (("l", left_leg), ("r", right_leg))}
             reflex = None
-            if self.arm_reflex and self.reflex_frames > 0:
+            if self.arm_reflex and self.reflex_level > ARM_REFLEX_OFF_LEVEL:
                 reflex = self.reflex_dir * ARM_REFLEX_DEG
-                self.reflex_frames -= 1
             catching = any(l.catch_active for l in (left_leg, right_leg))
             drive_on = self.arms_mode == "drive" and not (ARM_PASSIVE_DURING_CATCH and catching)
             self.arms.drive(leg_angles, enabled=(drive_on or reflex is not None),
-                            reflex_target_deg=reflex)
+                            reflex_target_deg=reflex, reflex_weight=self.reflex_level,
+                            exit_damping=ARM_EXIT_DAMPING if self.reflex_level > ARM_EXIT_LEVEL else 0.0)
+            # Adim 21 -- cikis sonumlemesi: tetik ARM_REFLEX_HOLD kare tam
+            # agirlikta tutulur, sonra agirlik ustel soner (zombi kilidi yok).
+            if self.reflex_hold > 0:
+                self.reflex_hold -= 1
+            else:
+                self.reflex_level *= ARM_REFLEX_DECAY
 
         body.step(dt=1.0)
         # preserve_momentum=True -- bkz. modulun 8. tur notu: varsayilan
         # (False) govde/boyun kelepcesi uzerinden kalcanin KENDI hizini da
         # sessizce sifirlayip dusme esigini maskeliyordu.
-        clamp_direction(body.points, body.prev_points, hip, idx["shoulder"], UP, TORSO_MAX_LEAN_DEG, preserve_momentum=True)
+        clamp_direction(body.points, body.prev_points, hip, idx["shoulder"], UP, TORSO_MAX_LEAN_DEG,
+                        preserve_momentum=self.torso_clamp_mode)
         torso_dir = body.points[idx["shoulder"]] - body.points[hip]
-        clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, NECK_MAX_TILT_DEG, preserve_momentum=True)
+        clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, NECK_MAX_TILT_DEG,
+                        preserve_momentum=self.torso_clamp_mode)
         if self.arms is not None:
             self.arms.constrain()
 

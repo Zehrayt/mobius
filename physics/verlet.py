@@ -118,7 +118,7 @@ def _unit(vector: np.ndarray) -> np.ndarray:
 def clamp_direction(points: np.ndarray, prev_points: np.ndarray,
                      i_anchor: int, i_free: int,
                      reference_dir: np.ndarray, max_deviation_deg: float,
-                     preserve_momentum: bool = False) -> None:
+                     preserve_momentum: bool | str = False) -> None:
     """`points[i_anchor] -> points[i_free]` segmentinin yönünü sabit bir
     `reference_dir` vektörüne göre `max_deviation_deg` ile simetrik olarak
     sınırlar (segment uzunluğu korunur).
@@ -203,7 +203,21 @@ def clamp_direction(points: np.ndarray, prev_points: np.ndarray,
         reference_dir[0] * sin_t + reference_dir[1] * cos_t,
     ])
     new_free = points[i_anchor] + rotated * length
-    if preserve_momentum:
+    if preserve_momentum == "inelastic":
+        # Adim 21: momentum korunur AMA eklem siniri ESNEK OLMAYAN bir duvardir:
+        # serbest noktanin ankora gore, siniri ASAN yondeki tanjantiyel hizi
+        # silinir. Duz preserve_momentum=True bu bileseni prev_points'te
+        # sakliyordu -- step14'te omuz her karede duvara ~2 px/kare (itki
+        # sonrasi ort. 14 px/kare) "hayalet hiz"la carpiyordu.
+        correction = new_free - points[i_free]
+        points[i_free] = new_free
+        prev_points[i_free] = prev_points[i_free] + correction
+        tangent = np.array([-rotated[1], rotated[0]]) * np.sign(clamped)
+        v_rel = (points[i_free] - prev_points[i_free]) - (points[i_anchor] - prev_points[i_anchor])
+        into_wall = float(np.dot(v_rel, tangent))
+        if into_wall > 0.0:
+            prev_points[i_free] = prev_points[i_free] + tangent * into_wall
+    elif preserve_momentum:
         correction = new_free - points[i_free]
         points[i_free] = new_free
         prev_points[i_free] = prev_points[i_free] + correction
