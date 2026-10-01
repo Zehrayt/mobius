@@ -4084,6 +4084,83 @@ tek karede en büyük yükseliş (px).
    kaba (tepe 536 birim, itki karesinde; Adım 23.6/3).
 4. Hill kuvvet–hız eğrisi ve kol doygunluğu açık kaldı.
 
+## Adım 25 — İnişe hazırlık (pre-activation)
+
+### 25.1 Ayağın yere değme süresi (`time_to_contact`)
+Servo kinematiği saf bir fonksiyona ayrıldı (`_servo_kin`; kanarya
+bit-bit aynı kaldı). `time_to_contact` bu kinematiği servo durumunun bir
+kopyası üzerinde ileri koşarak ayağın kaç karede basacağını tahmin ediyor.
+Hedef ve ivme sınırı sabit varsayılıyor. Normal Bézier salınımında süre,
+kalan salınım kareleri.
+
+Doğruluk (150 px itki, tahmin ≤3 kare iken): 9 tahminin 5'i tam isabet,
+2'si bir kare erken, 1'i bir kare geç. Bir tahmin 3 kare saptı: hedef kalçanın
+peşinden kaydı.
+
+### 25.2 Hazırlık refleksi (`PREACT_FRAMES = 3`)
+Salınımdaki ayağın kalan süresi ≤3 kareye (≤100 ms) inince bacak
+ekstansörleri temastan **önce** kasılmaya başlıyor. Hazırlık hızı her kare
+`SHOCK_EXT_ACCEL` (1 px/kare²) artıyor, tavanı `SHOCK_EXT_VMAX` (3 px/kare).
+Temas şok servosunu tetiklerse (Adım 24) servo sıfırdan değil, bu hızla
+başlıyor. Normal yürüyüşte şok tetiklenmediği için itkisiz yürüyüş bit-bit
+aynı (test).
+
+### 25.3 Sonuç: etki küçük, çünkü çömelmenin çoğu temastan önce
+Tarama: 0–4 kare hazırlık, 6 faz × 8 itki. Hücreler: en alçak kalça
+ortalama / en kötü, toparlanma süresi (en alçaktan 170 px'e, kare), temas
+sonrası ek çökme (px).
+
+| itki | hazırlıksız (Adım 24) | 3 kare hazırlık |
+|---|---|---|
+| +2.0 m/s | 137/106, 10 kare, 2.2 | 138/107, 9 kare, 1.4 |
+| −2.0 m/s | 139/128, 15 kare, 1.0 | 140/129, 13 kare, 0.5 |
+| +2.5 m/s | 121/98, 14 kare, 3.2 | 122/99, 14 kare, 2.5 |
+| −2.5 m/s | 127/107, 20 kare, 2.3 | 127/108, 19 kare, 1.6 |
+| +4.2 m/s (150 px) | 80/69, 28 kare, 7.4 | 81/70, 25 kare, 6.4 |
+| −4.2 m/s | 75/57, 38 kare, 5.9 | 76/58, 33 kare, 4.9 |
+
+- Hiçbir koşuda düşme ya da çift-havada kare yok. En büyük yükseliş 9 px/kare.
+- 4 kare hazırlık 3 kareyle aynı sonucu veriyor.
+- Temas sonrası ek çökme ~%15–50, toparlanma süresi 1–5 kare azaldı.
+- En alçak kalça neredeyse hiç değişmedi (+1 px).
+
+**Sebep ölçüldü:** Çökmenin %93–95'i ayak yere değmeden **önce**
+gerçekleşiyor:
+
+| itki | 184'ten temasa | temastan en alçağa |
+|---|---|---|
+| 150 px | 105 px | 8 px |
+| +2.5 m/s | 80 px | 6 px |
+| −2.5 m/s | 73 px | 4 px |
+
+Yakalama salınımı süresince (150 px'te 6 kare) eski duruş bacağı ters
+sarkaç gibi devriliyor ve kalça kare başına ~17 px düşüyor. Hazırlık
+refleksi temas sonrasını iyileştirebilir; temastan önceki düşüşü
+değiştiremez.
+
+**Toparlanma süresi bir parametre seçimi:** Kalça şok servosunun hız
+tavanıyla (3 px/kare ≈ 0.44 m/s) kalkıyor; 71 → 170 px yaklaşık 33 kare.
+Çömelmeden kalkış hızı ancak diz ekstansör kuvveti modellenirse fizikten
+gelir (Hill modeli ile birlikte açık iş).
+
+### 25.4 Gerileme
+- Kanarya: 25/0/104/1/145.53 (Adım 24: 145.66).
+- 60 s varsayılan senaryo ayakta, 121 adım, en alçak kalça 72. Temastaki
+  hazırlık hızları 2/3/3/3 px/kare.
+- `PRE24` (artık `preactivation=0` dahil) Adım 23'ü veriyor. Diğer eski
+  bayrak setleri de değişmedi.
+- Testler 75/75 geçti (yeni `tests/test_step25_preactivation.py`). step1–16
+  smoke geçti.
+
+### 25.5 Sıradaki gerçek açık
+Derin çömelmenin kaynağı yakalama süresi boyunca duruş bacağının
+devrilmesi. Bunu küçültmenin fiziksel yolları:
+- Daha hızlı yakalama: Hill modeli yakalamayı tersine **yavaşlatır**.
+- Duruş bacağında ayak bileği/kalça stratejisi: COP kaydırma, gövde
+  eğme.
+- Diz ekstansör kuvvetini ters dinamikle hesaplayıp şok servosunun hız
+  tavanını fiziğe bağlamak.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

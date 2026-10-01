@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 from demo import step14_active_biped as s14
 
 KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
-PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch")
+PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch", preactivation=0)
 
 
 def run(push_ms, t=7.0, n=420, **kw):

@@ -333,6 +333,12 @@ SHOCK_TRIGGER = "contact"
 SHOCK_CONTACT_MIN_PX = 8.0
 SHOCK_EXT_ACCEL = 1.0
 SHOCK_EXT_VMAX = 3.0
+# Adim 25 -- inise hazirlik (pre-activation). Salinimdaki ayagin zemine kalan
+# suresi (ActiveFootPlantingLeg.time_to_contact) PREACT_FRAMES'e inince bacak
+# ekstansorleri temastan ONCE kasilmaya baslar: hazirlik hizi her kare
+# SHOCK_EXT_ACCEL artar (VMAX tavanli). Temas sok servosunu tetiklerse servo
+# sifirdan degil bu hizla baslar. 0 = kapali (Adim 24).
+PREACT_FRAMES = 3
 
 # -- Sahne olaylari: bir kucuk (ABSORBE EDILEN) ve bir buyuk (GERCEK
 #    DUSMEYE yol acan) darbe.
@@ -467,7 +473,7 @@ class ActiveBipedSim:
                  leg_mass: bool | None = None, thrust_mode: str | None = None,
                  catch_timing: str | None = None, hip_torque_max: float | None = None,
                  closing_ttc: float | None = None, shock_mode: str | None = None,
-                 shock_trigger: str | None = None):
+                 shock_trigger: str | None = None, preactivation: int | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -489,6 +495,9 @@ class ActiveBipedSim:
         self.shock_events = []      # (kare, baslangic_dinlenme_boyu)
         self.shock_vel = 0.0
         self.shock_mode = SHOCK_MODE if shock_mode is None else shock_mode
+        self.preact_frames = PREACT_FRAMES if preactivation is None else preactivation
+        self.shock_pending_v0 = 0.0
+        self.preact_log = []        # Adim 25: (temas karesi, bacak, temastaki hazirlik hizi)
         self.shock_trigger = SHOCK_TRIGGER if shock_trigger is None else shock_trigger
         self.contact_log = []       # Adim 24: (kare, bacak, temas sikismasi px)
 
@@ -778,7 +787,7 @@ class ActiveBipedSim:
         if stance_leg is not None and self.shock_pending is not None and stance_leg is self.shock_pending:
             d = float(np.linalg.norm(body.points[hip] - np.array([stance_leg.planted[0], GROUND_Y])))
             self.shock_rest = min(ARM_LENGTH, d)
-            self.shock_vel = 0.0
+            self.shock_vel = self.shock_pending_v0 if self.preact_frames > 0 else 0.0
             self.shock_pending = None
             self.shock_events.append((f, round(self.shock_rest, 1)))
         if self.shock_rest is not None and self.shock_mode == "servo":
@@ -884,6 +893,17 @@ class ActiveBipedSim:
                 self.contact_log.append((f, "l" if leg is left_leg else "r", round(comp, 1)))
                 if comp > SHOCK_CONTACT_MIN_PX:
                     self.shock_pending = leg
+                    self.shock_pending_v0 = getattr(leg, "preact_v", 0.0)
+                    self.preact_log.append((f, "l" if leg is left_leg else "r", round(self.shock_pending_v0, 2)))
+            # Adim 25 -- inise hazirlik: temastan PREACT_FRAMES once ekstansorler kasilir
+            if leg.state == "swing" and self.preact_frames > 0:
+                ttc = leg.time_to_contact(hip_pos)
+                if ttc is not None and ttc <= self.preact_frames:
+                    leg.preact_v = min(SHOCK_EXT_VMAX, getattr(leg, "preact_v", 0.0) + SHOCK_EXT_ACCEL)
+                else:
+                    leg.preact_v = 0.0
+            else:
+                leg.preact_v = 0.0
             if was_stance and leg.state == "swing":
                 self.step_events.append((f, "l" if leg is left_leg else "r"))
             if was_swing and leg.state == "stance":

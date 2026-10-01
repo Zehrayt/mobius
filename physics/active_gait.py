@@ -537,26 +537,47 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         mag = float(np.sqrt(a * a / 4.0 + 2.0 * a * abs(err)) - a / 2.0)
         return float(np.copysign(min(mag, abs(err)), err))
 
-    def _servo_step(self, hip_pos: np.ndarray) -> np.ndarray:
-        a_max = self.servo_accel_limit(hip_pos)
-        ex = float(self.swing_target[0] - self.servo_pos[0])
+    def _servo_kin(self, pos: np.ndarray, vel: np.ndarray, a_max: float):
+        """Servonun tek karelik kinematigi (durum degistirmez): (pos, vel, |a|, basti_mi)."""
+        ex = float(self.swing_target[0] - pos[0])
         near = abs(ex) <= max(CATCH_SERVO_LIFT_PX, CATCH_SERVO_LAND_PX)
         y_des = self.ground_y if near else self.ground_y - CATCH_SERVO_LIFT_PX
-        ey = float(y_des - self.servo_pos[1])
-        a_cmd = np.array([self._brake_velocity(ex, a_max) - self.servo_vel[0],
-                          self._brake_velocity(ey, a_max) - self.servo_vel[1]])
+        ey = float(y_des - pos[1])
+        a_cmd = np.array([self._brake_velocity(ex, a_max) - vel[0],
+                          self._brake_velocity(ey, a_max) - vel[1]])
         n = float(np.linalg.norm(a_cmd))
         if n > a_max:
             a_cmd *= a_max / n
-        self.servo_vel = self.servo_vel + a_cmd
-        self.servo_pos = self.servo_pos + self.servo_vel
-        if self.servo_pos[1] > self.ground_y:
-            self.servo_pos[1] = self.ground_y
-            self.servo_vel[1] = 0.0
+        vel = vel + a_cmd
+        pos = pos + vel
+        if pos[1] > self.ground_y:
+            pos[1] = self.ground_y
+            vel[1] = 0.0
+        landed = (near and abs(float(self.swing_target[0] - pos[0])) <= CATCH_SERVO_LAND_PX
+                  and pos[1] >= self.ground_y - 0.5)
+        return pos, vel, float(np.linalg.norm(a_cmd)), landed
+
+    def time_to_contact(self, hip_pos: np.ndarray, horizon: int = 12) -> float | None:
+        """Adim 25 -- salinimdaki ayagin zemine kac karede basacagi.
+        Servo: ayni kinematik, durum kopyasi uzerinde ileri kosulur (hedef ve
+        ivme siniri sabit varsayilir). Bezier: kalan salinim kareleri."""
+        if self.state != "swing":
+            return None
+        if getattr(self, "catch_servo", False):
+            a_max = self.servo_accel_limit(hip_pos)
+            pos, vel = self.servo_pos.copy(), self.servo_vel.copy()
+            for k in range(1, horizon + 1):
+                pos, vel, _, landed = self._servo_kin(pos, vel, a_max)
+                if landed:
+                    return float(k)
+            return None
+        return max(0.0, (1.0 - self.swing_t) * self._active_swing_duration)
+
+    def _servo_step(self, hip_pos: np.ndarray) -> np.ndarray:
+        a_max = self.servo_accel_limit(hip_pos)
+        self.servo_pos, self.servo_vel, a_norm, landed = self._servo_kin(self.servo_pos, self.servo_vel, a_max)
         self.servo_frames += 1
-        self.servo_log.append((float(np.linalg.norm(a_cmd)), a_max))
-        landed = (near and abs(float(self.swing_target[0] - self.servo_pos[0])) <= CATCH_SERVO_LAND_PX
-                  and self.servo_pos[1] >= self.ground_y - 0.5)
+        self.servo_log.append((a_norm, a_max))
         if landed or self.servo_frames >= CATCH_SERVO_MAX_FRAMES:
             self.planted = np.array([self.servo_pos[0], self.ground_y])
             self.state = "stance"

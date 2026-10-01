@@ -14,13 +14,13 @@ from demo import step14_active_biped as s14
 from demo.step17_bilge_physics_skin import simulate, inspect, phase_report, stance_pitch_deg
 
 
-CANARY = (25, 0, 104, 1, 145.66)  # varsayilan senaryo, Adim 24 (temas tabanli sok servosu + TTC kapisi)
+CANARY = (25, 0, 104, 1, 145.53)  # varsayilan senaryo, Adim 25 (inise hazirlik; Adim 24: 145.66)
 CANARY_23 = (22, 0, 165, 7, 145.99)  # Adim 23 + servo baslangic duzeltmesi (PRE24 bayraklariyla; duzeltme oncesi 22/0/157/6/145.97)
 CANARY_22 = (25, 0, 122, 2, 146.20)  # Adim 22 (catch_timing="fixed")
 CANARY_21 = (23, 0, 63, 9, 146.32)  # Adim 21 fizigi (LEGACY_21 bayraklariyla birebir)
 # Adim 22 oncesi govde: kutlesiz bacak, kalcadan itki, durus kontrolu yok, PD kol
 # Adim 24 oncesi sok/tetik davranisi (sabit hiz sinirli sok emici, kapanma kapisi yok)
-PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch")
+PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch", preactivation=0)
 LEGACY_21 = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, arms_mode="drive",
                  catch_timing="fixed", **PRE24)
 LEGACY_PHYS = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, catch_timing="fixed", **PRE24)
