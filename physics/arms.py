@@ -27,6 +27,12 @@ bacagin "gercek" acisal momentumu motorun icinde YOK. Kol torku bacak
 kinematiginden okunur ve govdeye gercek bir reaksiyon uygular; "iptal"
 olcumu (bkz. `angular_momentum_about`) bacaklara anatomik sanal kutleler
 atanarak yapilir.
+
+ADIM 22 GUNCELLEMESI: bacaklar artik kutleli (physics/leg_mass.py, ters
+dinamik). Olcum: sagittal duzlemde kollarin momentum iptali ~%0 -- iki kol
+birbirine ters salinir, katkilari birbirini goturur. Iptalin gercek ekseni
+dikey eksen (yaw): `drive_cancel` kollari bacaklarin yaw momentumunu
+sifirlayacak hiza surer (physics/trunk_yaw.py, README "Adim 22").
 """
 from __future__ import annotations
 
@@ -64,6 +70,9 @@ class ArmGains:
     damping: float = 0.8           # PD: (hedef hiz - GERCEK kol hizi) -> acisal ivme
     max_accel: float = 0.15        # rad/kare^2 -- tork tavani (savrulma emniyeti)
     reflex_max_accel: float = 0.4  # refleks sirasindaki tork tavani (0.15 ile etki ~1 px, bkz. README Adim 20)
+    cancel_damping: float = 0.8    # Adim 22 'cancel': hedef acisal hiza izleme kazanci (<=1)
+    cancel_center: float = 0.04    # Adim 22 'cancel': kolu dikeye ceken zayif yay (kayma olmasin)
+    cancel_max_accel: float = 0.3  # Adim 22 'cancel': tork tavani
     max_leg_rate: float = 0.0      # bacak acisal hizi ileri beslemesi (rad/kare tavani; 0 = kapali).
                                    # Acik iken izleme KOTULESTI (corr -0.86 -> -0.71): FABRIK zincir
                                    # ucunun acisi inis karelerinde sicriyor, hiz hedefi o sicramayi
@@ -146,6 +155,46 @@ class PhysicalArms:
             q[e] = q[e] - dv                                  # dirsege hiz degisimi
             # Newton 3: esit ve ters dogrusal momentum omuza
             q[self.shoulder] = q[self.shoulder] + dv * (masses[e] / masses[self.shoulder])
+
+    def _apply_alpha(self, side: str, alpha: float) -> None:
+        p, q = self.body.points, self.body.prev_points
+        masses = self.body.masses
+        e, _ = self.idx[side]
+        a = self.arm_angle(side)
+        r = float(np.linalg.norm(p[e] - p[self.shoulder]))
+        tangent = np.array([np.cos(a), -np.sin(a)])
+        dv = tangent * (alpha * r)
+        q[e] = q[e] - dv
+        q[self.shoulder] = q[self.shoulder] + dv * (masses[e] / masses[self.shoulder])
+
+    def yaw_lever(self, side: str) -> float:
+        """d(L_yaw)/d(omega) bu kol icin: W * sum m_i d_i cos(a) (dirsek/el)."""
+        from physics.trunk_yaw import SHOULDER_HALF_WIDTH
+        e, h = self.idx[side]
+        p = self.body.points
+        m = self.body.masses
+        s = p[self.shoulder]
+        a = self.arm_angle(side)
+        lever = m[e] * float(np.linalg.norm(p[e] - s)) + m[h] * float(np.linalg.norm(p[h] - s))
+        return SHOULDER_HALF_WIDTH * lever * max(np.cos(a), 0.2)
+
+    def drive_cancel(self, L_leg_yaw: float) -> None:
+        """Adim 22 -- momentum iptali: kollar, bacaklarin dikey eksen (yaw)
+        momentumunu sifirlayacak acisal hizi hedefler. Sol kol (+W) ve sag
+        kol (-W) ters yonde doner (capraz salinim kendiliginden cikar):
+            W_l*K*w_l - W*K*w_r = -L_bacak  ->  w_l = -w_r = -L_bacak / (2 K)
+        Tork, `drive` ile ayni Newton-3 yoluyla uygulanir (sagittal tepki omza)."""
+        g = self.gains
+        for side in ("l", "r"):
+            from physics.trunk_yaw import side_sign
+            target_w = -side_sign(side) * L_leg_yaw / (2.0 * self.yaw_lever(side) + 1e-9)
+            a = self.arm_angle(side)
+            w = self.arm_angular_velocity(side)
+            alpha = g.cancel_damping * (target_w - w) - g.cancel_center * a
+            alpha = float(np.clip(alpha, -g.cancel_max_accel, g.cancel_max_accel))
+            self.last_target[side] = target_w
+            self.last_torque[side] = alpha
+            self._apply_alpha(side, alpha)
 
     def constrain(self) -> None:
         """body.step()'ten SONRA: koni sinirlari + dirsek yay-sonumu."""

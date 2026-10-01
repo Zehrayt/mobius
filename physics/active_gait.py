@@ -394,12 +394,14 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         lead = FAZB_TARGET_LEAD_PX if hip_vx >= 0 else -FAZB_TARGET_LEAD_PX
         return hip_x + ahead + lead
 
-    def compress_swing(self, hip_x: float, hip_vx: float, frames: float = FAZB_CATCH_FRAMES) -> bool:
+    def compress_swing(self, hip_x: float, hip_vx: float, frames: float | None = None) -> bool:
         """Havadaki bacagin KALAN salinimini `frames` kareye sikistirir.
         `swing_t` degismez (Bezier konumu sicramaz); sadece kare basina
         artis hizi (1/_active_swing_duration) buyur. DST/MAR bu salinim
         icin devre disi (emergency_step_active), hedefi yakalama mantigi
         surer. Zaten daha kisa kaldiysa dokunmaz."""
+        if frames is None:
+            frames = FAZB_CATCH_FRAMES
         if self.state != "swing" or self.swing_t >= 1.0:
             return False
         remaining = (1.0 - self.swing_t) * self._active_swing_duration
@@ -411,9 +413,11 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
         self.catch_active = True
         return True
 
-    def launch_catch_step(self, hip_x: float, hip_vx: float, frames: float = FAZB_CATCH_FRAMES) -> bool:
+    def launch_catch_step(self, hip_x: float, hip_vx: float, frames: float | None = None) -> bool:
         """toe_off'taki stance bacagini HEMEN, sikistirilmis bir salinimla
         birakir (cagiran kod diger bacagin havada OLMADIGINI garanti eder)."""
+        if frames is None:
+            frames = FAZB_CATCH_FRAMES
         if self.state != "stance":
             return False
         self.state = "swing"

@@ -38,7 +38,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import cv2
 
-from physics.verlet import VerletSystem, clamp_direction
+from physics.verlet import VerletSystem, clamp_direction, apply_angular_spring, apply_angular_couple
+from physics.trunk_yaw import (TrunkYaw, yaw_momentum, side_sign, HIP_HALF_WIDTH,
+                               SHOULDER_HALF_WIDTH)
+from physics.leg_mass import (LegMassModel, THIGH_MASS, SHANK_MASS,
+                              THIGH_AXIS_FRAC, SHANK_AXIS_FRAC)
 from physics.active_gait import ActiveFootPlantingLeg, PHASE_TOE_OFF, PHASE_HEEL_STRIKE
 from physics.environment import Terrain
 from physics.balance import support_interval, outside_interval_error, FallRiskMonitor, upper_body_com_x
@@ -264,12 +268,31 @@ FAZ_B_ENABLED = True
 # kelepce (siniri asan hiz prev_points'te SAKLANIR -> "hayalet hiz");
 # "inelastic" = momentum korunur ama siniri asan tanjantiyel bilesen silinir.
 TORSO_CLAMP_MODE = "inelastic"
+POSTURE_TARGET_DEG = 3.0   # hafif one egim (+ = yuruyus yonu)
+POSTURE_K = 0.2            # Adim 22 -- olculup ayarlanacak
+POSTURE_C = 0.8
+# Adim 22 -- salinim bacagina anatomik kutle (physics/leg_mass.py): ters dinamik
+# kalca yuku govdeye tepki olarak uygulanir.
+LEG_MASS_ENABLED = True
+# Adim 22 -- kutleli bacaklarla itki/capture-point TUM GOVDE kutle merkezinin
+# hizini okur (kalca noktasinin degil): salinim bacagi ile govde arasindaki
+# IC momentum alisverisi kalcayi yavaslatir ama sistemin COM'unu degil.
+LEG_MASS_COM_CONTROL = True
+# Adim 22 -- itki uygulama noktasi. "hip": eski model, hiz degisimi yalnizca
+# kalca noktasina (govde cubugu kalcadan itilir, geride kalip -12 derecelik
+# duvara yaslaniyordu). "com": zemin tepkisi kutle merkezinden gecer (LIP
+# varsayimi) -- ayni hiz degisimi govde+kol noktalarinin HEPSINE; itki govdeye
+# egim momenti vermez, govde durusunu kalca kaslari (POSTURE_*) tasir.
+THRUST_MODE = "com"
 STALE_SLIP_RESET = True
 
 # Adim 20 -- fiziksel kollar (physics/arms.py). "off": Adim 19 govdesi (kol
 # yok, bit-bit ayni); "passive": sadece yercekimi/koni/dirsek yayi;
 # "drive": + bacaga ters PD omuz torku (momentum dengeleme).
-ARMS_MODE = "drive"
+# Adim 22: "cancel": kollar bacaklarin dikey eksen (yaw) momentumunu olcup
+# onu sifirlayacak acisal hizi hedefler (physics/arms.py drive_cancel) --
+# capraz salinim buradan KENDILIGINDEN cikar (sol kol ~ sag bacak +0.73).
+ARMS_MODE = "cancel"
 ARM_REFLEX = False   # Adim 21: varsayilan KAPALI -- etkisi gurultu bandinda (README Adim 21)
 ARM_REFLEX_DEG = 70.0      # refleks hedef acisi (asagiya gore); isaret reflex_dir'den
 # Adim 21: eski "12 kare sabit hedef, sonra ani kesinti" yerine: ARM_REFLEX_HOLD
@@ -422,7 +445,9 @@ class ActiveBipedSim:
                  swing_lead_margin: float | None = None, faz_b: bool | None = None,
                  shock_absorb: bool | None = None, predictive_sensor: bool | None = None,
                  arms_mode: str | None = None, arm_reflex: bool | None = None,
-                 arm_gains: ArmGains | None = None, torso_clamp_mode=None):
+                 arm_gains: ArmGains | None = None, torso_clamp_mode=None,
+                 posture_k: float | None = None, posture_c: float | None = None,
+                 leg_mass: bool | None = None, thrust_mode: str | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -431,6 +456,10 @@ class ActiveBipedSim:
         self.dt = 1.0 / fps
         self.faz_b = FAZ_B_ENABLED if faz_b is None else faz_b
         self.torso_clamp_mode = TORSO_CLAMP_MODE if torso_clamp_mode is None else torso_clamp_mode
+        self.posture_k = POSTURE_K if posture_k is None else posture_k
+        self.posture_c = POSTURE_C if posture_c is None else posture_c
+        use_lm = LEG_MASS_ENABLED if leg_mass is None else leg_mass
+        self.leg_mass = LegMassModel(TUNED_GRAVITY) if use_lm else None
         self.predictive_sensor = PREDICTIVE_SENSOR_ENABLED if predictive_sensor is None else predictive_sensor
         self.fazb_events = []   # (kare, bacak, 'compress'|'launch', 'toe'|'heel', bacak_acisi)
         self.shock_absorb = SHOCK_ABSORB_ENABLED if shock_absorb is None else shock_absorb
@@ -439,10 +468,15 @@ class ActiveBipedSim:
         self.shock_events = []      # (kare, baslangic_dinlenme_boyu)
 
         self.body, self.idx = build_body()
+        self.hip_base_mass = float(self.body.masses[self.idx["hip"]])
+        self.thrust_mode = THRUST_MODE if thrust_mode is None else thrust_mode
         self.arms_mode = ARMS_MODE if arms_mode is None else arms_mode
         self.arm_reflex = ARM_REFLEX if arm_reflex is None else arm_reflex
         self.arms = (PhysicalArms(self.body, self.idx["shoulder"], arm_gains)
                      if self.arms_mode != "off" else None)
+        self.upper_ids = [self.idx["hip"], self.idx["shoulder"], self.idx["head"]]
+        if self.arms is not None:
+            self.upper_ids += [i for pair in self.arms.idx.values() for i in pair]
         self.reflex_level = 0.0
         self.reflex_hold = 0
         self.reflex_dir = 0.0
@@ -478,6 +512,11 @@ class ActiveBipedSim:
         self.hip_vx_log = []
         self.frame = 0
         self.last_hip_vx = 0.0
+        self.last_ctrl_vx = 0.0
+        self.trunk_yaw = TrunkYaw()
+        self._yaw_prev = None
+        self.last_leg_yaw = 0.0
+        self.last_arm_yaw = 0.0
         self.last_in_danger = False
         self.nan = False
 
@@ -488,8 +527,64 @@ class ActiveBipedSim:
         if self.arms is None:
             return upper_body_com_x(p, base)
         ids = base + [i for pair in self.arms.idx.values() for i in pair]
-        m = self.body.masses[ids]
+        m = self.body.masses[ids].copy()
+        m[0] = self.hip_base_mass   # Adim 22: kalcaya eklenen ortuk bacak kutlesi denge olcusunu degistirmesin
         return float(np.sum(p[ids, 0] * m) / np.sum(m))
+
+    def _update_trunk_yaw(self) -> None:
+        """Adim 22 -- 2.5B govde yaw defteri (bkz. physics/trunk_yaw.py).
+        Hizlar konum farkindan (bu kare - onceki kare), kalcaya gore."""
+        p = self.body.points
+        hip_x = float(p[self.idx["hip"], 0])
+        now = {"hip": hip_x, "foot_l": float(self.left_leg.foot_target[0]),
+               "foot_r": float(self.right_leg.foot_target[0])}
+        if self.arms is not None:
+            for side in ("l", "r"):
+                e, h = self.arms.idx[side]
+                now["e" + side], now["h" + side] = float(p[e, 0]), float(p[h, 0])
+        prev = self._yaw_prev
+        self._yaw_prev = now
+        if prev is None:
+            return
+        v_hip = now["hip"] - prev["hip"]
+        legs = []
+        for side in ("l", "r"):
+            v_foot = now["foot_" + side] - prev["foot_" + side]
+            lat = side_sign(side) * HIP_HALF_WIDTH
+            for frac, mm in ((THIGH_AXIS_FRAC, THIGH_MASS), (SHANK_AXIS_FRAC, SHANK_MASS)):
+                legs.append((lat, mm, frac * (v_foot - v_hip)))
+        arms = []
+        if self.arms is not None:
+            for side in ("l", "r"):
+                e, h = self.arms.idx[side]
+                lat = side_sign(side) * SHOULDER_HALF_WIDTH
+                for key, i in (("e", e), ("h", h)):
+                    arms.append((lat, float(self.body.masses[i]), now[key + side] - prev[key + side] - v_hip))
+        self.last_leg_yaw = yaw_momentum(legs)
+        self.last_arm_yaw = yaw_momentum(arms)
+        self.trunk_yaw.update(self.last_leg_yaw, self.last_arm_yaw)
+
+    def system_com_vx(self) -> float:
+        """Adim 22: govde + kollar + iki bacagin (pergel ekseni segmentleri)
+        kutle-agirlikli yatay hizi. Bacak segmenti i: v = (1-f_i) v_kalca + f_i v_ayak."""
+        idx, p, q = self.idx, self.body.points, self.body.prev_points
+        ids = [idx["hip"], idx["shoulder"], idx["head"]]
+        if self.arms is not None:
+            ids += [i for pair in self.arms.idx.values() for i in pair]
+        m = self.body.masses[ids].copy()
+        m[0] = self.hip_base_mass
+        mom = float(np.sum(m * (p[ids, 0] - q[ids, 0])))
+        tot = float(np.sum(m))
+        v_hip = float(p[idx["hip"], 0] - q[idx["hip"], 0])
+        for leg in self.legs:
+            h = self.leg_mass.hist.get(id(leg), [])
+            # Son ayak hizi [t-1, t]: tepki bir onceki karenin SONUNDA prev_points'e
+            # islendigi icin govde hizi bu araligin ivmesini zaten iceriyor.
+            v_foot = float(h[-1][0][0] - h[-2][0][0]) if len(h) >= 2 else 0.0
+            for frac, mm in ((THIGH_AXIS_FRAC, THIGH_MASS), (SHANK_AXIS_FRAC, SHANK_MASS)):
+                mom += mm * ((1.0 - frac) * v_hip + frac * v_foot)
+                tot += mm
+        return mom / tot
 
     @property
     def legs(self) -> list:
@@ -506,12 +601,18 @@ class ActiveBipedSim:
         hip_pos_before = body.points[hip].copy()
         hip_prev = body.prev_points[hip].copy()
         hip_vx = hip_pos_before[0] - hip_prev[0]
+        ctrl_vx = self.system_com_vx() if (self.leg_mass is not None and LEG_MASS_COM_CONTROL) else hip_vx
+        self.last_ctrl_vx = ctrl_vx
 
+        # Itkiler DURTU (momentum) olarak: kick_px, taban kalca kutlesine
+        # (1.0) verilen hiz. Adim 22'de kalcaya ortuk bacak kutlesi eklenince
+        # ayni hiz daha buyuk momentum olurdu -- kiyas adil kalsin diye bolunur.
+        kick_scale = self.hip_base_mass / float(body.masses[hip])
         if not self.stumbled and t >= self.stumble_t:
-            body.prev_points[hip][0] -= self.stumble_kick_px
+            body.prev_points[hip][0] -= self.stumble_kick_px * kick_scale
             self.stumbled = True
         if not self.big_pushed and t >= self.big_push_t:
-            body.prev_points[hip][0] -= self.big_push_kick_px
+            body.prev_points[hip][0] -= self.big_push_kick_px * kick_scale
             self.big_pushed = True
 
         stance_leg = None
@@ -529,7 +630,7 @@ class ActiveBipedSim:
                     leg.slip_velocity = 0.0
         in_danger = False
         if stance_leg is not None and not self.fell:
-            desired_thrust = THRUST_GAIN * (TARGET_VX - hip_vx)
+            desired_thrust = THRUST_GAIN * (TARGET_VX - ctrl_vx)
             desired_thrust = max(-THRUST_CAP, min(THRUST_CAP, desired_thrust))
 
             # 13. tur eki -- gercek 2B stres: bir onceki karenin relaksasyon
@@ -612,10 +713,10 @@ class ActiveBipedSim:
                 other = right_leg if stance_leg is left_leg else left_leg
                 side = "l" if stance_leg is left_leg else "r"
                 if other.state == "swing":
-                    if other.compress_swing(hip_pos_before[0], hip_vx):
+                    if other.compress_swing(hip_pos_before[0], ctrl_vx):
                         self.fazb_events.append((f, "r" if side == "l" else "l", "compress", front,
                                                  round(stance_leg.leg_angle_deg, 1)))
-                elif stance_leg.launch_catch_step(hip_pos_before[0], hip_vx):
+                elif stance_leg.launch_catch_step(hip_pos_before[0], ctrl_vx):
                     self.fazb_events.append((f, side, "launch", front, round(stance_leg.leg_angle_deg, 1)))
                 fazb_handled = True
             other_swinging = (right_leg if stance_leg is left_leg else left_leg).state == "swing"
@@ -630,7 +731,10 @@ class ActiveBipedSim:
                     self.emergency_step_events.append((f, "l" if stance_leg is left_leg else "r", round(float(real_error), 1)))
 
             body.set_pinned_position(anchor, [stance_leg.planted[0], GROUND_Y])
-            body.prev_points[hip][0] -= applied_thrust
+            if self.thrust_mode == "com":
+                body.prev_points[self.upper_ids, 0] -= applied_thrust
+            else:
+                body.prev_points[hip][0] -= applied_thrust
 
         # Adim 19b -- yakalama sonrasi sok emilimi (bkz. SHOCK_ABSORB_* notu)
         # anchor'in GERCEKTEN yakalama bacagina gectigi karede baslar (iki bacak
@@ -672,15 +776,28 @@ class ActiveBipedSim:
                 reflex = self.reflex_dir * ARM_REFLEX_DEG
             catching = any(l.catch_active for l in (left_leg, right_leg))
             drive_on = self.arms_mode == "drive" and not (ARM_PASSIVE_DURING_CATCH and catching)
-            self.arms.drive(leg_angles, enabled=(drive_on or reflex is not None),
-                            reflex_target_deg=reflex, reflex_weight=self.reflex_level,
-                            exit_damping=ARM_EXIT_DAMPING if self.reflex_level > ARM_EXIT_LEVEL else 0.0)
+            if self.arms_mode == "cancel" and reflex is None:
+                # Adim 22 -- kollar bacaklarin yaw momentumunu iptal etmeyi hedefler
+                self.arms.drive(leg_angles, enabled=False)   # yalnizca bacak acisi gecmisini gunceller
+                self.arms.drive_cancel(self.last_leg_yaw)
+            else:
+                self.arms.drive(leg_angles, enabled=(drive_on or reflex is not None),
+                                reflex_target_deg=reflex, reflex_weight=self.reflex_level,
+                                exit_damping=ARM_EXIT_DAMPING if self.reflex_level > ARM_EXIT_LEVEL else 0.0)
             # Adim 21 -- cikis sonumlemesi: tetik ARM_REFLEX_HOLD kare tam
             # agirlikta tutulur, sonra agirlik ustel soner (zombi kilidi yok).
             if self.reflex_hold > 0:
                 self.reflex_hold -= 1
             else:
                 self.reflex_level *= ARM_REFLEX_DECAY
+
+        # Adim 22 -- aktif govde durusu (kalca ekstansor/fleksor kaslari): govdeyi
+        # hedef egime cekmeye calisan PD tork (apply_angular_spring: konuma degil
+        # prev_points'e). Yoksa govde itki altinda karelerin %100'unde -12
+        # derecelik kelepce duvarinda duruyor ve momentum alisverisini duvar yutuyor.
+        if self.posture_k > 0.0 or self.posture_c > 0.0:
+            apply_angular_couple(body.points, body.prev_points, body.masses, hip, idx["shoulder"], UP,
+                                 POSTURE_TARGET_DEG, self.posture_k, self.posture_c)
 
         body.step(dt=1.0)
         # preserve_momentum=True -- bkz. modulun 8. tur notu: varsayilan
@@ -704,7 +821,7 @@ class ActiveBipedSim:
             was_stance = leg.state == "stance"
             was_swing = leg.state == "swing"
             was_catch = leg.catch_active
-            leg.update(hip_pos, hip_vx=hip_vx, other_leg_swinging=(other.state == "swing"))
+            leg.update(hip_pos, hip_vx=ctrl_vx, other_leg_swinging=(other.state == "swing"))
             if was_swing and was_catch and leg.state == "stance" and self.shock_absorb:
                 self.shock_pending = leg
             if was_stance and leg.state == "swing":
@@ -720,6 +837,17 @@ class ActiveBipedSim:
         if not self.fell and hip_pos[1] > FALL_HIP_Y_THRESHOLD:
             self.fell = True
             self.fall_frame = f
+
+        if self.leg_mass is not None:
+            # Adim 22 -- bacak kutlesi: bu karenin ayak konumlariyla merkezi
+            # fark ivmesi (ornek t-1) -> tepki simdi, bir sonraki karenin
+            # hizina (1 kare gecikme; bkz. physics/leg_mass.py).
+            self.leg_mass.observe((left_leg, right_leg))
+            F, tau, n_sw = self.leg_mass.hip_load((left_leg, right_leg), body.points[hip])
+            body.masses[hip] = self.hip_base_mass + n_sw * LegMassModel.implicit_hip_mass()
+            LegMassModel.apply_reaction(body.points, body.prev_points, body.masses, hip, idx["shoulder"], F, tau)
+
+        self._update_trunk_yaw()
 
         self.hip_x_log.append(hip_pos[0])
         self.hip_y_log.append(hip_pos[1])

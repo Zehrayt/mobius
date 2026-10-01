@@ -14,7 +14,11 @@ from demo import step14_active_biped as s14
 from demo.step17_bilge_physics_skin import simulate, inspect, phase_report, stance_pitch_deg
 
 
-CANARY = (23, 0, 63, 9, 146.32)   # varsayilan senaryo, Adim 21
+CANARY = (25, 0, 122, 2, 146.20)  # varsayilan senaryo, Adim 22 (kutleli bacak + yaw iptali)
+CANARY_21 = (23, 0, 63, 9, 146.32)  # Adim 21 fizigi (LEGACY_21 bayraklariyla birebir)
+# Adim 22 oncesi govde: kutlesiz bacak, kalcadan itki, durus kontrolu yok, PD kol
+LEGACY_21 = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0, arms_mode="drive")
+LEGACY_PHYS = dict(leg_mass=False, thrust_mode="hip", posture_k=0.0, posture_c=0.0)
 
 
 class ContactPhaseSensorTest(unittest.TestCase):
@@ -55,6 +59,7 @@ class Step14RegressionTest(unittest.TestCase):
         sim = self.sim
         self.assertFalse(sim.nan)
         self.assertFalse(sim.fell)
+        # Adim 22: kutleli bacak (buzda mikro kaymalar: 122 kayma karesi, hepsi buz bolgesinde)
         # Adim 21: esnek olmayan govde kelepcesi + kollar (20: 25/0/4/2/146.69;
         # 19c: 26/0/2/1/146.60; 18: 26/0/14/1/146.62; 17: 27/36/89/147.51)
         self.assertEqual(len(sim.step_events), CANARY[0])
@@ -63,8 +68,16 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertEqual(len(sim.fazb_events), CANARY[3])
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY[4], places=2)
 
+    def test_legacy_flags_reproduce_step21(self):
+        sim = s14.ActiveBipedSim(**LEGACY_21)
+        for _ in range(s14.N_FRAMES):
+            sim.step()
+        self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
+                          len(sim.fazb_events)), CANARY_21[:4])
+        self.assertAlmostEqual(sim.hip_y_log[-1], CANARY_21[4], places=2)
+
     def test_arms_off_reproduces_step19(self):
-        sim = s14.ActiveBipedSim(arms_mode="off", torso_clamp_mode=True)
+        sim = s14.ActiveBipedSim(arms_mode="off", torso_clamp_mode=True, **LEGACY_PHYS)
         for _ in range(s14.N_FRAMES):
             sim.step()
         self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
@@ -128,9 +141,9 @@ class FazBTest(unittest.TestCase):
             # senaryoda cokusun kendisini kucultuyor)
             # (kollar da kapali: Adim 19b olcumu kolsuz govdede yapildi)
             on, _, _ = self.run_sim(420, big_push_kick_px=push, predictive_sensor=False, arms_mode="off",
-                                    torso_clamp_mode=True)
+                                    torso_clamp_mode=True, **LEGACY_PHYS)
             off, _, _ = self.run_sim(420, big_push_kick_px=push, shock_absorb=False, predictive_sensor=False,
-                                     arms_mode="off", torso_clamp_mode=True)
+                                     arms_mode="off", torso_clamp_mode=True, **LEGACY_PHYS)
             rise_on = max(-np.diff(np.array(on.hip_y_log))[210:])
             rise_off = max(-np.diff(np.array(off.hip_y_log))[210:])
             self.assertLess(rise_on, 25.0, push)
@@ -141,10 +154,12 @@ class FazBTest(unittest.TestCase):
         self.assertTrue(np.array_equal(pa, pb))
 
     def test_predictive_sensor_removes_lag(self):
-        """Adim 19c: yakalama itkinin geldigi karede tetiklenir; itkisiz yuruyus degismez."""
+        """Adim 19c: yakalama itkinin geldigi karede tetiklenir; itkisiz yuruyus degismez.
+        Cokme derinligi kiyasi Adim 21 govdesinde (LEGACY_21) -- Adim 22'nin kutleli
+        bacaklarinda +150'de prediktif sensor cokmeyi KUCULTMUYOR (README Adim 22)."""
         for push in (150.0, -150.0):
-            on, _, _ = self.run_sim(300, big_push_kick_px=push)
-            off, _, _ = self.run_sim(300, big_push_kick_px=push, predictive_sensor=False)
+            on, _, _ = self.run_sim(300, big_push_kick_px=push, **LEGACY_21)
+            off, _, _ = self.run_sim(300, big_push_kick_px=push, predictive_sensor=False, **LEGACY_21)
             bp = round(s14.BIG_PUSH_T * s14.FPS)
             self.assertEqual(min(e[0] for e in on.fazb_events if e[0] >= bp), bp, push)
             self.assertGreater(min(e[0] for e in off.fazb_events if e[0] >= bp), bp, push)
@@ -167,8 +182,25 @@ class FazBTest(unittest.TestCase):
 class PhysicalArmsTest(unittest.TestCase):
     """Adim 20: kutleli Verlet kollar."""
 
-    def test_contralateral_swing_and_integrity(self):
+    def test_cancel_mode_is_contralateral(self):
+        """Adim 22: yaw momentum iptali capraz salinimi KENDILIGINDEN uretir."""
         sim = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0)
+        al, ar, ll, lr = [], [], [], []
+        for f in range(900):
+            sim.step()
+            hip = sim.body.points[sim.idx["hip"]]
+            if f >= 60:
+                al.append(sim.arms.arm_angle("l"))
+                ar.append(sim.arms.arm_angle("r"))
+                for out, leg in ((ll, sim.left_leg), (lr, sim.right_leg)):
+                    ft = leg.chain.points[-1]
+                    out.append(np.arctan2(ft[0] - hip[0], ft[1] - hip[1]))
+        self.assertGreater(np.corrcoef(al, lr)[0, 1], 0.6)    # sol kol ~ sag bacak
+        self.assertGreater(np.corrcoef(ar, ll)[0, 1], 0.6)
+        self.assertLess(np.corrcoef(al, ar)[0, 1], -0.4)      # kollar birbirine ters
+
+    def test_contralateral_swing_and_integrity(self):
+        sim = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, **LEGACY_21)
         arm_a, leg_a, stick_err, elbow = [], [], 0.0, []
         sh = sim.idx["shoulder"]
         for f in range(900):

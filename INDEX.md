@@ -30,7 +30,8 @@ açıkça gösteriyor.
 | 18. 60/−15 yuvarlanma geometrisi + Faz B toe_off yakalama adımı | `physics/active_gait.py` (`compress_swing`, `launch_catch_step`), `demo/step14_active_biped.py` | 🔶 README "Adım 18" |
 | 19. Faz B heel_strike aynası + yakalama sonrası şok emilimi + prediktif sensör | `physics/active_gait.py` (`heel_strike_overrun`, `predict_contact`), `demo/step14_active_biped.py` (`SHOCK_*`) | 🔶 README "Adım 19" |
 | 20. Fiziksel (Verlet) kollar: kütle, momentum dengeleme torku, itki refleksi | `physics/arms.py`, `demo/step14_active_biped.py` (`ARMS_MODE`, `ARM_REFLEX`) | 🔶 README "Adım 20" |
-| 21. Esnek olmayan eklem sınırı (hayalet hız kökü), refleks çıkış sönümü | `physics/verlet.py`, `physics/fabrik.py`, `physics/arms.py`, `demo/step14_active_biped.py` | 🔶 kollu toparlanma çalkantısı açık — README "Adım 21" |
+| 21. Esnek olmayan eklem sınırı (hayalet hız kökü), refleks çıkış sönümü | `physics/verlet.py`, `physics/fabrik.py`, `physics/arms.py`, `demo/step14_active_biped.py` | 🔶 README "Adım 21" (kollu çalkantı Adım 22'de tersine döndü) |
+| 22. Anatomik bacak kütlesi (ters dinamik), COM itkisi, duruş kuvvet çifti, 2.5B gövde yaw + kol yaw iptali | `physics/leg_mass.py`, `physics/trunk_yaw.py`, `physics/arms.py` (`drive_cancel`), `demo/step14_active_biped.py` | 🔶 ileri itkide daha derin çökme — README "Adım 22" |
 | — Bilge kinematik yürüyüş (REFERANS) | `demo/bilge_walk_validation.py`, `demo/bilge_walk_skinned.py` | render referansı: kalça kinematik eğriyle sürülür, ana motor DEĞİL |
 
 `step6` artık `scene/` üretim katmanının ilk sahnesidir. `step11` yok

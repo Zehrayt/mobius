@@ -3702,6 +3702,171 @@ Varsayılanlar: `TORSO_CLAMP_MODE="inelastic"`, `ARMS_MODE="drive"`,
 son `hip_y` 146.32, itki sonrası en alçak kalça 148.5. `arms_mode="off",
 torso_clamp_mode=True` Adım 19c'yi aynen veriyor. Testler 50/50.
 
+## Adım 22 — Anatomik bacak kütlesi, gerçek momentum alışverişi, gövde yaw iptali
+
+Bacaklar bu motorda kinematikti (capture-point kararı + Bézier salınım +
+FABRIK). Kütlesiz bacağın hızlanıp yavaşlaması gövdeye hiçbir tepki
+vermiyordu, kolların "iptal edeceği" gerçek bir momentum yoktu. Bu adımda
+bacaklara anatomik kütle verildi ve yürüyüş döngüsü buna göre yeniden
+kalibre edildi.
+
+### 22.1 Bacak kütlesi: ters dinamik, örtük/açık ayrımı (`physics/leg_mass.py`)
+Kütleler (Winter segment tabloları, yuvarlanmış; gövde+baş 3.0 = %58):
+uyluk 0.52, incik+ayak 0.31. Segment kütle merkezleri **pergel ekseni**
+üzerinde: kalça → ayak hedefi doğrusunun %21.5'i ve %75'i.
+
+**FABRIK dizi kullanılmadı.** Ölçüm: bacak neredeyse tam gergin (kalça–ayak
+184 px = 92+92). Kalça yüksekliğindeki 0.5 px'lik değişimler dizi tek karede
+±12 px yana sıçratıyor (kötü koşullu çözüm). Bu sıçramaların ikinci farkı
+5–20 px/kare² sahte ivme üretiyordu. Pergel ekseninde aynı karelerde ivme
+≤ 0.1.
+
+İlk deneme (segment ivmesinin tamamını açık kuvvet olarak kalçaya vermek)
+**kararsızdı**: kalçanın kendi ivmesi bir sonraki karenin bacak ivmesine
+giriyor, gecikmeli bir geri besleme döngüsü oluşuyordu (|F| p99 17 → 33,
+hız salınımı ±3 px/kare). Çözüm, segment konumunun kalçaya **doğrusal**
+olmasından geliyor: `COM_i = (1−f_i)·kalça + f_i·ayak`.
+
+- **Örtük pay:** Σ m_i(1−f_i) = 0.50 kalça noktasının kütlesine ekleniyor
+  (salınımdaki her bacak için). Verlet kendisi çözüyor, yerçekimi de bu
+  kütleye kendiliğinden etki ediyor.
+- **Açık pay (ayak programı):** `F = Σ m_i f_i (a_ayak − g)`,
+  `τ = Σ r_i × m_i (f_i a_ayak − g)`. Tepki: kalçaya −F itkisi, −τ ise
+  kalça–omuz eksenine dik bir **kuvvet çifti** (net kuvvet 0).
+- **Doğrulama:** Yerçekimsiz, zeminsiz serbest gövde + programlı salınım
+  ayağıyla doğrusal momentum 80 karede **1e-13** hassasiyetle sabit (test).
+  Bunun için tepki karenin **sonunda** uygulanıyor (gecikme 2 → 1 kare).
+
+### 22.2 Kalibrasyon: neyi değiştirmek gerekti
+| Değişiklik | Neden (ölçüm) |
+|---|---|
+| **İtki COM'dan** (`THRUST_MODE="com"`): aynı hız değişimi gövde+kol noktalarının hepsine | İtki sadece kalça noktasına verildiğinde gövde çubuğu dönüyordu. Kütleli bacakla bu mod yürüyemedi: hız 0.2–1.6, 170–750 kayma karesi |
+| **Denetleyici tüm-gövde COM hızını okuyor** (`LEG_MASS_COM_CONTROL`) | Salınım bacağı ile gövde arasındaki iç alışveriş kalçayı yavaşlatıyor, sistemin COM'unu değil. Kalça hızını okuyan P-denetleyici bu iç alışverişle savaşıp zemin sürtünmesini aşıyordu |
+| **Gövde duruşu: momentum koruyan kuvvet çifti** (`apply_angular_couple`, k=0.2, c=0.8) | Eski `apply_angular_spring` tek noktayı itiyordu (net dış kuvvet). c > 1'de de açık integrasyon her kare işaret değiştiriyordu (zikzak) |
+| **İtkiler dürtü (momentum) olarak** | Kalça kütlesi örtük bacak payıyla artınca aynı "px/kare" itki %43 daha büyük momentum olurdu; kıyas adil kalsın diye bölündü |
+| `FAZB_CATCH_FRAMES` 3'te **bırakıldı** | 4/5/6/8 kare denendi. Daha yavaş yakalama daha kötü: 6 karede 36 itkiden 5'inde düşme |
+
+Sonuç: Gövde artık −12° duvarında değil. Duruş +3.1° ± 1.0° (eskiden
+karelerin %100'ünde −12°). Bu salınım insan gövde eğimine (±2°) yakın.
+
+### 22.3 Sagittal düzlemde kollar momentumu iptal EDEMEZ (ölçüldü)
+Kütleli bacaklarla 900 karede, kalçaya göre sagittal açısal momentum:
+
+| Kollar | bacak L std | kol L std | korelasyon | iptal |
+|---|---|---|---|---|
+| pasif | 131 | 3.9 | −0.44 | %1 |
+| drive (Adım 20) | 130 | 11.1 | +0.05 | %−1 |
+
+İki kol birbirine ters salındığı için sagittal momentumları birbirini
+götürüyor. Gerçek insanda kol salınımının iptal ettiği şey, **dikey eksen
+(yaw)** momentumu: kalça eklemi gövdenin yanında, öne atılan bacak gövdeyi
+kendi etrafında burar. Bu eksen 2B motorda yoktu.
+
+### 22.4 Gövde yaw serbestlik derecesi — 2.5B (`physics/trunk_yaw.py`)
+Tek serbestlik dereceli bir gövde yaw durumu eklendi:
+`I·dω/dt = −d(L_bacak + L_kol)/dt − kθ − cω`.
+Segment yaw momentumu `m · yanal_ofset · (v_x − v_x_kalça)` şeklinde:
+kalça yarı genişliği 18 px, omuz yarı genişliği 38 px (184 px = 0.9 m
+ölçeğiyle ~9 / ~19 cm). Değerler: I = 1200 (gövde 3.0, yarıçap 20 px),
+zemin serbest momenti ω_n = 0.2 rad/kare, ζ = 0.7. Yaw durumu sagittal
+fiziğe geri etki **etmiyor** (tek yönlü).
+
+**Yeni kol modu `cancel` (varsayılan):** Kollar bacakların ölçülen yaw
+momentumunu sıfırlayacak açısal hızı hedefliyor:
+`ω_sol = −ω_sağ = −L_bacak / (2K)`, burada `K = W·Σ m_i d_i cos a`. Tork,
+`drive` ile aynı Newton-3 yoluyla uygulanıyor (sagittal tepki omza gidiyor).
+İzleme kazancı 0.8, merkezleme 0.04, tavan 0.3.
+
+| Kollar | gövde yaw RMS | maks | L_kol std | korelasyon | kalan |
+|---|---|---|---|---|---|
+| kolsuz | 5.00° | 10.6° | 0 | — | %100 |
+| pasif | 4.94° | 9.4° | 0.0 | −0.11 | %100 |
+| drive (açı PD, Adım 20) | 4.29° | 9.2° | 11.8 | −0.49 | %88 |
+| **cancel** | **1.88°** | **4.3°** | 26.7 | **−0.90** | **%44** |
+
+**Çapraz salınım kendiliğinden çıktı.** `cancel` modunda sol kol ~ sağ bacak
++0.80, sağ kol ~ sol bacak +0.85, sol kol ~ sağ kol −0.64. Kütleli
+bacaklarla eski `drive` modunda iki kolun korelasyonu **+0.21**; yani açı
+PD'si çapraz salınımı artık üretemiyordu. Kol açıları yaklaşık −16°…+20°.
+Gövde eğimi `cancel` ile değişmiyor (±0.95°): kol sagittal pitch'i
+etkilemiyor, beklendiği gibi.
+
+### 22.5 İtki taraması (6 büyüklük × 6 faz = 36 koşu, en alçak kalça ort/en kötü)
+| | +150 | +300 | +500 | −150 | −300 | −500 | düşme |
+|---|---|---|---|---|---|---|---|
+| Adım 21 (drive) | 159/149 | 139/125 | 108/83 | 147/132 | 126/108 | 106/78 | 0 |
+| Adım 22 kolsuz | 148/131 | 120/98 | 86/**50** | 146/126 | 133/125 | 102/85 | 0 |
+| Adım 22 pasif | 148/132 | 115/91 | 93/71 | 142/127 | 130/124 | 106/94 | 0 |
+| Adım 22 drive | 149/133 | 115/93 | 95/74 | 144/127 | 128/123 | 106/92 | 0 |
+| **Adım 22 cancel** | 149/131 | 116/90 | 96/72 | 145/133 | 121/90 | 101/75 | 0 |
+
+**Dürüst gerileme:** İleri itkilerde kalça ortalamada 10–24 px daha derine
+çöküyor. Sebep ölçüldü: Faz B yakalaması bacağı 3 karede 70 px taşıyor.
+Kütleli bacakta bu, kalçada 36 birimlik tepki kuvveti demek (dikeyde ±6–12).
+Bu, bacağın gerçek eylemsizliği. Kolsuz gövdede en kötü +500 durumu 50 px;
+kollar bunu 71–74'e çıkarıyor. Hiçbir koşuda düşme, çift-havada kare veya
+toparlanamama yok.
+
+**Adım 21.4'ün açık sorunu (kollu çalkantılı toparlanma) tersine döndü.**
+±150 px × 12 faz için en uzun kayma serisi (medyan/maks) ve itkiden 20–90
+kare sonra en büyük |vx−2| (konum farkından):
+
+| | kayma serisi | max \|vx−2\| |
+|---|---|---|
+| Adım 21 kolsuz | 8 / 99 | 1.9 |
+| Adım 21 drive | 27 / 54 | 4.5 |
+| Adım 22 kolsuz | 38 / 160 | 7.3 |
+| Adım 22 drive | 17 / 50 | 1.3 |
+| Adım 22 cancel | 20 / 48 | 1.5 |
+
+Kütleli bacakta kollar toparlanmayı **sakinleştiriyor**. Kolsuz gövde daha
+çalkantılı. Kaymaların çoğu buz bölgesinde: t=7 s itkisi kalçayı x≈400'de,
+yani buzun içinde yakalıyor.
+
+### 22.6 Kayma: artık sadece buzda, ama buzda daha çok
+İtkisiz 30 saniyede buz dışında **0** kayma (eskiden 7–8), buzda 87–107
+kayma karesi (eskiden 0). Kaymalar mikro düzeyde: hız 0.05–0.5 px/kare.
+Fiziksel yorum: kütlesiz bacak buzda hiç sürtünme istemiyordu. Kütleli
+bacakla COM hızı adım boyunca ±0.1 px/kare dalgalanıyor, denetleyici bunu
+düzeltirken μ=0.15'lik buzu aşıyor. İnsanın normal yürüyüşte gereken
+sürtünme katsayısı ~0.17–0.20, yani μ=0.15 buzda insan da kayar.
+
+### 22.7 Gerileme ve kanaryalar
+- 60 saniye varsayılan senaryo: NaN yok, düşme yok, 121 adım, vx 1.94, en
+  alçak kalça 131, gövde yaw RMS 2.29°.
+- 60 saniye düz yürüyüş: 123 adım, vx 1.90, en alçak kalça 182.
+- Yeni kanaryalar: 25 adım, 0 acil, 122 kayma karesi (hepsi buzda), 2 Faz B,
+  son `hip_y` 146.20.
+- `LEGACY_21` bayrakları (`leg_mass=False, thrust_mode="hip", posture_k=0,
+  posture_c=0, arms_mode="drive"`) Adım 21'i aynen veriyor (23/0/63/9/146.32).
+- Testler 59/59 geçti (yeni `tests/test_step22_leg_mass.py`: momentum
+  korunumu, kuvvet çifti, buz dışı kayma yok, FABRIK titreşimsiz yük, yaw
+  iptali, ±150/300/500 itki). step1–16 smoke geçti.
+- 19b/19c izolasyon testleri Adım 21 gövdesinde çalışıyor. **Bulgu:**
+  Kütleli bacakta +150'de prediktif sensör çökmeyi küçültmüyor (130.8'e
+  karşı 138.2). Sensör itkinin geldiği karede tetiklemeye devam ediyor, ama
+  erken başlayan 3 karelik yakalama artık bedava değil.
+
+### 22.8 Dürüst sınırlar
+1. Bacak yörüngesi hâlâ kinematik. Tepki gövdeyi etkiliyor, bacağın
+   hareketini etkilemiyor (ters dinamik, ileri dinamik değil).
+2. Diz bükülmesinin momentum katkısı yok (pergel ekseni).
+3. Kalça ivmesinin moment terimi `Σ r_i × m_i(1−f_i) a_kalça` atlandı (açık
+   döngü kararsızlığı riski). Normal yürüyüşte <%5.
+4. Yaw tek yönlü 2.5B bir defter: burulma sagittal fiziğe geri dönmüyor.
+   I, k ve c seçilmiş parametreler.
+5. `TUNED_GRAVITY` (0.065 px/kare²) gerçek ölçeğin ~1/34'ü (184 px = 0.9 m,
+   30 fps için g ≈ 2.2 px/kare²). Bacak ivmeleri gerçek ölçekte makul
+   (~1 g), ama gövdenin yerçekimi altında düşüşü hâlâ ağır çekim. Yerçekimini
+   gerçek ölçeğe çekmek bütün motoru yeniden ayarlamak demek; ayrı iş.
+6. `hip_vx_log`, `prev_points`'e işlenen tepki dürtüsünü de içeriyor, bu
+   yüzden gürültülü (std 1.19). Denetleyici COM hızını okuyor (std 0.10).
+   Gerçek kalça hızı (konum farkı) adım içinde 1.3–2.5 px/kare arasında
+   (±%30). İnsanda bu oran ±%15–20.
+
+Varsayılanlar: `LEG_MASS_ENABLED=True`, `LEG_MASS_COM_CONTROL=True`,
+`THRUST_MODE="com"`, `POSTURE_K=0.2`, `POSTURE_C=0.8`, `ARMS_MODE="cancel"`.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

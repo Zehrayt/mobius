@@ -307,6 +307,40 @@ def apply_angular_spring(points: np.ndarray, prev_points: np.ndarray,
     return theta_deg
 
 
+def apply_angular_couple(points: np.ndarray, prev_points: np.ndarray, masses: np.ndarray,
+                         i_anchor: int, i_free: int, reference_dir: np.ndarray, rest_deg: float,
+                         stiffness: float, damping: float) -> float:
+    """Adim 22 -- `apply_angular_spring`'in momentum-koruyan esi: ayni PD
+    acisal ivme (radyan/kare^2, `-k*hata - c*omega`), ama tek bir noktayi
+    itmek yerine segmentin iki ucuna ESIT ve TERS tanjantiyel kuvvet (kuvvet
+    cifti) olarak uygulanir. Net dogrusal momentum 0 -- gercek bir kas
+    torku gibi (or. kalca ekstansorleri govdeyi dondurur, govdeyi itmez).
+
+    Kuvvet buyuklugu, iki ucun GORELI tanjantiyel hizi tam `alfa * L`
+    degissin diye kutlelere gore secilir: f = alfa L / (1/m_a + 1/m_f).
+    Boylece `damping` <= 1 iken (kare basina goreli acisal hizin sonumlenen
+    orani) acik integrasyon isaret degistirip salinmaz; >1 asim yapar."""
+    if stiffness == 0.0 and damping == 0.0:
+        return 0.0
+    reference_dir = _unit(np.asarray(reference_dir, dtype=float))
+    vec = points[i_free] - points[i_anchor]
+    length = float(np.linalg.norm(vec))
+    direction = vec / (length + 1e-9)
+    cross_z = reference_dir[0] * direction[1] - reference_dir[1] * direction[0]
+    dot = float(np.clip(np.dot(reference_dir, direction), -1.0, 1.0))
+    theta_deg = float(np.degrees(np.arctan2(cross_z, dot)))
+    perp = np.array([-direction[1], direction[0]])
+    v_rel = (points[i_free] - prev_points[i_free]) - (points[i_anchor] - prev_points[i_anchor])
+    angular_vel = float(np.dot(v_rel, perp)) / (length + 1e-9)
+    alpha = -stiffness * np.radians(theta_deg - rest_deg) - damping * angular_vel
+    ma = max(float(masses[i_anchor]), 1e-9)
+    mf = max(float(masses[i_free]), 1e-9)
+    f = perp * (alpha * length / (1.0 / ma + 1.0 / mf))
+    prev_points[i_free] = prev_points[i_free] - f / mf
+    prev_points[i_anchor] = prev_points[i_anchor] + f / ma
+    return theta_deg
+
+
 @dataclass
 class VerletSystem:
     """Noktalar (points) ve aralarındaki mesafe kısıtlamalarından (sticks)
