@@ -23,10 +23,9 @@ hepsi durustce listelenmistir):
      cubugu 55px (yetiskin-cubuk oranlari), Bilge'nin gövde parcasi ~86px
      bekliyor. `chest = hip + yon(omuz-kalca) * 86`. COM/denge hesaplari
      GERCEK 55px'lik noktalari kullanmaya devam eder.
-  2. Kollar step14'te YOK. Kol salinimi, iki ayagin FIZIKSEL x-farkindan
-     (karsi-bacak) turetilen bir FABRIK hedefidir -- bagimsiz bir zaman
-     cizelgesi degil ama fiziksel bir kol da degil (Prosedurel Kol Salinimi /
-     Angular Momentum Cancellation hala yol haritasinda, baslanmadi).
+  2. Kollar (Adim 20) fiziksel: physics/arms.py'nin Verlet dirsek/el
+     noktalari. Kemik yonleri fizikten, cizim uzunluklari rig'den (54/50 px;
+     fizikte 34/32). Eski kozmetik FABRIK kol surucusu kaldirildi.
   3. Ayakkabi egimi Faz A fazina gore: heel_strike -> TOPUK etrafinda
      parmak ucu yukari; toe_off -> PARMAK UCU etrafinda topuk yukari;
      flat_foot -> 0. Pivot noktasi dunyada sabit kalir (yere gomulme/kayma
@@ -54,7 +53,6 @@ from demo import step14_active_biped as s14
 from demo.bilge_walk_skinned import BilgeSkin, ORDER, overlap_pixels
 from physics.active_gait import (CONTACT_DEADBAND_DEG, classify_contact_phase, PHASE_SWING, PHASE_HEEL_STRIKE,
                                  PHASE_FLAT_FOOT, PHASE_TOE_OFF)
-from physics.fabrik import FabrikChain2D
 from scene.export import render_video
 from scene.skinning import rigid_matrix, transform_point, composite_cutout
 
@@ -108,6 +106,8 @@ def simulate(n_frames: int | None = None, **sim_kwargs) -> tuple[list[dict], s14
                 swing_t=float(leg.swing_t) if leg.state == "swing" else None,
                 swing_target=leg.swing_target.copy(), foot_target=leg.foot_target.copy(),
                 slipping=bool(leg.is_slipping))
+        if sim.arms is not None:
+            snap["arms"] = {k: sim.arms.points_for(k) for k in ("l", "r")}
         frames.append(snap)
         if sim.nan:
             break
@@ -154,8 +154,6 @@ class PhysicsBilgeRig:
 
     def __init__(self, skin: BilgeSkin | None = None):
         self.skin = skin or BilgeSkin()
-        self.arms = {}
-        self.arm_swing = 0.0
         self.cam_x = None
         self.shoe_local = {}
         for side in ("left", "right"):
@@ -261,22 +259,21 @@ class PhysicsBilgeRig:
                               shin_stretch=shin_stretch, chain_end_error=float(np.linalg.norm(chain[2] - foot)),
                               reach_clamped=clamped, knee_phys=knee_phys,
                               heel=transform_point(m, local["heel"]), toe=transform_point(m, local["toe"]))
-        # kollar: karsi-bacak x-farkindan (fiziksel ayak konumlari) turetilen FABRIK hedefi
-        separation = p["right_foot"][0] - p["left_foot"][0]
-        desired = float(np.clip(0.62 * separation, -40, 40))
-        self.arm_swing += 0.35 * (desired - self.arm_swing)
-        for side, sign in (("left", -1), ("right", 1)):
+        # Adim 20: kollar FIZIKTEN (physics/arms.py). Omuz tek Verlet noktasi;
+        # cizimde +/-SHOULDER_HALF_WIDTH ofsetli. Kemik YONLERI fizikten,
+        # UZUNLUKLARI rig'den (gövdeyle ayni ilke). Kol yoksa (arms_mode="off")
+        # kollar dik asili cizilir -- eski kozmetik FABRIK suruculu salinim kaldirildi.
+        arms = snap.get("arms")
+        for side, sign, key in (("left", -1, "l"), ("right", 1, "r")):
             shoulder = chest + [sign * SHOULDER_HALF_WIDTH, 0.0]
-            if side not in self.arms:
-                arm = FabrikChain2D(shoulder.copy(), [UPPER_ARM, FOREARM], 1e-9)
-                arm.points[1] = shoulder + [25.0, UPPER_ARM * 0.8]
-                arm.points[2] = shoulder + [0.0, 93.0]
-                self.arms[side] = arm
-            arm = self.arms[side]
-            hand_x = -sign * self.arm_swing
-            arm.set_base(shoulder.copy())
-            arm.solve(shoulder + [hand_x, 94.0 - abs(hand_x) * 0.1], max_iterations=256)
-            p[f"{side}_shoulder"], p[f"{side}_elbow"], p[f"{side}_hand"] = arm.points.copy()
+            if arms is not None:
+                sh, el, ha = snap["shoulder"], arms[key][0], arms[key][1]
+                elbow = shoulder + _unit(el - sh) * UPPER_ARM
+                hand = elbow + _unit(ha - el) * FOREARM
+            else:
+                elbow = shoulder + [0.0, UPPER_ARM]
+                hand = elbow + [0.0, FOREARM]
+            p[f"{side}_shoulder"], p[f"{side}_elbow"], p[f"{side}_hand"] = shoulder, elbow, hand
         return dict(points=p, shoes=shoes, info=info, snap=snap)
 
     def matrices(self, pose: dict) -> dict:

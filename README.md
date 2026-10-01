@@ -3516,6 +3516,109 @@ hamle/çömelme artık yok.
 26 adım, 0 acil adım, 2 kayma karesi, 1 Faz B yakalaması (itki karesinde),
 son `hip_y` 146.60. Testler 47/47.
 
+## Adım 20 — Fiziksel (Verlet) kollar: kütle, momentum dengeleme torku, itki refleksi
+
+Kozmetik kol sürücüsü (`step17`'de ayak x-farkından türetilen FABRIK hedefi)
+kaldırıldı. Kollar artık `physics/arms.py`'deki `PhysicalArms`: omuz Verlet
+noktasına asılı kütleli dirsek ve el noktaları, iki rijit çubuk. Aynı
+`VerletSystem` kısıt çözücüsünde gövdeyle birlikte çözülüyorlar, yani omuz
+üzerinden kalçaya geri etki ediyorlar. `ARMS_MODE` (`off` / `passive` /
+`drive`) ve `ARM_REFLEX` ile kademeli kapatılabiliyor. `arms_mode="off"`
+Adım 19c'nin kanaryalarını aynen veriyor (26/0/2/1/146.60, test edildi).
+
+### 20.1 Kütle ve eklemler
+- **Kütle:** Gövde (kalça + omuz + baş = 3 birim) anatomik olarak ~%58
+  sayıldı (Winter segment tablolarına göre yuvarlatılmış oranlar). Bir kol
+  ~%5 ediyor: dirsek 0.16, el 0.10. Fırıldak etkisi yok: gövde açısı itkiler
+  dahil hiç 12°'lik kelepçeyi aşmıyor.
+- **Uzunluk:** Fizikte 34/32 px (gövde ölçeği 55). Deride rig'in 54/50 px'i
+  kullanılıyor. Yön fizikten geliyor, uzunluk rig'den (gövdedeki ilke).
+- **Eklemler:** Omuz için aşağı yöne ±100° koni. Dirsek tek yönlü menteşe
+  (`clamp_joint_angle_points`, 2°–140°), hiperekstansiyon yok. Dirsek
+  yay-sönümü `apply_angular_spring` ile.
+- **Bulunan 1 — "omuzdan kopma":** Gövde/boyun kelepçeleri `body.step()`'ten
+  sonra omzu taşıyor ve kol çubukları açık kalıyordu. İtkide 36–87 px boy
+  hatası ölçüldü. Kol noktaları kelepçeden sonra omza yeniden bağlanıyor;
+  aynı kaydırma `prev_points`'e de uygulanıyor, yani kolun kendi hızı
+  korunuyor. Hata normal yürüyüşte 0, itkide 2–5 px.
+- **Bulunan 2 — sahte açısal hız:** Kolun açısal hızı önce `prev_points`'ten
+  okunuyordu. Gövde kelepçesi (`preserve_momentum=True`, 5. tur) omzun
+  `prev_points`'inde duvara doğru saklanan bir hız bırakıyor: itkisiz ~2
+  px/kare, itki sonrası ortalama 14 px/kare. Kolsuz gövdede de var, önceden
+  var olan bir artefakt. Kol sabit dururken −0.2 rad/kare okunuyor, PD'nin
+  sönüm terimi hedefe dönüşü iptal ediyordu: kollar 40°'de asılı kaldı. Hız
+  artık kaydedilen bir önceki kol açısından ölçülüyor.
+
+### 20.2 Momentum dengeleme torku (`drive`)
+Hedef kol açısı = −1.5 × aynı taraftaki bacağın kalça→ayak açısı. Bu PD bir
+omuz torku: k=0.3, c=0.8, tavan 0.15 rad/kare². Tork dirseğe tanjantiyel hız
+değişimi olarak uygulanıyor, eşit ve ters doğrusal momentum omza veriliyor
+(Newton 3).
+
+**Bacak açısal hızı ileri beslemesi denendi, reddedildi.** FABRIK zincir
+ucunun açısı iniş karelerinde sıçrıyor; hız hedefi bu sıçramayı kola tork
+olarak taşıyordu. Korelasyon −0.86'dan −0.71'e düştü, genlik ±25–36° oldu.
+`max_leg_rate=0`, yani kapalı.
+
+| 60 s itkisiz | Kol yok | Pasif | **Drive (seçilen)** |
+|---|---|---|---|
+| Düşme / adım / yuvarlanma | yok / 124 / 123 | yok / 123 / 122 | yok / 123 / 122 |
+| Ort. hız, medyan kalça | 1.92, 183.7 | 1.92, 183.7 | 1.92, 183.7 |
+| Kol–bacak açı korelasyonu (aynı taraf) | — | +0.03 / +0.25 | **−0.86 / −0.86** (1 kare gecikmeyle −0.88) |
+| Kol genliği | — | ±3.6° | ±16° |
+
+−1'e tam ulaşılmıyor. Omuz her itki karesinde kalçayla birlikte ivmeleniyor
+ve sarkaç gibi asılı kol bu ivmeyle arkaya geri kalıyor. Bu gerçek bir
+eylemsizlik tepkisi ve kol izinin asimetrik olmasının sebebi. Açısal hız
+korelasyonu ham olarak −0.35, 3 karelik yumuşatmayla −0.60.
+
+**Dürüst sınır — açısal momentum iptali ölçülemedi:** Bacaklara anatomik
+sanal kütleler atandı (diz 0.5, ayak 0.33). Kalça etrafındaki sagital
+açısal momentumun RMS'i kollarla ~%0 değişti. Bunun iki sebebi var:
+(a) Bacaklar bu motorda kütlesiz (FABRIK kinematiği), kolların karşı
+koyabileceği gerçek bir bacak momentumu motorda yok. (b) İnsan yürüyüşünde
+kol salınımının iptal ettiği momentum ağırlıkla **dikey eksen** (yaw)
+etrafında. Bacaklar gövdenin iki yanında zıt yönde hareket ettiği için
+oluşuyor ve tek düzlemli bir 2B sagital modelde bu eksen yok. Kolların
+gövdeye uyguladığı tork gerçek, ama "iptal" iddiası bu modelde
+kanıtlanamıyor.
+
+### 20.3 İtki refleksi
+Tehlike ya da Faz B yakalaması anında kollar 12 kare boyunca ±70°'ye
+gidiyor (tork tavanı 0.4). İki yön ölçüldü. Kolların COM'u geri çekmesi
+(ters), açısal momentum kazancının COM'un yükselmesine karşı tartıldığı
+taraf. Yel değirmeni (COM'un gittiği yöne savurma) de denendi.
+
+| ±150/300/500 px + ±150 px × 24 gait anı | Kol yok | Pasif | Drive | Drive + ters refleks | **Drive + yel değirmeni (seçilen)** |
+|---|---|---|---|---|---|
+| 24 anda en alçak kalça: en kötü / ortalama | 91 / 127 | 88 / 126 | 94 / 129 | 93 / 128 | **99 / 133** |
+| +150 / +500 | 154 / 104 | 132 / 81 | 135 / 82 | 133 / 83 | 139 / 82 |
+| −300 / −500 | 86 / 71 | 111 / 86 | 112 / 87 | 111 / 88 | 113 / 86 |
+| Düşme / çift-havada / toparlanamayan | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
+
+Yel değirmeni, COM'u geri çeken refleksten ölçülebilir şekilde iyi: açısal
+momentum kazancı COM'un yükselmesinden daha ağır basıyor. Ama etki küçük
+(ortalama +4–6 px). Anatomik %5 kütleyle kollar baskın bir denge aracı
+değil. Senaryo bazında karışık: ileri itkilerde kolsuz gövde daha iyi
+(+150: 154 → 139, +500: 104 → 82), geri itkilerde kollar belirgin şekilde
+daha iyi (−300: 86 → 113). Toplamda ve en kötü durumda (91 → 99) kazanç var.
+
+**Yan bulgu:** 500 px'te eski acil adım yolu, diğer bacak Faz B yakalaması
+için havadayken stance bacağını fırlattı (1 kare çift-havada). Faz B açıkken
+eski acil adım artık diğer bacak havadayken tetiklenmiyor (tek-destek
+kuralı). Kolsuz gövdenin sonuçları bu değişiklikten etkilenmedi.
+
+### 20.4 Gerileme
+İtkisiz 60 saniyede bacak kalibrasyonunu yeniden ayarlamak gerekmedi: adım,
+yuvarlanma, hız ve kalça yüksekliği kolsuz gövdeyle aynı mertebede. Yeni
+kanaryalar (varsayılan senaryo): 25 adım, 0 acil, 4 kayma, 2 Faz B, son
+`hip_y` 146.69, itki sonrası en alçak kalça 139.4 px. Testler 50/50,
+step1–16 smoke geçti. `step14` çubuk-adam çizimi kolları da gösteriyor.
+
+**Açık kalanlar:** Refleks bitişinde kolların ~12 kare yatay kalması
+görselde biraz uzun. Dikey eksen momentumu ancak 2.5B/3B bir gövdeyle
+ölçülebilir. Bacaklara gerçek kütle verilmesi ayrı ve büyük bir iş.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

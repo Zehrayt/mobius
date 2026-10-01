@@ -2,34 +2,41 @@
   "source": "demo.step14_active_biped.ActiveBipedSim (fizik degismedi)",
   "fell": false,
   "fall_frame": null,
-  "steps": 26,
+  "steps": 25,
   "emergency_steps": 0,
-  "slip_frames": 2,
+  "slip_frames": 4,
   "faz_b": true,
   "faz_b_events": [
     [
       210,
-      "l",
+      "r",
       "compress",
       "toe",
-      -2.3
+      0.9
+    ],
+    [
+      213,
+      "r",
+      "launch",
+      "heel",
+      -15.9
     ]
   ],
-  "min_hip_height_after_push": 154.3,
+  "min_hip_height_after_push": 139.4,
   "double_swing_frames": 0,
   "frames": 360,
   "phases": {
     "deadband_deg": 2.0,
-    "stance_count": 27,
+    "stance_count": 28,
     "stances_ge5_frames": 25,
     "non_monotonic": 0,
-    "full_heel_to_toe_rolls": 23,
+    "full_heel_to_toe_rolls": 24,
     "stance_frame_phase_counts": {
-      "heel_strike": 174,
-      "flat_foot": 148,
-      "toe_off": 153
+      "heel_strike": 159,
+      "flat_foot": 152,
+      "toe_off": 175
     },
-    "one_frame_stances": 0,
+    "one_frame_stances": 2,
     "stances": [
       {
         "side": "left",
@@ -41,224 +48,231 @@
       {
         "side": "right",
         "start": 10,
-        "frames": 22,
+        "frames": 26,
         "sequence": "HS>FF>TO",
         "monotonic": true
       },
       {
         "side": "left",
         "start": 21,
+        "frames": 26,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "right",
+        "start": 46,
+        "frames": 18,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 57,
+        "frames": 18,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "right",
+        "start": 74,
+        "frames": 16,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 85,
+        "frames": 13,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "right",
+        "start": 97,
+        "frames": 22,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 108,
         "frames": 22,
         "sequence": "HS>FF>TO",
         "monotonic": true
       },
       {
         "side": "right",
-        "start": 42,
+        "start": 129,
         "frames": 18,
         "sequence": "HS>FF>TO",
         "monotonic": true
       },
       {
         "side": "left",
-        "start": 53,
+        "start": 140,
+        "frames": 19,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "right",
+        "start": 157,
+        "frames": 18,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 169,
+        "frames": 19,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "right",
+        "start": 185,
         "frames": 18,
         "sequence": "HS>FF>TO",
         "monotonic": true
       },
       {
         "side": "right",
-        "start": 70,
-        "frames": 18,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "left",
-        "start": 81,
-        "frames": 16,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 96,
-        "frames": 11,
-        "sequence": "FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "left",
-        "start": 107,
-        "frames": 15,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 117,
-        "frames": 19,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "left",
-        "start": 132,
-        "frames": 18,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 146,
-        "frames": 19,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "left",
-        "start": 160,
-        "frames": 19,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 175,
-        "frames": 19,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "left",
-        "start": 189,
-        "frames": 19,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 204,
-        "frames": 8,
-        "sequence": "HS>TO",
-        "monotonic": true
-      },
-      {
-        "side": "left",
         "start": 212,
+        "frames": 1,
+        "sequence": "HS",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 198,
+        "frames": 18,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 218,
         "frames": 3,
-        "sequence": "HS",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 214,
-        "frames": 8,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 233,
-        "frames": 24,
-        "sequence": "HS>FF>TO",
+        "sequence": "TO",
         "monotonic": true
       },
       {
         "side": "left",
-        "start": 222,
-        "frames": 46,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 267,
-        "frames": 20,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "left",
-        "start": 278,
-        "frames": 20,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 297,
-        "frames": 20,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "left",
-        "start": 308,
-        "frames": 20,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "right",
-        "start": 327,
-        "frames": 19,
-        "sequence": "HS>FF>TO",
-        "monotonic": true
-      },
-      {
-        "side": "left",
-        "start": 338,
+        "start": 223,
         "frames": 19,
         "sequence": "HS>FF>TO",
         "monotonic": true
       },
       {
         "side": "right",
-        "start": 356,
-        "frames": 4,
+        "start": 215,
+        "frames": 29,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 244,
+        "frames": 18,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "right",
+        "start": 254,
+        "frames": 19,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 272,
+        "frames": 20,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "right",
+        "start": 283,
+        "frames": 19,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 302,
+        "frames": 19,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "right",
+        "start": 312,
+        "frames": 19,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 331,
+        "frames": 18,
+        "sequence": "HS>FF>TO",
+        "monotonic": true
+      },
+      {
+        "side": "left",
+        "start": 359,
+        "frames": 1,
         "sequence": "HS",
+        "monotonic": true
+      },
+      {
+        "side": "right",
+        "start": 341,
+        "frames": 19,
+        "sequence": "HS>FF>TO",
         "monotonic": true
       }
     ]
   },
   "skin": {
     "minimum_pair_overlap_pixels": {
-      "left_upper_arm/left_forearm": 159,
-      "left_forearm/left_hand": 95,
-      "left_thigh/left_shin": 241,
+      "left_upper_arm/left_forearm": 155,
+      "left_forearm/left_hand": 96,
+      "left_thigh/left_shin": 239,
       "left_shin/left_shoe": 190,
-      "torso/left_upper_arm": 687,
+      "torso/left_upper_arm": 149,
       "pelvis/left_thigh": 874,
-      "right_upper_arm/right_forearm": 154,
+      "right_upper_arm/right_forearm": 155,
       "right_forearm/right_hand": 90,
       "right_thigh/right_shin": 239,
       "right_shin/right_shoe": 198,
-      "torso/right_upper_arm": 184,
-      "pelvis/right_thigh": 853,
+      "torso/right_upper_arm": 154,
+      "pelvis/right_thigh": 858,
       "torso/head": 455,
-      "torso/pelvis": 1592,
-      "head/braid": 134
+      "torso/pelvis": 1591,
+      "head/braid": 135
     },
     "max_visible_sole_penetration_px": 0.0,
-    "max_stance_pivot_drift_px_excluding_physics_slip": 1.3634,
-    "max_visual_knee_deviation_from_physics_knee_px": 94.223,
-    "reach_clamped_leg_frames": 216,
+    "max_stance_pivot_drift_px_excluding_physics_slip": 0.314,
+    "max_visual_knee_deviation_from_physics_knee_px": 24.99,
+    "reach_clamped_leg_frames": 180,
     "shin_stretch_px": {
-      "p95": 1.68,
-      "max": 8.7
+      "p95": 1.22,
+      "max": 6.65
     },
     "fabrik_end_vs_gait_target_px": {
       "median": 0.0,
-      "frames_over_5px": 17,
-      "max": 14.17,
+      "frames_over_5px": 13,
+      "max": 12.96,
       "note": "asiri uzanma (hedef > 184px bacak boyu) -- fizik geometrisi"
     },
-    "max_within_state_pitch_step_deg": 15.641,
+    "max_within_state_pitch_step_deg": 17.411,
     "touchdown_pitch_jumps_deg": {
-      "count": 26,
-      "mean": 0.997,
-      "max": 8.449
+      "count": 27,
+      "mean": 1.385,
+      "max": 8.824
     }
   },
   "gait_params": {

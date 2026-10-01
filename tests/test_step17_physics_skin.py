@@ -52,11 +52,20 @@ class Step14RegressionTest(unittest.TestCase):
         sim = self.sim
         self.assertFalse(sim.nan)
         self.assertFalse(sim.fell)
-        # Adim 19c: prediktif sensor dahil (19b: 26/0/5/1/146.42; 18: 26/0/14/1/146.62; 17: 27/36/89/147.51)
-        self.assertEqual(len(sim.step_events), 26)
+        # Adim 20: fiziksel kollar dahil (19c: 26/0/2/1/146.60; 19b: 26/0/5/1/146.42;
+        # 18: 26/0/14/1/146.62; 17: 27/36/89/147.51)
+        self.assertEqual(len(sim.step_events), 25)
         self.assertEqual(len(sim.emergency_step_events), 0)
-        self.assertEqual(len(sim.slip_events), 2)
-        self.assertEqual(len(sim.fazb_events), 1)
+        self.assertEqual(len(sim.slip_events), 4)
+        self.assertEqual(len(sim.fazb_events), 2)
+        self.assertAlmostEqual(sim.hip_y_log[-1], 146.69, places=2)
+
+    def test_arms_off_reproduces_step19(self):
+        sim = s14.ActiveBipedSim(arms_mode="off")
+        for _ in range(s14.N_FRAMES):
+            sim.step()
+        self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
+                          len(sim.fazb_events)), (26, 0, 2, 1))
         self.assertAlmostEqual(sim.hip_y_log[-1], 146.60, places=2)
 
     def test_knees_bend_forward(self):
@@ -109,8 +118,10 @@ class FazBTest(unittest.TestCase):
         for push in (150.0, -150.0):
             # sok emilimini izole etmek icin prediktif sensor kapali (19c o
             # senaryoda cokusun kendisini kucultuyor)
-            on, _, _ = self.run_sim(420, big_push_kick_px=push, predictive_sensor=False)
-            off, _, _ = self.run_sim(420, big_push_kick_px=push, shock_absorb=False, predictive_sensor=False)
+            # (kollar da kapali: Adim 19b olcumu kolsuz govdede yapildi)
+            on, _, _ = self.run_sim(420, big_push_kick_px=push, predictive_sensor=False, arms_mode="off")
+            off, _, _ = self.run_sim(420, big_push_kick_px=push, shock_absorb=False, predictive_sensor=False,
+                                     arms_mode="off")
             rise_on = max(-np.diff(np.array(on.hip_y_log))[210:])
             rise_off = max(-np.diff(np.array(off.hip_y_log))[210:])
             self.assertLess(rise_on, 25.0, push)
@@ -142,6 +153,42 @@ class FazBTest(unittest.TestCase):
         self.assertAlmostEqual(leg.swing_t, 0.4)
         self.assertAlmostEqual((1.0 - leg.swing_t) * leg._active_swing_duration, 3.0)
         self.assertTrue(leg.catch_active and leg.emergency_step_active)
+
+
+class PhysicalArmsTest(unittest.TestCase):
+    """Adim 20: kutleli Verlet kollar."""
+
+    def test_contralateral_swing_and_integrity(self):
+        sim = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0)
+        arm_a, leg_a, stick_err, elbow = [], [], 0.0, []
+        sh = sim.idx["shoulder"]
+        for f in range(900):
+            sim.step()
+            p = sim.body.points
+            hip = p[sim.idx["hip"]]
+            foot = sim.left_leg.chain.points[-1]
+            if f >= 60:
+                arm_a.append(sim.arms.arm_angle("l"))
+                leg_a.append(np.arctan2(foot[0] - hip[0], foot[1] - hip[1]))
+            for i, j, L, _ in sim.body.sticks[3:]:
+                stick_err = max(stick_err, abs(np.linalg.norm(p[j] - p[i]) - L))
+            for e, h in sim.arms.idx.values():
+                ua, fa = p[e] - p[sh], p[h] - p[e]
+                elbow.append(np.degrees(np.arctan2(ua[0] * fa[1] - ua[1] * fa[0], ua @ fa)))
+        self.assertFalse(sim.fell)
+        self.assertLess(np.corrcoef(arm_a, leg_a)[0, 1], -0.8)
+        self.assertLess(stick_err, 0.01)
+        self.assertLessEqual(max(elbow), -1.0)   # tek yonlu dirsek: hiperekstansiyon yok
+
+    def test_pushes_with_arms(self):
+        for push in (150.0, -150.0, 500.0, -500.0):
+            sim = s14.ActiveBipedSim(big_push_kick_px=push)
+            double = 0
+            for _ in range(420):
+                sim.step()
+                double += all(l.state == "swing" for l in sim.legs)
+            self.assertFalse(sim.fell, push)
+            self.assertEqual(double, 0, push)
 
 
 class SkinOnPhysicsTest(unittest.TestCase):

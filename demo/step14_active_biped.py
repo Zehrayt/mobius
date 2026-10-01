@@ -42,6 +42,7 @@ from physics.verlet import VerletSystem, clamp_direction
 from physics.active_gait import ActiveFootPlantingLeg, PHASE_TOE_OFF, PHASE_HEEL_STRIKE
 from physics.environment import Terrain
 from physics.balance import support_interval, outside_interval_error, FallRiskMonitor, upper_body_com_x
+from physics.arms import PhysicalArms, ArmGains
 import math
 
 W, H = 640, 400
@@ -259,6 +260,16 @@ FAZ_B_ENABLED = True
 # sebebi normal handoff'lari bozmasiydi; itkisiz yuruyus bit-bit ayni).
 # Denenip reddedilen: birinci derece low-pass (rate 0.1-0.5) -- -500 px'te
 # HER oranda dustu.
+# Adim 20 -- fiziksel kollar (physics/arms.py). "off": Adim 19 govdesi (kol
+# yok, bit-bit ayni); "passive": sadece yercekimi/koni/dirsek yayi;
+# "drive": + bacaga ters PD omuz torku (momentum dengeleme).
+ARMS_MODE = "drive"
+ARM_REFLEX = True
+ARM_REFLEX_DEG = 70.0      # refleks hedef acisi (asagiya gore); isaret reflex_dir'den
+ARM_REFLEX_FRAMES = 12
+ARM_PASSIVE_DURING_CATCH = False   # Faz B yakalama salinimi surerken bacak-izleme torku kapali
+ARM_REFLEX_SIGN = 1.0      # +1: kollar COM sapmasi yonune savrulur (yel degirmeni) -- olculen en iyi; -1: tersine (COM.u geri cek)
+
 # Adim 19c -- Faz B tetigi, bir sonraki karenin tahmini bacak acisini da okur
 # (bkz. ActiveFootPlantingLeg.predict_contact).
 PREDICTIVE_SENSOR_ENABLED = True
@@ -352,6 +363,14 @@ def draw_frame(body: VerletSystem, idx: dict, legs: list[ActiveFootPlantingLeg],
     cv2.line(frame, to_screen(body.points[idx["shoulder"]]), to_screen(body.points[idx["head"]]), body_color, 3, cv2.LINE_AA)
     cv2.circle(frame, to_screen(body.points[idx["head"]]), HEAD_RADIUS, body_color, 2, cv2.LINE_AA)
 
+    # Adim 20: fiziksel kollar (varsa) -- omuz -> dirsek -> el
+    if len(body.points) >= idx["head"] + 5:
+        sh = body.points[idx["shoulder"]]
+        for k, color in ((0, (90, 220, 90)), (2, (230, 160, 60))):
+            e, h = body.points[idx["head"] + 1 + k], body.points[idx["head"] + 2 + k]
+            cv2.line(frame, to_screen(sh), to_screen(e), color, 3, cv2.LINE_AA)
+            cv2.line(frame, to_screen(e), to_screen(h), color, 3, cv2.LINE_AA)
+
     for leg, color in zip(legs, leg_colors):
         pts = leg.chain.points
         for i in range(len(pts) - 1):
@@ -385,7 +404,9 @@ class ActiveBipedSim:
                  big_push_t: float | None = None, big_push_kick_px: float | None = None,
                  fps: int = FPS, support_margin: float | None = None,
                  swing_lead_margin: float | None = None, faz_b: bool | None = None,
-                 shock_absorb: bool | None = None, predictive_sensor: bool | None = None):
+                 shock_absorb: bool | None = None, predictive_sensor: bool | None = None,
+                 arms_mode: str | None = None, arm_reflex: bool | None = None,
+                 arm_gains: ArmGains | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -401,6 +422,12 @@ class ActiveBipedSim:
         self.shock_events = []      # (kare, baslangic_dinlenme_boyu)
 
         self.body, self.idx = build_body()
+        self.arms_mode = ARMS_MODE if arms_mode is None else arms_mode
+        self.arm_reflex = ARM_REFLEX if arm_reflex is None else arm_reflex
+        self.arms = (PhysicalArms(self.body, self.idx["shoulder"], arm_gains)
+                     if self.arms_mode != "off" else None)
+        self.reflex_frames = 0
+        self.reflex_dir = 0.0
         self.terrain_static = Terrain(ground_y=GROUND_Y, default_friction=GROUND_MU_STATIC,
                                       zones=list(ICE_ZONES))
         kinetic_zones = [(x0, x1, mu * KINETIC_RATIO) for (x0, x1, mu) in ICE_ZONES]
@@ -435,6 +462,16 @@ class ActiveBipedSim:
         self.last_hip_vx = 0.0
         self.last_in_danger = False
         self.nan = False
+
+    def com_x(self) -> float:
+        """Govde (kalca+omuz+bas) -- kollar varsa kutle-agirlikli olarak dahil."""
+        idx, p = self.idx, self.body.points
+        base = [idx["hip"], idx["shoulder"], idx["head"]]
+        if self.arms is None:
+            return upper_body_com_x(p, base)
+        ids = base + [i for pair in self.arms.idx.values() for i in pair]
+        m = self.body.masses[ids]
+        return float(np.sum(p[ids, 0] * m) / np.sum(m))
 
     @property
     def legs(self) -> list:
@@ -515,7 +552,7 @@ class ActiveBipedSim:
             # 13. tur eki 3 -- eski SABIT-aci kriteri (MAX_SLIP_LEG_ANGLE_DEG)
             # KALDIRILDI: artik gercek COM-vs-destek-araligi (FallRiskMonitor)
             # kullaniliyor. BILEREK `is_slipping`'e bagli DEGIL.
-            com_x = upper_body_com_x(body.points, [hip, idx["shoulder"], idx["head"]])
+            com_x = self.com_x()
             interval = support_interval([stance_leg.planted[0]], foot_half_len=FOOT_HALF_LEN,
                                          fallback_x=[left_leg.swing_target[0], right_leg.swing_target[0]])
             real_error = outside_interval_error(com_x, interval)
@@ -535,6 +572,13 @@ class ActiveBipedSim:
                     front = "toe"
                 elif real_error < 0 and stance_leg.contact_phase == PHASE_HEEL_STRIKE:
                     front = "heel"
+            # Adim 20 -- kol refleksi: tehlike ya da Faz B yakalamasi aninda
+            # kollar, COM sapma yonune gore sabit bir denge acisina gider.
+            if self.arms is not None and self.arm_reflex and (in_danger or front is not None):
+                direction = (1.0 if front == "toe" else -1.0) if front is not None else float(np.sign(real_error))
+                if direction != 0.0:
+                    self.reflex_dir = ARM_REFLEX_SIGN * direction
+                    self.reflex_frames = ARM_REFLEX_FRAMES
             if front is not None:
                 other = right_leg if stance_leg is left_leg else left_leg
                 side = "l" if stance_leg is left_leg else "r"
@@ -545,7 +589,11 @@ class ActiveBipedSim:
                 elif stance_leg.launch_catch_step(hip_pos_before[0], hip_vx):
                     self.fazb_events.append((f, side, "launch", front, round(stance_leg.leg_angle_deg, 1)))
                 fazb_handled = True
-            if in_danger and not fazb_handled:
+            other_swinging = (right_leg if stance_leg is left_leg else left_leg).state == "swing"
+            if in_danger and not fazb_handled and not (self.faz_b and other_swinging):
+                # Adim 20: Faz B aciksa eski acil adim, diger bacak HAVADAYKEN
+                # stance bacagini firlatamaz (tek-destek kurali; kollu 500 px
+                # itkide bu yoldan 1 karelik cift-havada olculdu).
                 target_x = com_x + np.sign(real_error) * EMERGENCY_STEP_LEAD_PX
                 if stance_leg.trigger_emergency_step(target_x, speedup=EMERGENCY_SWING_SPEEDUP):
                     stance_leg.is_slipping = False
@@ -586,6 +634,19 @@ class ActiveBipedSim:
         # KALDIRILDI; anchor-kalca cubugu HER ZAMAN sabit
         # ANCHOR_HIP_COMPLIANCE_BASE ile kurulur (bkz. build_body()).
 
+        if self.arms is not None:
+            hp = body.points[hip]
+            leg_angles = {k: float(np.arctan2(leg.chain.points[-1][0] - hp[0], leg.chain.points[-1][1] - hp[1]))
+                          for k, leg in (("l", left_leg), ("r", right_leg))}
+            reflex = None
+            if self.arm_reflex and self.reflex_frames > 0:
+                reflex = self.reflex_dir * ARM_REFLEX_DEG
+                self.reflex_frames -= 1
+            catching = any(l.catch_active for l in (left_leg, right_leg))
+            drive_on = self.arms_mode == "drive" and not (ARM_PASSIVE_DURING_CATCH and catching)
+            self.arms.drive(leg_angles, enabled=(drive_on or reflex is not None),
+                            reflex_target_deg=reflex)
+
         body.step(dt=1.0)
         # preserve_momentum=True -- bkz. modulun 8. tur notu: varsayilan
         # (False) govde/boyun kelepcesi uzerinden kalcanin KENDI hizini da
@@ -593,6 +654,8 @@ class ActiveBipedSim:
         clamp_direction(body.points, body.prev_points, hip, idx["shoulder"], UP, TORSO_MAX_LEAN_DEG, preserve_momentum=True)
         torso_dir = body.points[idx["shoulder"]] - body.points[hip]
         clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, NECK_MAX_TILT_DEG, preserve_momentum=True)
+        if self.arms is not None:
+            self.arms.constrain()
 
         hip_pos = body.points[hip]
         # NOT: bu dongu bilerek SIRALI (once sol, sonra sag) calisir -- bkz.
