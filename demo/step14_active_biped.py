@@ -39,6 +39,7 @@ import numpy as np
 import cv2
 
 from physics.verlet import VerletSystem, clamp_direction, apply_angular_spring, apply_angular_couple
+from physics.fabrik import clamp_joint_angle_points
 from physics.trunk_yaw import (TrunkYaw, yaw_momentum, side_sign, HIP_HALF_WIDTH,
                                SHOULDER_HALF_WIDTH)
 from physics.hill import force_velocity
@@ -349,7 +350,30 @@ KNEE_FLEX_MIN_DIST = 2.0 * 92.0 * np.sin(np.radians(15.0))   # diz 150 der bukuk
 ACT_RATE = 0.57                      # aktivasyon: kare basina (1 - act) * 0.57 (zaman sabiti ~1.2 kare, ~40 ms)
 ACT_INITIAL = 0.2                    # hazirliksiz temasta kas aktivasyonu
 LEG_FORCE_CAP_W = 6.0
-HILL_ENABLED = True                  # Adim 28: kuvvet-hiz iliskisi (physics/hill.py)                # neredeyse duz bacakta F -> sonsuz; agirligin 6 kati ile sinirla
+HILL_ENABLED = True                  # Adim 28: kuvvet-hiz iliskisi (physics/hill.py)
+# Adim 29 -- cokus sonrasi yere yigilma (ragdoll gecisi). Cokus aninda bacaklar
+# kinematik IK'dan cikip kutleli Verlet zincirlerine (kalca-diz-ayak, 92+92 px)
+# donusur; anchor cubugu (ayak yapistirici) kapanir; yere temas eden her nokta
+# esnek olmayan zemin + kinetik surtunme gorur; diz menteşe sinirli (0-150 der);
+# gövde kelepcesi genisler. Yercekimi bu durumda GERCEK olcektir (G_REAL_PX):
+# Adim 27'deki karar -- bacak ivmeleri ve zaman olcegi gercek, dusus de oyle.
+FALLEN_KNEE_MASS = 0.45              # uyluk payi (bacak 0.83 = 0.45 + 0.38)
+FALLEN_FOOT_MASS = 0.38
+FALLEN_GROUND_MU = 0.6               # zemine degen noktada yatay hiz kare basina bu oranda sonumlenir
+FALLEN_TORSO_LIMIT_DEG = 179.0       # yigilmada govde-kalca acisi serbest (gevsek govde)
+# temas yaricaplari (px; 184 px = 0.9 m): kalca eklemi oturunca ~10 cm yerde
+FALLEN_RADIUS = {"hip": 20.0, "shoulder": 14.0, "head": 16.0, "knee": 12.0, "foot": 6.0, "arm": 5.0}
+FALLEN_KNEE_MIN_DEG = 0.0
+FALLEN_KNEE_MAX_DEG = 150.0
+FALLEN_KNEE_BEND_SIGN = 1.0
+# Yigilmada govde kaslari: True = gevsek (durus kuvvet cifti kapali). Acik
+# birakilinca ayarli yercekimine gore ayarlanmis kuvvet cifti gercek yercekimine
+# karsi govdeyi tutmaya calisip zemin surtunmesiyle kare basina 0.4-0.5 px
+# "surunme" uretiyordu (olculdu).
+FALLEN_LIMP = True
+RELAX_ITERS_FALLEN = 8
+FALLEN_NECK_LIMIT_DEG = 60.0         # yerde bas zemine yaslanabilsin (dik durusta 25-ish)
+FALLEN_STATIC_STICK_PX = 0.6         # temas noktasinin bu hizin altindaki yatay kaymasi durur                # neredeyse duz bacakta F -> sonsuz; agirligin 6 kati ile sinirla
 SHOCK_TRIGGER = "contact"
 SHOCK_CONTACT_MIN_PX = 8.0
 SHOCK_EXT_ACCEL = 1.0
@@ -547,6 +571,7 @@ class ActiveBipedSim:
         self.shock_pending_v0 = 0.0
         self.shock_act = 1.0
         self.collapsed = False
+        self.fallen_legs = None     # Adim 29: {"l": (diz, ayak), "r": ...} Verlet indeksleri
         self.hill = HILL_ENABLED if hill is None else hill
         self.collapse_frame = None
         self.leg_force_log = []     # Adim 27: (kare, d, F_toplam/W, a, r, v)
@@ -654,6 +679,106 @@ class ActiveBipedSim:
         self.last_leg_yaw = yaw_momentum(legs)
         self.last_arm_yaw = yaw_momentum(arms)
         self.trunk_yaw.update(self.last_leg_yaw, self.last_arm_yaw)
+
+    def _enter_fallen(self) -> None:
+        """Adim 29 -- cokus: bacaklar kinematikten kutleli Verlet zincirlerine gecer."""
+        body, idx = self.body, self.idx
+        hip = idx["hip"]
+        v_hip = body.points[hip] - body.prev_points[hip]
+        self.fallen_legs = {}
+        for key, leg in (("l", self.left_leg), ("r", self.right_leg)):
+            knee = leg.chain.points[1].copy()
+            foot = (np.array([leg.planted[0], GROUND_Y]) if leg.state == "stance"
+                    else np.asarray(leg.foot_target, float).copy())
+            k_i = body.add_point(knee, mass=FALLEN_KNEE_MASS)
+            f_i = body.add_point(foot, mass=FALLEN_FOOT_MASS)
+            # diz kalcayla birlikte hareket ediyordu; yerdeki ayak duruyordu
+            body.prev_points[k_i] = knee - 0.5 * v_hip
+            body.prev_points[f_i] = foot if leg.state == "stance" else foot - v_hip
+            body.add_stick(hip, k_i, length=LEG_SEGMENT_LEN)
+            body.add_stick(k_i, f_i, length=LEG_SEGMENT_LEN)
+            self.fallen_legs[key] = (k_i, f_i)
+        i0, j0, r0, _ = body.sticks[0]
+        body.sticks[0] = (i0, j0, r0, 1.0)          # anchor cubugu: compliance 1 -> etkisiz
+        body.masses[hip] = self.hip_base_mass       # ortuk bacak kutlesi artik ayri noktalarda
+        body.gravity = np.array([0.0, G_REAL_PX])
+
+    def _fallen_constraints(self) -> None:
+        """Adim 29 -- yigilma: diz menteşe siniri + esnek olmayan zemin + kinetik surtunme.
+        Zemin, cubuk cozucusuyle AYNI relaksasyon dongusunde uygulanir: yalniz
+        sonda uygulandiginda cubuklar her kare noktalari zemine geri itiyor ve
+        surtunmeyle birlikte kare basina ~1 px "surunme" uretiyordu (olculdu)."""
+        body, idx = self.body, self.idx
+        p, q = body.points, body.prev_points
+        hip = idx["hip"]
+        radius = np.zeros(len(p))
+        radius[hip] = FALLEN_RADIUS["hip"]
+        radius[idx["shoulder"]] = FALLEN_RADIUS["shoulder"]
+        radius[idx["head"]] = FALLEN_RADIUS["head"]
+        for k_i, f_i in self.fallen_legs.values():
+            radius[k_i] = FALLEN_RADIUS["knee"]
+            radius[f_i] = FALLEN_RADIUS["foot"]
+        if self.arms is not None:
+            for e_i, h_i in self.arms.idx.values():
+                radius[e_i] = FALLEN_RADIUS["arm"]
+                radius[h_i] = FALLEN_RADIUS["arm"]
+        mask = np.ones(len(p), dtype=bool)
+        mask[idx["anchor"]] = False
+        floor = GROUND_Y - radius
+        x_before = p[:, 0].copy()
+        contact = np.zeros(len(p), dtype=bool)
+        # Diz menteşesi momentum koruyarak: (1) en fazla 150 derece bukulme =
+        # kalca-ayak mesafesi >= KNEE_FLEX_MIN_DIST (kutle agirlikli, yalniz itme);
+        # (2) geri bukulme yok: diz kalca-ayak cizgisinin arkasina dusunce aynalanir.
+        # fabrik.clamp_joint_angle_points yalnizca uc noktayi oynattigi icin zeminle
+        # birlikte kare basina 0.5-2 px "surunme" uretiyordu (olculdu).
+        m_ = body.masses
+        x0 = getattr(self, "_fallen_x0", None)
+        def knee_flex_limit():
+            for k_i, f_i in self.fallen_legs.values():
+                dvec = p[f_i] - p[hip]
+                dist = float(np.linalg.norm(dvec))
+                if 1e-6 < dist < KNEE_FLEX_MIN_DIST:
+                    wi, wj = 1.0 / m_[hip], 1.0 / m_[f_i]
+                    corr = dvec / dist * (KNEE_FLEX_MIN_DIST - dist)
+                    p[hip] -= corr * wi / (wi + wj)
+                    p[f_i] += corr * wj / (wi + wj)
+
+        for _ in range(RELAX_ITERS_FALLEN):
+            below = mask & (p[:, 1] > floor)
+            contact |= below
+            p[below, 1] = floor[below]
+            if x0 is not None and len(x0) == len(p):
+                # statik surtunme (konum tabanli PBD): bu kare az kaymis temas noktasi
+                # kare basindaki yerine kilitlenir -- cubuk duzeltmeleri de onu kaydiramaz
+                stick = contact & (np.abs(p[:, 0] - x0) < FALLEN_STATIC_STICK_PX)
+                p[stick, 0] = x0[stick]
+            body._satisfy_sticks()
+            knee_flex_limit()
+        for k_i, f_i in self.fallen_legs.values():
+            dvec = p[f_i] - p[hip]
+            n = float(np.linalg.norm(dvec))
+            v = p[k_i] - p[hip]
+            # hiperekstansiyon siniri (0 derece): diz kalca-ayak cizgisinin arkasina
+            # gecerse cizgiye geri konur (esnek olmayan). Aynalama denendi: duz bacakta
+            # diz her kare ileri-geri atlayip 40 px/kare hiz pompaliyordu (olculdu).
+            if n > 1e-6 and -(dvec[0] * v[1] - dvec[1] * v[0]) / n * FALLEN_KNEE_BEND_SIGN < 0.0:
+                u = dvec / n
+                along = p[hip] + u * float(np.dot(v, u))
+                fwd = np.array([-u[1], u[0]]) * (-FALLEN_KNEE_BEND_SIGN)
+                if -(dvec[0] * fwd[1] - dvec[1] * fwd[0]) / n * FALLEN_KNEE_BEND_SIGN < 0.0:
+                    fwd = -fwd
+                p[k_i] = along + fwd * 0.5
+                q[k_i] = p[k_i].copy()
+        below = mask & (p[:, 1] > floor)
+        contact |= below
+        p[below, 1] = floor[below]
+        # temas eden noktalar: dikey hiz sifir (esnek olmayan), yatay hiz surtunmeyle soner
+        q[contact, 1] = p[contact, 1]
+        q[contact, 0] = p[contact, 0] - (p[contact, 0] - q[contact, 0]) * (1.0 - FALLEN_GROUND_MU)
+        # statik surtunme (Coulomb): yavas kayan temas noktasi yapisir
+        slow = contact & (np.abs(p[:, 0] - q[:, 0]) < FALLEN_STATIC_STICK_PX)
+        q[slow, 0] = p[slow, 0]
 
     def leg_force_capacity(self, d: float) -> float:
         """Adim 27 -- iki kemikli bacagin kalca-ayak dogrultusunda uretebildigi en
@@ -887,8 +1012,7 @@ class ActiveBipedSim:
             self.shock_pending = None
             self.shock_events.append((f, round(self.shock_rest, 1)))
         if self.collapsed:
-            i0, j0, _, c0 = body.sticks[0]
-            body.sticks[0] = (i0, j0, KNEE_FLEX_MIN_DIST, c0)   # cokmus bacak: diz tam bukuk kalir
+            pass   # Adim 29: anchor cubugu kapali, bacaklar ragdoll (bkz. _enter_fallen)
         elif self.shock_rest is not None and self.shock_mode == "force":
             i0, j0, _, c0 = body.sticks[0]
             if stance_leg is not None:
@@ -929,12 +1053,16 @@ class ActiveBipedSim:
                         if not self.fell:
                             self.fell = True
                             self.fall_frame = f
+                        self._enter_fallen()
                 self.shock_act += (1.0 - self.shock_act) * ACT_RATE
                 self.leg_force_log.append((f, round(d_now, 1), round(f_tot / W, 2), round(a_up, 2),
                                            round(self.shock_rest, 1), round(self.shock_vel, 2)))
-            body.sticks[0] = (i0, j0, self.shock_rest, c0)
-            if ARM_LENGTH - self.shock_rest < SHOCK_ABSORB_DONE_PX and self.shock_vel >= 0.0:
-                self.shock_rest = None
+            if self.collapsed:
+                self.shock_rest = None                  # Adim 29: cubuk _enter_fallen'da kapatildi
+            else:
+                body.sticks[0] = (i0, j0, self.shock_rest, c0)
+                if ARM_LENGTH - self.shock_rest < SHOCK_ABSORB_DONE_PX and self.shock_vel >= 0.0:
+                    self.shock_rest = None
         elif self.shock_rest is not None and self.shock_mode == "servo":
             i0, j0, _, c0 = body.sticks[0]
             if stance_leg is not None:
@@ -980,7 +1108,9 @@ class ActiveBipedSim:
                 reflex = self.reflex_dir * ARM_REFLEX_DEG
             catching = any(l.catch_active for l in (left_leg, right_leg))
             drive_on = self.arms_mode == "drive" and not (ARM_PASSIVE_DURING_CATCH and catching)
-            if self.arms_mode == "cancel" and reflex is None:
+            if self.collapsed:
+                self.arms.drive(leg_angles, enabled=False)   # Adim 29: yigilmis -- kollar pasif
+            elif self.arms_mode == "cancel" and reflex is None:
                 # Adim 22 -- kollar bacaklarin yaw momentumunu iptal etmeyi hedefler
                 self.arms.drive(leg_angles, enabled=False)   # yalnizca bacak acisi gecmisini gunceller
                 self.arms.drive_cancel(self.last_leg_yaw)
@@ -999,27 +1129,27 @@ class ActiveBipedSim:
         # hedef egime cekmeye calisan PD tork (apply_angular_spring: konuma degil
         # prev_points'e). Yoksa govde itki altinda karelerin %100'unde -12
         # derecelik kelepce duvarinda duruyor ve momentum alisverisini duvar yutuyor.
-        if self.posture_k > 0.0 or self.posture_c > 0.0:
+        if (self.posture_k > 0.0 or self.posture_c > 0.0) and not (self.collapsed and FALLEN_LIMP):
             apply_angular_couple(body.points, body.prev_points, body.masses, hip, idx["shoulder"], UP,
                                  POSTURE_TARGET_DEG + self._hip_strategy_deg(), self.posture_k, self.posture_c)
 
+        if self.collapsed:
+            self._fallen_x0 = body.points[:, 0].copy()   # Adim 29: statik surtunme icin kare basi konum
         body.step(dt=1.0)
         # preserve_momentum=True -- bkz. modulun 8. tur notu: varsayilan
         # (False) govde/boyun kelepcesi uzerinden kalcanin KENDI hizini da
         # sessizce sifirlayip dusme esigini maskeliyordu.
-        clamp_direction(body.points, body.prev_points, hip, idx["shoulder"], UP, TORSO_MAX_LEAN_DEG,
+        clamp_direction(body.points, body.prev_points, hip, idx["shoulder"], UP,
+                        FALLEN_TORSO_LIMIT_DEG if self.collapsed else TORSO_MAX_LEAN_DEG,
                         preserve_momentum=self.torso_clamp_mode)
         torso_dir = body.points[idx["shoulder"]] - body.points[hip]
-        clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir, NECK_MAX_TILT_DEG,
+        clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir,
+                        FALLEN_NECK_LIMIT_DEG if self.collapsed else NECK_MAX_TILT_DEG,
                         preserve_momentum=self.torso_clamp_mode)
         if self.arms is not None:
             self.arms.constrain()
         if self.collapsed:
-            # Adim 27: yere yigilmis govde zeminin altina gecemez (esnek olmayan zemin)
-            pts, prv = body.points, body.prev_points
-            below = pts[:, 1] > GROUND_Y
-            pts[below, 1] = GROUND_Y
-            prv[below, 1] = GROUND_Y
+            self._fallen_constraints()
 
         hip_pos = body.points[hip]
         # NOT: bu dongu bilerek SIRALI (once sol, sonra sag) calisir -- bkz.
@@ -1032,8 +1162,14 @@ class ActiveBipedSim:
             was_swing = leg.state == "swing"
             was_catch = leg.catch_active
             if self.collapsed:
-                # Adim 27: bacak cokmus (diz tam bukuk) -- terminal durum, adim yok
-                leg.chain.set_base(hip_pos)
+                # Adim 29: bacak ragdoll -- IK zinciri fizikten okunur (cizim/olcum icin)
+                k_i, f_i = self.fallen_legs["l" if leg is left_leg else "r"]
+                leg.chain.points[0] = hip_pos.copy()
+                leg.chain.points[1] = body.points[k_i].copy()
+                leg.chain.points[2] = body.points[f_i].copy()
+                leg.planted = np.array([body.points[f_i][0], GROUND_Y])
+                leg.foot_target = body.points[f_i].copy()
+                leg.state = "stance"
                 continue
             leg.update(hip_pos, hip_vx=ctrl_vx, other_leg_swinging=(other.state == "swing"))
             if was_swing and was_catch and leg.state == "stance":
@@ -1078,7 +1214,7 @@ class ActiveBipedSim:
             self.fell = True
             self.fall_frame = f
 
-        if self.leg_mass is not None:
+        if self.leg_mass is not None and not self.collapsed:
             # Adim 22 -- bacak kutlesi: bu karenin ayak konumlariyla merkezi
             # fark ivmesi (ornek t-1) -> tepki simdi, bir sonraki karenin
             # hizina (1 kare gecikme; bkz. physics/leg_mass.py).

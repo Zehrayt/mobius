@@ -37,7 +37,8 @@ açıkça gösteriyor.
 | 25. İnişe hazırlık (pre-activation): servo `time_to_contact`, temastan 3 kare önce ekstansör kasılması | `physics/active_gait.py` (`time_to_contact`, `_servo_kin`), `demo/step14_active_biped.py` (`PREACT_FRAMES`) | 🔶 etki küçük: çömelmenin %93–95'i temastan önce — README "Adım 25" |
 | 26. Duruş bacağı: ayak rocker'ı (parmak ucu/topuk pivotu) + kalça stratejisi | `demo/step14_active_biped.py` (`ROCKER_*`, `HIP_STRATEGY_*`) | 🔶 README "Adım 26" |
 | 27. Kuvvet sınırlı bacak: diz torku (200 Nm) gerçek ağırlığa karşı, kas aktivasyonu, çökme | `demo/step14_active_biped.py` (`SHOCK_MODE="force"`, `leg_force_capacity`) | 🔶 README "Adım 27" (yük paylaşımı hatası Adım 28'de düzeltildi) |
-| 28. Hill kas modeli (kuvvet–hız): diz ekstansörü + kalça servosu | `physics/hill.py`, `demo/step14_active_biped.py`, `physics/active_gait.py` | 🔶 çöküş sonrası düşme pozu yok — README "Adım 28" |
+| 28. Hill kas modeli (kuvvet–hız): diz ekstansörü + kalça servosu | `physics/hill.py`, `demo/step14_active_biped.py`, `physics/active_gait.py` | 🔶 README "Adım 28" |
+| 29. Çöküş sonrası yere yığılma: ragdoll bacaklar, zemin + statik/kinetik sürtünme, diz menteşesi, render | `demo/step14_active_biped.py` (`_enter_fallen`, `_fallen_constraints`), `demo/step17_bilge_physics_skin.py` | 🔶 pasif ragdoll; korunma/kalkma yok — README "Adım 29" |
 | — Bilge kinematik yürüyüş (REFERANS) | `demo/bilge_walk_validation.py`, `demo/bilge_walk_skinned.py` | render referansı: kalça kinematik eğriyle sürülür, ana motor DEĞİL |
 
 `step6` artık `scene/` üretim katmanının ilk sahnesidir. `step11` yok

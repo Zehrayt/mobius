@@ -4426,6 +4426,88 @@ bacağı aşırı uzuyor (spagat görüntüsü). Kare 224'te bir bacak bir kare
 zeminin altına geçiyor (render). Varsayılan sahnenin 150 px itkisi
 (~4.2 m/s) artık bu görüntüyle bitiyor.
 
+## Adım 29 — Çöküş sonrası yere yığılma (ragdoll geçişi)
+
+Adım 27–28'de bacak ağırlığı taşıyamayınca çöküyordu, ama bir "yere
+düşme" durumu yoktu. Bacaklar donuyor, kalça ilerliyordu. Deri spagat
+gibi geriliyor, kare 224'te bir bacak zeminin altına geçiyordu.
+
+### 29.1 Geçiş (`_enter_fallen`)
+Çöküş anında (diz 150°, kalça–ayak 48 px):
+
+- **Bacaklar fiziğe geçiyor:** Kinematik IK'dan çıkıp kütleli Verlet
+  zincirlerine dönüyorlar (kalça–diz–ayak, 92 + 92 px). Diz noktası 0.45,
+  ayak noktası 0.38 kütleli (bacak toplam 0.83). Başlangıç konumları son
+  IK pozundan, hızları kalçadan alınıyor; yerdeki ayak duruyor.
+- **Ayak yapıştırıcısı kapanıyor:** Anchor çubuğunun compliance'ı 1 oluyor.
+  Kalçaya eklenen örtük bacak kütlesi kaldırılıyor; kütle artık ayrı
+  noktalarda.
+- **Yerçekimi gerçek ölçeğe geçiyor (2.23 px/kare²):** Adım 27'deki
+  kararla aynı gerekçe; zaman ölçeği gerçek, düşüş de öyle.
+- **Kaslar gevşiyor:** Duruş kuvvet çifti, kol sürüşü ve bacak kütlesi
+  tepkisi kapanıyor. Gövde–kalça açısı serbest (179°), boyun ±60°.
+
+### 29.2 Zemin, diz ve sürtünme (`_fallen_constraints`)
+- **Zemin:** Esnek değil; çubuk çözücüsüyle aynı relaksasyon döngüsünde,
+  8 iterasyon uygulanıyor. Temas yarıçapları (px): kalça 20, omuz 14,
+  baş 16, diz 12, ayak 6, kol 5.
+- **Sürtünme:** Kinetik sürtünme temas noktasının yatay hızını kare başına
+  %60 sönümlüyor. Statik sürtünme, bu karede 0.6 px'den az kayan temas
+  noktasını kare başındaki konumuna kilitliyor (konum tabanlı PBD). Böylece
+  çubuk düzeltmeleri de onu kaydıramıyor.
+- **Diz menteşesi (momentum korunuyor):** En fazla 150° bükülme, yani
+  kalça–ayak ≥ 48 px; kütle ağırlıklı, yalnızca itme. Geri bükülme yok:
+  diz kalça–ayak çizgisinin arkasına geçerse çizgiye geri konuyor.
+
+### 29.3 Bulunup düzeltilen hatalar (ölçüldü)
+
+| sorun | sebep | etki | çözüm |
+|---|---|---|---|
+| Zemin yalnızca sonda uygulanıyordu | çubuklar her kare noktaları zemine geri itiyordu | kare başına ~1 px "sürünme" | zemin relaksasyon döngüsüne alındı |
+| `fabrik.clamp_joint_angle_points` | yalnızca uç noktayı oynatıyor (kütle ağırlıksız); 8 iterasyonda tekrarlanıyordu | 0.5–2 px/kare sürünme | yerine momentum koruyan diz menteşesi yazıldı |
+| Düz bacakta diz aynalama | diz her kare ileri-geri atladı | diz hızı 40 px/kare | aynalama yerine çizgiye koyma |
+| Duruş kuvvet çifti açık kaldı | ayarlı yerçekimine göre ayarlı tork, gerçek yerçekimine karşı + sürtünme | 0.4–0.5 px/kare sürünme | yığılmada gevşek gövde |
+| Dar boyun sınırı (18°) | yerdeki baş ile boyun kelepçesi çekişiyordu | baş 45 px sıçradı | sınır ±60° |
+
+### 29.4 Render (`demo/step17_bilge_physics_skin.py`)
+- **Bacaklar:** Diz fizik dizinden, bilek incik yönünde görsel incik
+  boyunda. Ayakkabı bileğe takılı ve incike dik; zemine gömülmüyor.
+- **Uzun deri parçaları:** Deri parçaları fizik gövdesinden uzun (gövde
+  86/55 px, baş 43/30, kol 54+50 / 34+32). Yerde yatarken aynı yön uzun
+  parçayı zeminin altına sokuyordu. Parça, zemine değecek şekilde kökü
+  etrafında yataya doğru döndürülüyor. Bu yalnızca görsel; fiziğe
+  yazılmıyor.
+- **Ölçüm:** Çöküş sonrası tüm render eklemleri (diz, bilek, kalça, göğüs,
+  baş, dirsek, el) zemin çizgisinin üstünde; en düşükleri 6 px üstte.
+
+### 29.5 Sonuç
+- **Varsayılan sahne (150 px itki, ~4.2 m/s):** öne hamle (212–219),
+  bacak kare 222'de çöküyor, dizler bükülüyor (224–229), gövde öne yere
+  düşüyor (233), ~240'tan sonra yerde hareketsiz yatıyor. Spagat gerilmesi
+  ve zemine girme yok.
+- **Durgunluk:** 36 itki koşusunun (±2 / ±2.5 / ±4.2 m/s × 6 faz)
+  19'u çöküyor; hepsi duruyor. Son 60 karede en hızlı nokta medyan 0.003,
+  en fazla 0.010 px/kare. Kalça kayması < 1 px. NaN yok.
+- **Çarpma anı:** Çöküş +0…+3 karede diz sınırı 5 px'e kadar aşılabiliyor,
+  sonra toparlanıyor.
+
+### 29.6 Gerileme
+- Çöküş öncesi her şey Adım 28 ile aynı; durum yalnızca çöküşte açılıyor.
+- Kanarya 16/0/92/1, son `hip_y` 277.33 (kalça katlanmış bacaklar
+  üzerinde, yerden ~53 px).
+- Testler 94/94 geçti (yeni `tests/test_step29_fallen.py`: zemin altına
+  geçmeme, durgunluk, diz menteşesi ve kemik boyları, render'da göğüs/baş
+  zemin üstünde). step1–16 smoke geçti.
+
+### 29.7 Sınırlar
+1. Yığılma pasif bir ragdoll. Kollarla kendini koruma (el uzatma) ya da
+   kalkma davranışı yok; terminal durum.
+2. Gövde tek çubuk (kalça–omuz–baş). Omurga bükülmesi ve kalça–gövde
+   kas tonusu yok.
+3. Render, uzun deri parçalarını zemin üstünde tutmak için kökleri
+   etrafında döndürüyor. Fizik gövdesiyle deri arasındaki ölçek farkı (Adım
+   17'den beri) burada görünür hale geliyor.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

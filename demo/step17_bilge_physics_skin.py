@@ -95,6 +95,7 @@ def simulate(n_frames: int | None = None, **sim_kwargs) -> tuple[list[dict], s14
         hip_vx = sim.step()
         pts = sim.body.points
         snap = dict(frame=f, time=f / FPS, hip_vx=float(hip_vx), fell=sim.fell,
+                    collapsed=bool(getattr(sim, "collapsed", False)),
                     in_danger=sim.last_in_danger,
                     hip=pts[idx["hip"]].copy(), shoulder=pts[idx["shoulder"]].copy(),
                     head=pts[idx["head"]].copy(), legs={})
@@ -127,6 +128,23 @@ def stance_pitch_deg(phase: str, angle: float) -> float:
     if phase == PHASE_TOE_OFF:
         return min(TOE_OFF_MAX_PITCH_DEG, over)
     return 0.0
+
+
+FALLEN_CHEST_RADIUS = 22.0
+FALLEN_HEAD_RADIUS = 22.0
+FALLEN_ARM_RADIUS = 6.0
+
+
+def _keep_above_ground(base, tip, length, y_max):
+    """Adim 29: `base`->`tip` parcasinin ucu y_max'in altindaysa, ayni yatay yonde
+    zemine degecek aciya dondurur (gorsel tutarlilik; fizige yazilmaz)."""
+    if tip[1] <= y_max:
+        return tip
+    dy = y_max - base[1]
+    if abs(dy) >= length:
+        return np.array([base[0], base[1] + np.sign(dy) * length])
+    sx = 1.0 if tip[0] >= base[0] else -1.0
+    return np.array([base[0] + sx * float(np.sqrt(length * length - dy * dy)), y_max])
 
 
 def two_bone_knee(hip, ankle, l1, l2, side_ref):
@@ -200,6 +218,12 @@ class PhysicsBilgeRig:
         hip = S(snap["hip"])
         chest = hip + _unit(snap["shoulder"] - snap["hip"]) * RENDER_TORSO_LEN
         head = chest + _unit(snap["head"] - snap["shoulder"]) * RENDER_HEAD_OFFSET
+        if snap.get("collapsed"):
+            # Adim 29: deri parcalari fizik govdesinden uzun (govde 86 / 55 px, bas 43 / 30 px).
+            # Yerde yatan govdede ayni YON uzun parcayi zeminin altina sokar; parca,
+            # zemine degecek sekilde pelvis (bas icin gogus) etrafinda yataya dogru dondurulur.
+            chest = _keep_above_ground(hip, chest, RENDER_TORSO_LEN, SCREEN_GROUND_Y - FALLEN_CHEST_RADIUS)
+            head = _keep_above_ground(chest, head, RENDER_HEAD_OFFSET, SCREEN_GROUND_Y - FALLEN_HEAD_RADIUS)
         p = {"pelvis": hip, "chest": chest, "head": head}
         shoes, info = {}, {}
         for side, _ in SIDES:
@@ -214,7 +238,18 @@ class PhysicsBilgeRig:
             flat = self._flat_shoe(side, foot)
             local = self.shoe_local[side]
             pitch = 0.0
-            if leg["state"] == "stance":
+            fallen = snap.get("collapsed", False)
+            if fallen:
+                # Adim 29: yigilma -- bacak fizik (ragdoll) noktalarindan; ayakkabi
+                # incik yonune dik (ayak bilegi gevsek, notr aci)
+                foot = S(leg["chain"][2])
+                shin = leg["chain"][2] - leg["chain"][1]
+                pitch = float(np.degrees(np.arctan2(shin[0], shin[1])))
+                flat = self._flat_shoe(side, foot)
+                m = rigid_matrix(self.skin.anchor(f"{side}_shoe"), foot,
+                                 self.skin.scale(f"{side}_shoe"), np.radians(pitch))
+                pivot = foot
+            elif leg["state"] == "stance":
                 pitch = stance_pitch_deg(leg["phase"], leg["angle"])
                 if pitch < 0:
                     pivot = transform_point(flat, local["heel"])
@@ -241,16 +276,32 @@ class PhysicsBilgeRig:
                 pivot = foot
             # taban temasi: donmus kabugun EN ALT noktasi zemine/ayak y'sine
             # oturtulur (yuvarlanan temas -- gomulme yok)
-            hull = self.skin.parts[f"{side}_shoe"].hull @ m[:, :2].T + m[:, 2]
-            m[1, 2] += foot[1] - .55 - hull[:, 1].max()
-            ankle = transform_point(m, self.skin.anchor(f"{side}_shoe"))
-            if leg["state"] == "stance" and pitch < 0:
+            if fallen:
+                # Adim 29: diz fizikten; bilek incik yonunde gorsel incik boyunda;
+                # ayakkabi bilege takili, zemine gomulmez
+                ankle = knee_phys + _unit(foot - knee_phys) * self.shin_visual[side]
+                m = rigid_matrix(self.skin.anchor(f"{side}_shoe"), ankle,
+                                 self.skin.scale(f"{side}_shoe"), np.radians(pitch))
+                hull = self.skin.parts[f"{side}_shoe"].hull @ m[:, :2].T + m[:, 2]
+                lift = max(0.0, hull[:, 1].max() - (SCREEN_GROUND_Y - .55))
+                m[1, 2] -= lift
+                ankle = transform_point(m, self.skin.anchor(f"{side}_shoe"))
+            else:
+                hull = self.skin.parts[f"{side}_shoe"].hull @ m[:, :2].T + m[:, 2]
+                m[1, 2] += foot[1] - .55 - hull[:, 1].max()
+                ankle = transform_point(m, self.skin.anchor(f"{side}_shoe"))
+            if not fallen and leg["state"] == "stance" and pitch < 0:
                 pivot = transform_point(m, local["heel"])
-            elif leg["state"] == "stance" and pitch > 0:
+            elif not fallen and leg["state"] == "stance" and pitch > 0:
                 pivot = transform_point(m, local["toe"])
             # diz: kalca -> gorsel bilek, sabit kemik boylari, ILERI bukulme
             forward_ref = hip + (ankle - hip) * 0.5 + np.array([1.0, 0.0])
-            knee, clamped = two_bone_knee(hip, ankle, THIGH_LEN, self.shin_visual[side], forward_ref)
+            if fallen:
+                forward_ref = knee_phys     # Adim 29: bukulme yonu fizik dizinden
+            if fallen:
+                knee, clamped = knee_phys, False
+            else:
+                knee, clamped = two_bone_knee(hip, ankle, THIGH_LEN, self.shin_visual[side], forward_ref)
             p[f"{side}_hip"], p[f"{side}_knee"], p[f"{side}_foot"] = hip, knee, foot
             p[f"{side}_ankle"] = ankle
             shoes[side] = m
@@ -273,6 +324,10 @@ class PhysicsBilgeRig:
             else:
                 elbow = shoulder + [0.0, UPPER_ARM]
                 hand = elbow + [0.0, FOREARM]
+            if snap.get("collapsed"):
+                # Adim 29: gorsel kol (54/50) fizik kolundan (34/32) uzun -- zemine gomulmesin
+                elbow = _keep_above_ground(shoulder, elbow, UPPER_ARM, SCREEN_GROUND_Y - FALLEN_ARM_RADIUS)
+                hand = _keep_above_ground(elbow, hand, FOREARM, SCREEN_GROUND_Y - FALLEN_ARM_RADIUS)
             p[f"{side}_shoulder"], p[f"{side}_elbow"], p[f"{side}_hand"] = shoulder, elbow, hand
         return dict(points=p, shoes=shoes, info=info, snap=snap)
 
@@ -449,7 +504,7 @@ def phase_report(frames) -> dict:
     counts = {PHASE_HEEL_STRIKE: 0, PHASE_FLAT_FOOT: 0, PHASE_TOE_OFF: 0}
     for snap in frames + [None]:
         for side in ("left", "right"):
-            leg = None if snap is None else snap["legs"][side]
+            leg = None if snap is None or snap.get("collapsed") else snap["legs"][side]
             if leg is not None and leg["state"] == "stance":
                 cur[side].append((snap["frame"], leg["phase"]))
                 counts[leg["phase"]] += 1

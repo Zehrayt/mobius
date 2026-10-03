@@ -14,7 +14,7 @@ from demo import step14_active_biped as s14
 from demo.step17_bilge_physics_skin import simulate, inspect, phase_report, stance_pitch_deg
 
 
-CANARY = (16, 0, 92, 1, 327.21)  # varsayilan senaryo, Adim 28 (Hill): 150 px (~4.2 m/s) itkide bacak COKUYOR (kare 222)
+CANARY = (16, 0, 92, 1, 277.33)  # varsayilan senaryo: 150 px (~4.2 m/s) itkide bacak cokuyor (kare 222), Adim 29 yigilma (kalca katlanmis bacaklar uzerinde)
 CANARY_26 = (25, 0, 89, 1, 145.95)  # Adim 26 (shock_mode="servo")
 CANARY_23 = (22, 0, 165, 7, 145.99)  # Adim 23 + servo baslangic duzeltmesi (PRE24 bayraklariyla; duzeltme oncesi 22/0/157/6/145.97)
 CANARY_22 = (25, 0, 122, 2, 146.20)  # Adim 22 (catch_timing="fixed")
