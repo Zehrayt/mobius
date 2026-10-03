@@ -359,6 +359,8 @@ HILL_ENABLED = True                  # Adim 28: kuvvet-hiz iliskisi (physics/hil
 # Adim 27'deki karar -- bacak ivmeleri ve zaman olcegi gercek, dusus de oyle.
 FALLEN_KNEE_MASS = 0.45              # uyluk payi (bacak 0.83 = 0.45 + 0.38)
 FALLEN_FOOT_MASS = 0.38
+FALLEN_FINAL_STATIC_LOCK = True
+FALLEN_STATIC_MU = 0.8               # Adim 30: yuke bagli statik surtunme (PBD normal duzeltmesine oranla)
 FALLEN_GROUND_MU = 0.6               # zemine degen noktada yatay hiz kare basina bu oranda sonumlenir
 FALLEN_TORSO_LIMIT_DEG = 179.0       # yigilmada govde-kalca acisi serbest (gevsek govde)
 # temas yaricaplari (px; 184 px = 0.9 m): kalca eklemi oturunca ~10 cm yerde
@@ -371,7 +373,33 @@ FALLEN_KNEE_BEND_SIGN = 1.0
 # karsi govdeyi tutmaya calisip zemin surtunmesiyle kare basina 0.4-0.5 px
 # "surunme" uretiyordu (olculdu).
 FALLEN_LIMP = True
-RELAX_ITERS_FALLEN = 8
+RELAX_ITERS_FALLEN = 24
+# Adim 30 -- koruyucu kol refleksi (bracing). Tetik: bacak agirligi tasiyamiyor
+# (kuvvet dengesi a < 0 ve bacak bukuluyor, BRACE_YIELD_FRAMES kare) ya da cokus.
+# Kollar dusus tarafinda dunyaya sabit bir noktaya (kalca + yon * BRACE_PLANT_FROM_HIP)
+# uzanir; yerdeki el omuz-el kolonu olur (README "Adim 30"). Govde durulunca kollar
+# onu eksantrik olarak indirir, boyun gevser, sonra refleks soner.
+BRACE_ENABLED = True
+BRACE_YIELD_FRAMES = 2
+BRACE_PLANT_FROM_HIP = 50.0         # px: elin dusecegi nokta, kalcadan (govde 55 px)
+BRACE_FREEZE_PX = 25.0              # el zemine bu kadar yaklasinca hedef (ve yon) donar
+BRACE_LOOKAHEAD = 3.0               # kare: dusus yonu = omuz-kalca konumu + 3 kare goreli hiz
+BRACE_ELBOW_K = 0.3
+BRACE_ELBOW_C = 0.6
+BRACE_SETTLE_SPEED = 0.5            # px/kare: omuz bundan yavassa "duruldu"
+BRACE_SETTLE_FRAMES = 15
+BRACE_RELAX_RATE = 0.9              # indirme bitince refleks agirligi kare basina
+BRACE_LOWER_RATE = 0.6              # px/kare: durulduktan sonra kolon boyunun kisalma hizi
+BRACE_NECK_RELAX_DEG = 0.7          # der/kare: indirmede boyun siniri 18 -> 60 der
+# Kol kolonu: eli yere degmis ve refleksi aktif kol, omuz-el dogrultusunda yalniz
+# itebilen bir destek; dirsek ekstansor kapasitesini (TAU_ELBOW_MAX_NM, eksantrikte
+# Hill 1.5x) asan carpma hizi kolu bukerek (dinlenme boyunu kisaltarak) yutulur.
+FALLEN_HAND_MU = 0.8                 # el-zemin statik surtunme katsayisi (koni yarim acisi ~39 der)
+TAU_ELBOW_MAX_NM = 60.0              # tek kol triseps (~0.85 Nm/kg)
+ARM_SEG_MEAN = 33.0                  # (34 + 32) / 2
+ARM_SUPPORT_MASS = 1.0               # omuz noktasinin bir kola dusen etkin kutlesi (omuz+bas)/2
+ELBOW_FLEX_MIN_DIST = float(np.sqrt(34.0 ** 2 + 32.0 ** 2 - 2 * 34.0 * 32.0 * np.cos(np.radians(40.0))))  # dirsek 140 der
+FALLEN_NECK_IN_LOOP = True           # Adim 30: yerde boyun siniri relaksasyon dongusunde (kalca-bas en kisa mesafe)
 FALLEN_NECK_LIMIT_DEG = 60.0         # yerde bas zemine yaslanabilsin (dik durusta 25-ish)
 FALLEN_STATIC_STICK_PX = 0.6         # temas noktasinin bu hizin altindaki yatay kaymasi durur                # neredeyse duz bacakta F -> sonsuz; agirligin 6 kati ile sinirla
 SHOCK_TRIGGER = "contact"
@@ -426,6 +454,7 @@ BIG_PUSH_T = 7.0
 BIG_PUSH_KICK_PX = 150.0
 
 FALL_HIP_Y_THRESHOLD = GROUND_Y - 10.0  # bkz. main() -- sadece raporlama icin
+FALLEN_ENTRY_ON_LOW_HIP = True          # Adim 30: kalca bacak destek sinirinin altinda -> yigilma
 
 
 def build_body() -> tuple[VerletSystem, dict]:
@@ -541,7 +570,7 @@ class ActiveBipedSim:
                  closing_ttc: float | None = None, shock_mode: str | None = None,
                  shock_trigger: str | None = None, preactivation: int | None = None,
                  rocker: bool | None = None, hip_strategy_gain: float | None = None,
-                 hill: bool | None = None):
+                 hill: bool | None = None, brace: bool | None = None):
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
         self.big_push_t = BIG_PUSH_T if big_push_t is None else big_push_t
@@ -572,6 +601,22 @@ class ActiveBipedSim:
         self.shock_act = 1.0
         self.collapsed = False
         self.fallen_legs = None     # Adim 29: {"l": (diz, ayak), "r": ...} Verlet indeksleri
+        self.brace = BRACE_ENABLED if brace is None else brace
+        self.bracing = False
+        self.brace_level = 0.0
+        self.brace_dir = 0.0
+        self.brace_start = None
+        self.brace_plant_x = None
+        self.brace_lowering = False
+        self.brace_neck_deg = None
+        self.brace_lowered = False
+        self.yield_frames = 0
+        self.settle_count = 0
+        self.brace_log = []         # Adim 30: (kare, seviye, hedef_aci_der)
+        self.impact_log = []        # Adim 30: (kare, nokta, dikey carpma hizi px/kare)
+        self._contact_prev = None
+        self.arm_column = {}        # Adim 30: kol -> dinlenme boyu (yalniz itme), el yerdeyken
+        self.arm_yield_log = []     # (kare, kol, cozulemeyen hiz px/kare)
         self.hill = HILL_ENABLED if hill is None else hill
         self.collapse_frame = None
         self.leg_force_log = []     # Adim 27: (kare, d, F_toplam/W, a, r, v)
@@ -680,6 +725,68 @@ class ActiveBipedSim:
         self.last_arm_yaw = yaw_momentum(arms)
         self.trunk_yaw.update(self.last_leg_yaw, self.last_arm_yaw)
 
+    def _neck_min_dist(self) -> float | None:
+        """Adim 30: koruyucu refleks boyun tonusunu da kapsar -- bas govdeyle
+        hizali tutulur. Boyun acisi siniri, kalca-bas arasinda yalniz itebilen
+        bir en kisa mesafe olarak yigilma relaksasyon dongusunde cozulur:
+        |kalca-bas|^2 = L_g^2 + L_b^2 + 2 L_g L_b cos(theta). Disaridaki
+        clamp_direction ile 18 derece denendi: yerde bas her kare dusup geri
+        kaldirilarak 4 px/kare titresiyor, eller zeminden sekiyordu (olculdu;
+        Adim 29'daki 18 derece bulgusunun aynisi)."""
+        if not self.collapsed:
+            return None
+        if self.bracing and self.brace_neck_deg is not None:
+            th = np.radians(self.brace_neck_deg)
+        elif FALLEN_NECK_IN_LOOP:
+            th = np.radians(FALLEN_NECK_LIMIT_DEG)
+        else:
+            return None
+        return float(np.sqrt(TORSO_LEN ** 2 + HEAD_STICK_LEN ** 2 + 2 * TORSO_LEN * HEAD_STICK_LEN * np.cos(th)))
+
+    def _brace_side(self) -> float:
+        """Omzun inecegi taraf: govde kalca etrafinda devrilir, belirleyici
+        omzun KALCAYA GORE konumu ve hizidir. Mutlak omuz hizi denendi: geri
+        itkide kalca geri kacarken govde one katlaniyor, refleks eli kalcanin
+        arkasina uzatip omuz cizgisinden kaciriyordu (olculdu)."""
+        idx, p, q = self.idx, self.body.points, self.body.prev_points
+        sh, hp = idx["shoulder"], idx["hip"]
+        rel = p[sh][0] - p[hp][0]
+        v_rel = (p[sh][0] - q[sh][0]) - (p[hp][0] - q[hp][0])
+        return 1.0 if rel + BRACE_LOOKAHEAD * v_rel >= 0.0 else -1.0
+
+    def _update_brace(self, f: int) -> None:
+        """Adim 30 -- koruyucu refleksin acilmasi/sonmesi."""
+        if not self.brace or self.arms is None:
+            return
+        idx, p, q = self.idx, self.body.points, self.body.prev_points
+        if not self.bracing and (self.collapsed or self.yield_frames >= BRACE_YIELD_FRAMES):
+            self.brace_dir = self._brace_side()
+            self.bracing = True
+            self.brace_level = 1.0
+            self.brace_start = f
+        if not self.bracing:
+            return
+        if not self.collapsed and self.yield_frames == 0 and self.shock_rest is None:
+            # bacak toparlandi (cokus olmadi) -- refleks soner
+            self.brace_level *= BRACE_RELAX_RATE
+        elif self.collapsed:
+            v = float(np.linalg.norm(p[idx["shoulder"]] - q[idx["shoulder"]]))
+            self.settle_count = self.settle_count + 1 if v < BRACE_SETTLE_SPEED else 0
+            if self.settle_count >= BRACE_SETTLE_FRAMES:
+                # durulma: once kollar eksantrik olarak govdeyi yere indirir
+                # (kolon boyu BRACE_LOWER_RATE ile kisalir), sonra refleks soner
+                self.brace_lowering = True
+            if self.brace_neck_deg is None:
+                self.brace_neck_deg = NECK_MAX_TILT_DEG
+            if self.brace_lowering:
+                # bas da yavasca birakilir: govdeyi bir payanda gibi tutmasin, birden de dusmesin
+                self.brace_neck_deg = min(FALLEN_NECK_LIMIT_DEG, self.brace_neck_deg + BRACE_NECK_RELAX_DEG)
+            if self.brace_lowering and self.brace_lowered and self.brace_neck_deg >= FALLEN_NECK_LIMIT_DEG:
+                self.brace_level *= BRACE_RELAX_RATE
+        if self.brace_level < 0.01 and not self.collapsed:
+            self.bracing = False
+            self.brace_level = 0.0
+
     def _enter_fallen(self) -> None:
         """Adim 29 -- cokus: bacaklar kinematikten kutleli Verlet zincirlerine gecer."""
         body, idx = self.body, self.idx
@@ -690,6 +797,7 @@ class ActiveBipedSim:
             knee = leg.chain.points[1].copy()
             foot = (np.array([leg.planted[0], GROUND_Y]) if leg.state == "stance"
                     else np.asarray(leg.foot_target, float).copy())
+            knee, foot = self._fallen_leg_init(body.points[hip].copy(), knee, foot)
             k_i = body.add_point(knee, mass=FALLEN_KNEE_MASS)
             f_i = body.add_point(foot, mass=FALLEN_FOOT_MASS)
             # diz kalcayla birlikte hareket ediyordu; yerdeki ayak duruyordu
@@ -702,6 +810,62 @@ class ActiveBipedSim:
         body.sticks[0] = (i0, j0, r0, 1.0)          # anchor cubugu: compliance 1 -> etkisiz
         body.masses[hip] = self.hip_base_mass       # ortuk bacak kutlesi artik ayri noktalarda
         body.gravity = np.array([0.0, G_REAL_PX])
+        self.elbow_side = {}
+        if self.arms is not None:
+            sh = idx["shoulder"]
+            for key, (e_i, h_i) in self.arms.idx.items():
+                d, v = body.points[h_i] - body.points[sh], body.points[e_i] - body.points[sh]
+                c = -(d[0] * v[1] - d[1] * v[0])
+                self.elbow_side[key] = 1.0 if c >= 0.0 else -1.0
+
+    def _fallen_leg_init(self, hp_: np.ndarray, knee: np.ndarray, foot: np.ndarray):
+        """Adim 30 duzeltmesi -- yigilmaya giriste kinematik bacagi gecerli bir
+        ragdoll durusuna cevirir. Cokus gec tetiklenip kalca zemine cok
+        yaklastiysa FABRIK dizi zeminin 58-71 px ALTINA bukebiliyor ya da bacagi
+        150 dereceden fazla katlayabiliyordu (kalca-ayak 30 px); zemin/menteşe
+        siniri ilk karede bunu duzeltirken cubuklar kalcayi 70-150 px yukari
+        firlatiyordu (olculdu). Gecerli durus (diz zemin ustunde, geri bukulme
+        yok, bukulme <= 150 der) aynen korunur; degilse yeni olusan AYAK noktasi
+        zemin boyunca kalcadan uzaklastirilir ve diz iki kemik IK ile dogru
+        tarafta yeniden kurulur (govdenin momentumuna dokunulmaz)."""
+        l = LEG_SEGMENT_LEN
+        knee_floor = GROUND_Y - FALLEN_RADIUS["knee"]
+
+        def valid(k, ft):
+            u, v = ft - hp_, k - hp_
+            n = float(np.linalg.norm(u))
+            return (k[1] <= knee_floor and n >= KNEE_FLEX_MIN_DIST - 1e-6 and
+                    -(u[0] * v[1] - u[1] * v[0]) * FALLEN_KNEE_BEND_SIGN >= 0.0 and
+                    abs(float(np.linalg.norm(v)) - l) < 2.0 and abs(float(np.linalg.norm(k - ft)) - l) < 2.0)
+
+        if valid(knee, foot):
+            return knee, foot
+
+        def ik(ft):
+            u = ft - hp_
+            n = float(np.linalg.norm(u))
+            h = float(np.sqrt(max(l * l - 0.25 * n * n, 0.0)))
+            perp = np.array([-u[1], u[0]]) / n
+            if -(u[0] * perp[1] - u[1] * perp[0]) * FALLEN_KNEE_BEND_SIGN < 0.0:
+                perp = -perp
+            return hp_ + 0.5 * u + perp * h
+
+        dy = float(foot[1] - hp_[1])
+        sx = 1.0 if foot[0] >= hp_[0] else -1.0
+        n0 = max(float(np.linalg.norm(foot - hp_)), KNEE_FLEX_MIN_DIST * 1.01, abs(dy) + 0.5)
+        best = None
+        for n in np.arange(n0, 2.0 * l - 0.5, 2.0):
+            ft = np.array([hp_[0] + sx * float(np.sqrt(max(n * n - dy * dy, 0.0))), foot[1]])
+            k = ik(ft)
+            if best is None:
+                best = (k, ft)
+            if k[1] <= knee_floor:
+                return k, ft
+        if best is None:   # ayak bacak boyundan uzakta (salinim hedefi): erisilebilir uca cek
+            u = foot - hp_
+            ft = hp_ + u / float(np.linalg.norm(u)) * (2.0 * l - 0.5)
+            best = (ik(ft), ft)
+        return best
 
     def _fallen_constraints(self) -> None:
         """Adim 29 -- yigilma: diz menteşe siniri + esnek olmayan zemin + kinetik surtunme.
@@ -734,7 +898,20 @@ class ActiveBipedSim:
         # birlikte kare basina 0.5-2 px "surunme" uretiyordu (olculdu).
         m_ = body.masses
         x0 = getattr(self, "_fallen_x0", None)
+        pairs = [(hip, k_i, f_i, KNEE_FLEX_MIN_DIST) for k_i, f_i in self.fallen_legs.values()]
+        if self.arms is not None:
+            pairs += [(idx["shoulder"], e_i, h_i, ELBOW_FLEX_MIN_DIST) for e_i, h_i in self.arms.idx.values()]
+
         def knee_flex_limit():
+            # Adim 30: ayni momentum koruyan bukulme siniri dirsekler icin de (omuz-el >= 140 der)
+            for a_i, _m, b_i, dmin in pairs[len(self.fallen_legs):]:
+                dvec = p[b_i] - p[a_i]
+                dist = float(np.linalg.norm(dvec))
+                if 1e-6 < dist < dmin:
+                    wi, wj = 1.0 / m_[a_i], 1.0 / m_[b_i]
+                    corr = dvec / dist * (dmin - dist)
+                    p[a_i] -= corr * wi / (wi + wj)
+                    p[b_i] += corr * wj / (wi + wj)
             for k_i, f_i in self.fallen_legs.values():
                 dvec = p[f_i] - p[hip]
                 dist = float(np.linalg.norm(dvec))
@@ -744,14 +921,81 @@ class ActiveBipedSim:
                     p[hip] -= corr * wi / (wi + wj)
                     p[f_i] += corr * wj / (wi + wj)
 
+        # Adim 30: kol kolonlari -- el yerde ve refleks aktifken omuz-el yalniz itme destegi
+        columns = []
+        if self.arms is not None and self.bracing and self.brace_level > 0.5:
+            sh = idx["shoulder"]
+            for key, (e_i, h_i) in self.arms.idx.items():
+                on_ground = p[h_i][1] >= floor[h_i] - 0.5
+                if not on_ground:
+                    self.arm_column.pop(key, None)
+                    continue
+                dvec = p[sh] - p[h_i]
+                d = float(np.linalg.norm(dvec))
+                if d < 1e-6:
+                    continue
+                r = self.arm_column.get(key, min(d, 34.0 + 32.0))
+                # omzun ele dogru (sikistiran) hizi; kapasitenin durduramadigi kismi kolu buker
+                u = dvec / d
+                v_c = -float(np.dot(p[sh] - q[sh], u))
+                a_cap = self.arm_column_capacity(r, v_c)
+                if v_c > a_cap:
+                    r = max(ELBOW_FLEX_MIN_DIST, r - (v_c - a_cap))
+                    self.arm_yield_log.append((self.frame, key, round(v_c - a_cap, 2)))
+                r = min(r, d) if v_c <= 0.0 else r
+                if self.brace_lowering:
+                    r = max(ELBOW_FLEX_MIN_DIST, r - BRACE_LOWER_RATE)
+                self.arm_column[key] = r
+                columns.append((sh, h_i, r))
+
+        if self.brace_lowering and not self.brace_lowered:
+            sh_down = p[idx["shoulder"]][1] >= floor[idx["shoulder"]] - 0.5
+            at_min = all(r <= ELBOW_FLEX_MIN_DIST + 1e-6 for _a, _b, r in columns)
+            self.brace_lowered = sh_down or at_min
+
+        neck_min = self._neck_min_dist()
+        if neck_min is not None:
+            columns.append((idx["head"], hip, neck_min))
+
+        def arm_columns():
+            for a_i, b_i, r in columns:
+                if b_i == hip:
+                    # boyun tonusu: kalca-bas en kisa mesafe, kutle agirlikli (zemine dayanmiyor)
+                    dvec = p[a_i] - p[b_i]
+                    dist = float(np.linalg.norm(dvec))
+                    if 1e-6 < dist < r:
+                        corr = dvec / dist * (r - dist)
+                        wi, wj = 1.0 / m_[a_i], 1.0 / m_[b_i]
+                        p[a_i] += corr * wi / (wi + wj)
+                        p[b_i] -= corr * wj / (wi + wj)
+                    continue
+                dvec = p[a_i] - p[b_i]
+                dist = float(np.linalg.norm(dvec))
+                if 1e-6 < dist < r:
+                    corr = dvec / dist * (r - dist)
+                    # yerdeki el: kolun dikeyle acisi surtunme konisinin icindeyse zemin
+                    # tepkiyi karsilar (el kaymaz, tum duzeltme omuza); disindaysa el kayar
+                    if abs(dvec[0]) <= FALLEN_HAND_MU * abs(dvec[1]):
+                        p[a_i] += corr
+                    else:
+                        wi, wj = 1.0 / m_[a_i], 1.0 / m_[b_i]
+                        p[a_i] += corr * wi / (wi + wj)
+                        p[b_i] -= corr * wj / (wi + wj)
+
+        dn = np.zeros(len(p))     # bu kare zeminin noktaya verdigi toplam normal duzeltme
         for _ in range(RELAX_ITERS_FALLEN):
+            arm_columns()
             below = mask & (p[:, 1] > floor)
             contact |= below
+            dn[below] += p[below, 1] - floor[below]
             p[below, 1] = floor[below]
             if x0 is not None and len(x0) == len(p):
                 # statik surtunme (konum tabanli PBD): bu kare az kaymis temas noktasi
-                # kare basindaki yerine kilitlenir -- cubuk duzeltmeleri de onu kaydiramaz
-                stick = contact & (np.abs(p[:, 0] - x0) < FALLEN_STATIC_STICK_PX)
+                # kare basindaki yerine kilitlenir -- cubuk duzeltmeleri de onu kaydiramaz.
+                # Adim 30: esik yuke bagli (Coulomb, PBD: |dx_t| <= mu_s * dx_n); sabit
+                # 0.6 px esikte kolun itisi oturan kalcayi her kare 2 px geri kaydiriyordu.
+                lim = np.maximum(FALLEN_STATIC_STICK_PX, FALLEN_STATIC_MU * dn)
+                stick = contact & (np.abs(p[:, 0] - x0) < lim)
                 p[stick, 0] = x0[stick]
             body._satisfy_sticks()
             knee_flex_limit()
@@ -770,15 +1014,66 @@ class ActiveBipedSim:
                     fwd = -fwd
                 p[k_i] = along + fwd * 0.5
                 q[k_i] = p[k_i].copy()
+        if self.arms is not None:
+            sh = idx["shoulder"]
+            for key, (e_i, h_i) in self.arms.idx.items():
+                sgn = self.elbow_side.get(key, 1.0)
+                dvec = p[h_i] - p[sh]
+                n = float(np.linalg.norm(dvec))
+                v = p[e_i] - p[sh]
+                if n > 1e-6 and -(dvec[0] * v[1] - dvec[1] * v[0]) * sgn < 0.0:
+                    u = dvec / n
+                    along = p[sh] + u * float(np.dot(v, u))
+                    side = np.array([-u[1], u[0]])
+                    if -(dvec[0] * side[1] - dvec[1] * side[0]) * sgn < 0.0:
+                        side = -side
+                    p[e_i] = along + side * 0.5
+                    q[e_i] = p[e_i].copy()
         below = mask & (p[:, 1] > floor)
         contact |= below
         p[below, 1] = floor[below]
+        if FALLEN_FINAL_STATIC_LOCK and x0 is not None and len(x0) == len(p):
+            # Adim 30: statik kilit son kez, cubuk gecisinden SONRA. Dongu cubuklarla
+            # bittigi icin kilitli temas noktalari her kare ~0.02 px kayiyordu; yerdeki
+            # govde surekli "surunuyordu" (480 karede 1.4 px, iterasyon sayisina gore
+            # yonu bile degisiyordu -- olculdu). Kalan cubuk hatasi sonraki karede cozulur.
+            lim = np.maximum(FALLEN_STATIC_STICK_PX, FALLEN_STATIC_MU * dn)
+            stick = contact & (np.abs(p[:, 0] - x0) < lim)
+            p[stick, 0] = x0[stick]
+        # Adim 30: yeni temas eden noktalarin dikey carpma hizi
+        names = {hip: "kalca", idx["shoulder"]: "omuz", idx["head"]: "bas"}
+        if self.arms is not None:
+            for key, (e_i, h_i) in self.arms.idx.items():
+                names[e_i] = "dirsek_" + key
+                names[h_i] = "el_" + key
+        prevc = self._contact_prev if self._contact_prev is not None and len(self._contact_prev) == len(p) else np.zeros(len(p), bool)
+        for i in np.where(contact & ~prevc)[0]:
+            if i in names:
+                self.impact_log.append((self.frame, names[i], round(float(p[i][1] - q[i][1]), 2)))
+        self._contact_prev = contact.copy()
         # temas eden noktalar: dikey hiz sifir (esnek olmayan), yatay hiz surtunmeyle soner
         q[contact, 1] = p[contact, 1]
         q[contact, 0] = p[contact, 0] - (p[contact, 0] - q[contact, 0]) * (1.0 - FALLEN_GROUND_MU)
+        if self.arms is not None and self.bracing:
+            # Adim 30: refleksle uzanan avuc zemine yapisir (avuc ici-zemin, aktif kavrama):
+            # yatay hiz temas karesinde sifirlanir; yuk altinda kayma kolon/koni kuralinda
+            for _e_i, h_i in self.arms.idx.values():
+                if contact[h_i]:
+                    q[h_i, 0] = p[h_i, 0]
         # statik surtunme (Coulomb): yavas kayan temas noktasi yapisir
         slow = contact & (np.abs(p[:, 0] - q[:, 0]) < FALLEN_STATIC_STICK_PX)
         q[slow, 0] = p[slow, 0]
+
+    def arm_column_capacity(self, r: float, v_c: float) -> float:
+        """Adim 30 -- bir kolun omuz-el dogrultusunda bir karede durdurabildigi
+        en buyuk omuz hizi (px/kare): dirsek ekstansor torku / (l sin beta) /
+        etkin kutle; cos beta = r / 2l. Sikisan (eksantrik) kolda Hill ~1.5x.
+        Duz kol (sin beta -> 0) kemik kolonudur: kapasite cok buyur."""
+        c = min(max(r / (2.0 * ARM_SEG_MEAN), 0.0), 1.0)
+        sinb = max(float(np.sqrt(1.0 - c * c)), 0.05)
+        fv = force_velocity(-v_c / (ARM_SEG_MEAN * sinb)) if self.hill else 1.0
+        tau = TAU_ELBOW_MAX_NM / TORQUE_UNIT_NM * fv
+        return tau / (ARM_SEG_MEAN * sinb) / ARM_SUPPORT_MASS
 
     def leg_force_capacity(self, d: float) -> float:
         """Adim 27 -- iki kemikli bacagin kalca-ayak dogrultusunda uretebildigi en
@@ -1036,6 +1331,7 @@ class ActiveBipedSim:
                     if d2 < ARM_LENGTH - SHOCK_CONTACT_MIN_PX:
                         f_tot += self.leg_force_capacity(d2) * self.shock_act * hill_factor(d2)
                 a_up = (f_tot - W) / BODY_MASS_TOTAL
+                self.yield_frames = self.yield_frames + 1 if (a_up < 0.0 and self.shock_vel < 0.0) else 0
                 err = ARM_LENGTH - self.shock_rest
                 g = G_REAL_PX
                 v_des = float(np.sqrt(g * g / 4.0 + 2.0 * g * max(err, 0.0)) - g / 2.0)
@@ -1108,7 +1404,29 @@ class ActiveBipedSim:
                 reflex = self.reflex_dir * ARM_REFLEX_DEG
             catching = any(l.catch_active for l in (left_leg, right_leg))
             drive_on = self.arms_mode == "drive" and not (ARM_PASSIVE_DURING_CATCH and catching)
-            if self.collapsed:
+            self._update_brace(f)
+            if self.bracing and self.brace_level > 0.01:
+                # Adim 30: koruyucu refleks -- kollar dusus yonunde zemine uzanir
+                sh = body.points[idx["shoulder"]]
+                # hedef dunyaya sabit: omzun govde kalca etrafinda devrilince inecegi
+                # noktanin altina (kalca + yon * BRACE_PLANT_FROM_HIP). Omze gore hedef
+                # denendi: el omzu kovalayip zemine 11 px/kare yatay hizla carpiyor,
+                # kayarak kolu yataya yatiriyordu (olculdu).
+                hands_y = max(body.points[h][1] for _e, h in self.arms.idx.values())
+                side = self._brace_side()
+                # yeniden planlama: hicbir el yuk tasimiyorken govde ters tarafa devriliyorsa
+                # (ornegin ellere sekip geriye oturma) kollar yeni dusus tarafina uzanir
+                replan = not self.arm_column and side != self.brace_dir
+                if self.brace_plant_x is None or hands_y < GROUND_Y - BRACE_FREEZE_PX or replan:
+                    self.brace_dir = side
+                    self.brace_plant_x = float(body.points[idx["hip"]][0]) + self.brace_dir * BRACE_PLANT_FROM_HIP
+                target = np.array([self.brace_plant_x, GROUND_Y])
+                ang = float(np.degrees(np.arctan2(target[0] - sh[0], max(target[1] - sh[1], 1.0))))
+                self.brace_log.append((f, round(self.brace_level, 3), round(ang, 1)))
+                self.arms.drive(leg_angles, enabled=True, reflex_target_deg=ang,
+                                reflex_weight=self.brace_level, passive_base=self.collapsed,
+                                skip=tuple(self.arm_column))
+            elif self.collapsed:
                 self.arms.drive(leg_angles, enabled=False)   # Adim 29: yigilmis -- kollar pasif
             elif self.arms_mode == "cancel" and reflex is None:
                 # Adim 22 -- kollar bacaklarin yaw momentumunu iptal etmeyi hedefler
@@ -1143,11 +1461,15 @@ class ActiveBipedSim:
                         FALLEN_TORSO_LIMIT_DEG if self.collapsed else TORSO_MAX_LEAN_DEG,
                         preserve_momentum=self.torso_clamp_mode)
         torso_dir = body.points[idx["shoulder"]] - body.points[hip]
-        clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir,
-                        FALLEN_NECK_LIMIT_DEG if self.collapsed else NECK_MAX_TILT_DEG,
-                        preserve_momentum=self.torso_clamp_mode)
+        if not (self.collapsed and FALLEN_NECK_IN_LOOP):
+            clamp_direction(body.points, body.prev_points, idx["shoulder"], idx["head"], torso_dir,
+                            FALLEN_NECK_LIMIT_DEG if self.collapsed else NECK_MAX_TILT_DEG,
+                            preserve_momentum=self.torso_clamp_mode)
         if self.arms is not None:
-            self.arms.constrain()
+            lvl = self.brace_level if self.bracing else 0.0
+            # yuk alan (kolonu olan) kolda dirsek ekstansorleri kolonun icinde: cift yok
+            self.arms.constrain(fallen=self.collapsed, brace_k=BRACE_ELBOW_K * lvl, brace_c=BRACE_ELBOW_C * lvl,
+                                skip=tuple(self.arm_column))
         if self.collapsed:
             self._fallen_constraints()
 
@@ -1213,6 +1535,18 @@ class ActiveBipedSim:
         if not self.fell and hip_pos[1] > FALL_HIP_Y_THRESHOLD:
             self.fell = True
             self.fall_frame = f
+        if FALLEN_ENTRY_ON_LOW_HIP and not self.collapsed and hip_pos[1] > GROUND_Y - KNEE_FLEX_MIN_DIST:
+            # Adim 30 duzeltmesi: kalca, iki kemikli bacagin en katlanmis halinden
+            # (kalca-ayak 48 px) daha alcaga indiyse bacak destegi fiziksel olarak
+            # bitmistir -- kuvvet bacagi cokusu tetiklememis olsa da (ornegin iki
+            # ayak havadayken) yigilma durumuna girilir. Oncesinde >= ~5.6 m/s
+            # itkilerde kalca zeminin 184 px ALTINA iniyordu (Adim 29'da da; olculdu).
+            self.collapsed = True
+            self.collapse_frame = f
+            if not self.fell:
+                self.fell = True
+                self.fall_frame = f
+            self._enter_fallen()
 
         if self.leg_mass is not None and not self.collapsed:
             # Adim 22 -- bacak kutlesi: bu karenin ayak konumlariyla merkezi

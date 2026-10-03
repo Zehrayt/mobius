@@ -39,6 +39,7 @@ açıkça gösteriyor.
 | 27. Kuvvet sınırlı bacak: diz torku (200 Nm) gerçek ağırlığa karşı, kas aktivasyonu, çökme | `demo/step14_active_biped.py` (`SHOCK_MODE="force"`, `leg_force_capacity`) | 🔶 README "Adım 27" (yük paylaşımı hatası Adım 28'de düzeltildi) |
 | 28. Hill kas modeli (kuvvet–hız): diz ekstansörü + kalça servosu | `physics/hill.py`, `demo/step14_active_biped.py`, `physics/active_gait.py` | 🔶 README "Adım 28" |
 | 29. Çöküş sonrası yere yığılma: ragdoll bacaklar, zemin + statik/kinetik sürtünme, diz menteşesi, render | `demo/step14_active_biped.py` (`_enter_fallen`, `_fallen_constraints`), `demo/step17_bilge_physics_skin.py` | 🔶 pasif ragdoll; korunma/kalkma yok — README "Adım 29" |
+| 30. Koruyucu kol refleksi: dünyaya sabit el hedefi, kol kolonu (dirsek kapasitesi + sürtünme konisi), kontrollü indirme, boyun tonusu; yüke bağlı statik sürtünme, yığılma girişi düzeltmeleri | `demo/step14_active_biped.py` (`_update_brace`, `_brace_side`, `arm_column_capacity`, `_fallen_leg_init`, `_fallen_constraints`), `physics/arms.py` | 🔶 baş çarpması medyan 9.1 → 1.1 px/kare (24 sahne); kalkma yok, omurga tek çubuk — README "Adım 30" |
 | — Bilge kinematik yürüyüş (REFERANS) | `demo/bilge_walk_validation.py`, `demo/bilge_walk_skinned.py` | render referansı: kalça kinematik eğriyle sürülür, ana motor DEĞİL |
 
 `step6` artık `scene/` üretim katmanının ilk sahnesidir. `step11` yok

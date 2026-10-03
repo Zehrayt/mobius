@@ -14,7 +14,8 @@ from demo import step14_active_biped as s14
 from demo.step17_bilge_physics_skin import simulate, inspect, phase_report, stance_pitch_deg
 
 
-CANARY = (16, 0, 92, 1, 277.33)  # varsayilan senaryo: 150 px (~4.2 m/s) itkide bacak cokuyor (kare 222), Adim 29 yigilma (kalca katlanmis bacaklar uzerinde)
+CANARY = (16, 0, 92, 1, 277.01)  # varsayilan senaryo: 150 px (~4.2 m/s) itkide bacak cokuyor (kare 222); Adim 30: kollar govdeyi tutup indiriyor (kare 360'ta hala iniyor)
+CANARY_29 = (16, 0, 92, 1, 277.38)  # brace=False: Adim 29 yigilmasi (Adim 30 zemin surtunmesi/giris duzeltmeleriyle; oncesi 277.33)
 CANARY_26 = (25, 0, 89, 1, 145.95)  # Adim 26 (shock_mode="servo")
 CANARY_23 = (22, 0, 165, 7, 145.99)  # Adim 23 + servo baslangic duzeltmesi (PRE24 bayraklariyla; duzeltme oncesi 22/0/157/6/145.97)
 CANARY_22 = (25, 0, 122, 2, 146.20)  # Adim 22 (catch_timing="fixed")
@@ -78,6 +79,14 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertEqual(len(sim.slip_events), CANARY[2])
         self.assertEqual(len(sim.fazb_events), CANARY[3])
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY[4], places=2)
+
+    def test_brace_off_reproduces_step29_fall(self):
+        sim = s14.ActiveBipedSim(brace=False)
+        for _ in range(s14.N_FRAMES):
+            sim.step()
+        self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
+                          len(sim.fazb_events)), CANARY_29[:4])
+        self.assertAlmostEqual(sim.hip_y_log[-1], CANARY_29[4], places=2)
 
     def test_servo_shock_reproduces_step26(self):
         sim = s14.ActiveBipedSim(shock_mode="servo", hill=False)

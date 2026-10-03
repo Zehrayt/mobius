@@ -4508,6 +4508,119 @@ gibi geriliyor, kare 224'te bir bacak zeminin altına geçiyordu.
    etrafında döndürüyor. Fizik gövdesiyle deri arasındaki ölçek farkı (Adım
    17'den beri) burada görünür hale geliyor.
 
+## Adım 30 — Koruyucu kol refleksi (bracing)
+
+Adım 29'da karakter yere pasif bir ragdoll olarak düşüyordu: gövde kalas
+gibi devriliyor, baş zemine 1.2–18.5 px/kare (0.2–2.7 m/s) ile çarpıyordu.
+Bu adım düşüşte kolları zemine uzatan, gövdeyi kollar üzerinde tutan ve
+sonra kontrollü indiren bir refleks ekliyor. Omurga hâlâ tek çubuk (bir
+sonraki adım).
+
+### 30.1 Tetik ve yön (`_update_brace`, `_brace_side`)
+- **Tetik:** Kuvvet bacağı ağırlığı taşıyamıyor (Adım 27 kuvvet dengesi
+  a < 0 ve bacak bükülüyor, 2 kare üst üste) ya da çöküş. Yürüyüşte ve
+  toparlanan itkilerde (±1, ±2 m/s) hiç tetiklenmiyor (test).
+- **Düşüş tarafı:** Omzun kalçaya göre konumu + 3 kare göreli hızı. İlk
+  denemede mutlak omuz hızı kullanıldı. Geri itkide kalça geriye kaçarken
+  gövde öne katlanıyor ve refleks eli kalçanın arkasına, omuz çizgisinin
+  dışına uzatıyordu (ölçüldü).
+- **Yeniden planlama:** Hiçbir el yük taşımıyorken gövde ters tarafa
+  devriliyorsa (ellere sekip geriye oturma) kollar yeni tarafa uzanıyor.
+
+### 30.2 Uzanma: dünyaya sabit hedef
+El hedefi omza göre değil zemine göre: kalça + yön × 50 px (gövde 55 px).
+Burası, gövde kalça etrafında devrilince omzun ineceği noktanın altı.
+El zemine 25 px yaklaşınca hedef donuyor. Omza göre hedef (0.75 × kol boyu
+önde) denendi: el omzu kovalıyor, zemine 11 px/kare yatay hızla çarpıyor,
+kayıp kolu yataya yatırıyordu. Omuz yine 59 → 14 px'e düşüyordu
+(ölçüldü). Yere değen avuç yapışıyor: yatay hız temas karesinde sıfır.
+
+### 30.3 Kol kolonu (`_fallen_constraints`, `arm_column_capacity`)
+- El yerdeyken omuz–el arasında yalnızca itebilen bir destek var; rest
+  boyu temas anındaki boy. El–kol doğrusu sürtünme konisinin içindeyse
+  (|dx| ≤ 0.8|dy|) zemin tepkiyi karşılıyor ve düzeltmenin tamamı omza
+  gidiyor. Dışındaysa el kayıyor (kütle ağırlıklı).
+- **Dirsek kapasitesi:** Triseps 60 Nm. Kuvvet τ/(l sin β), cos β = r/2l;
+  eksantrikte Hill ≈1.5×. Kapasiteyi aşan sıkışma hızı kolu büküyor
+  (rest boyu kısalıyor). Düz kol kemik kolonu gibi davranıyor: r = 65 px'te
+  kapasite 36 px/kare, r = 40 px'te 7.9.
+- **Ölçüm:** Taranan sahnelerde omuz kollara 8–10 px/kare (1.2–1.5 m/s)
+  ile iniyor ve kollar neredeyse düz. Kapasite aşılmıyor, dirsek bükülme
+  yolu hiç çalışmadı. Çarpmayı düz kol durduruyor.
+
+### 30.4 Kontrollü indirme ve boyun tonusu
+- **İndirme:** Omuz 15 kare boyunca 0.5 px/kare'den yavaşsa kolonlar
+  0.6 px/kare kısalıyor (dirsek 140°'ye kadar eksantrik bükülme). Bitince
+  refleks %10/kare sönüyor.
+- **Boyun:** Refleks boyunca 18° (dik duruş sınırı); indirmede 0.7°/kare
+  60°'ye gevşiyor. Sınır, kalça–baş arasında yalnızca itebilen en kısa
+  mesafe olarak relaksasyon döngüsünde çözülüyor. Dışarıdaki
+  `clamp_direction` ile 18° denendi: Adım 29'daki bulgunun aynısı, yerde
+  baş 4 px/kare titriyor, eller zeminden sekiyordu (ölçüldü). Yerde
+  60°'lik pasif sınır da artık döngüde.
+- **Kol sürüşü:** Yığılmış gövdede refleks yürüyüş salınımına değil sıfır
+  torka karışıyor. Yük alan kol sürülmüyor; dirsek tonus çifti de yok
+  (kolon onu temsil ediyor). Önceki hali, refleks sönerken kolları
+  yürüyüş pozuna sürüp dirsekleri 7 px/kare savuruyordu.
+
+### 30.5 Bulunup düzeltilen hatalar (Adım 29'dan kalan, ölçüldü)
+
+| sorun | etki | çözüm |
+|---|---|---|
+| ≥ ~5.6 m/s itkilerde kuvvet bacağı çöküşü tetiklemiyor (iki ayak havada) | kalça zeminin **184 px altına** iniyordu (Adım 29'da da; ±200/±260 px itkiler Adım 29 taramasında yoktu) | kalça, bacağın en katlanmış halinden (48 px) alçaktaysa yığılmaya giriliyor |
+| Geç tetiklenen çöküşte FABRIK dizi zeminin 58–71 px altında ya da bacak > 150° katlı (kalça–ayak 30 px) | ilk karede kalça 70–150 px yukarı fırlıyordu | `_fallen_leg_init`: geçerli duruş aynen korunuyor; değilse yeni ayak noktası zemin boyunca uzaklaştırılıp diz IK ile doğru tarafta kuruluyor |
+| Erişilemeyen salınım hedefi (kalça–ayak 215 > 184 px) | diz–ayak çubuğu 31 px uzun başlıyordu | ayak erişilebilir uca çekiliyor (varsayılan sahne de; kanarya değişti) |
+| Sabit 0.6 px statik sürtünme eşiği | kol itişi oturan kalçayı her kare 2 px geri kaydırıyordu | eşik yüke bağlı: \|dx_t\| ≤ 0.8 × bu karenin normal düzeltmesi (PBD Coulomb) |
+| Döngü çubuklarla bitiyordu | kilitli temas noktaları ~0.02 px/kare kayıyordu, gövde sürekli sürünüyordu (480 karede 1.4 px; yönü iterasyon sayısına göre değişiyordu) | statik kilit son kez çubuklardan sonra; relaksasyon 8 → 24 iterasyon. 600 karelik koşularda son 100 karede kayma 0.000 px |
+
+### 30.6 Sonuç
+24 çöküş sahnesi (±130/150/200/260 px itki × itki zamanı 6.6/7.0/7.4 s),
+pasif (`brace=False`) ve refleksli. Ölçü: baş zemine 4 px yakınken en
+büyük aşağı hız.
+
+| | medyan | ortalama | en çok |
+|---|---|---|---|
+| pasif | 9.06 px/kare (1.33 m/s) | 9.06 | 18.48 (2.71 m/s) |
+| refleks | 1.09 px/kare (0.16 m/s) | 1.21 | 4.10 (0.60 m/s) |
+
+- Refleks hiçbir sahnede pasiften kötü değil. 23/24'te baş ≤ 1.47 px/kare
+  (indirme hızı mertebesi). İstisna: −260 px @7.0 s (4.10; pasif 7.85).
+  Kalça çok hızlı geriye kayarken eller omzun altında kalamıyor.
+- Pasif 18 sahnede baş > 5 px/kare ile çarpıyor; refleksle hiçbirinde.
+- Omuz: refleksle hiçbir sahnede zemine çarpmıyor (pasif 4 sahnede
+  2–10 px/kare).
+- Tüm sahneler duruyor: 480. karede son 60 karenin en hızlı noktası
+  ≤ 0.009 px/kare.
+- **Varsayılan sahne (150 px):** kare 222 çöküş, eller 238'de yerde,
+  gövde ellerin üzerinde, omuz yerden 70 px yukarıda tutuluyor (240–257).
+  Sonra kontrollü iniyor (omuz 70 → 40 px, ~60 kare). Kalça dizlerin
+  üzerinde (53 px), alnı yerde duruyor.
+
+### 30.7 Gerileme
+- Kanarya 16/0/92/1. Son `hip_y` 277.01 (refleksle; kare 360). Yeni
+  `CANARY_29` (`brace=False`) 277.38 (Adım 29: 277.33; fark §30.5'teki
+  giriş/sürtünme düzeltmelerinden).
+- `test_step29`: çöküş koşusu 420 → 480 kare (kontrollü indirme yığılmayı
+  ~60 kare uzatıyor).
+- Testler 103/103 geçti (yeni `tests/test_step30_bracing.py`: baş çarpması
+  < 2 px/kare ve ortalamada ≥ 3× azalma, kolların omzu tutması, ellerin
+  düşüş tarafına ve koni içine konması, kontrollü indirme + durgunluk,
+  yürüyüşte/toparlanan itkide tetiklenmeme, aşırı itkide zemine girmeme,
+  kol kapasitesi).
+
+### 30.8 Sınırlar
+1. Dirsek bükülmesiyle çarpma emilimi modelde var ama bu sahnelerde hiç
+   devreye girmedi; çarpmayı düz kol kolonu durduruyor. Gerçekte bu,
+   bilek kırığı (FOOSH) mekanizmasıdır.
+2. Omuz–kol açısı için tork yok: kolon yalnızca omuz–el mesafesini
+   tutuyor. Kol yataya yaklaşırsa destek biter. Eller ancak omzun
+   altına konduğunda çalışıyor (−260 @7.0 istisnası).
+3. Son poz çoğunlukla "alnı yerde diz çökmüş": 2B'de baş yana
+   dönemiyor, refleks bitince kas tonusu yok. Kalkma yok.
+4. Gövde hâlâ tek çubuk. Omurga segmentasyonu (yalnız yığılmada) sıradaki
+   adım.
+5. Render: yerdeki başın deri açısı 60° boyun sınırıyla ters görünebiliyor.
+
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
 
 Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak

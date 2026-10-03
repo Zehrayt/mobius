@@ -40,7 +40,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from physics.verlet import VerletSystem, clamp_direction, apply_angular_spring
+from physics.verlet import VerletSystem, clamp_direction, apply_angular_spring, apply_angular_couple
 from physics.fabrik import clamp_joint_angle_points
 
 DOWN = np.array([0.0, 1.0])
@@ -56,6 +56,7 @@ ELBOW_BEND_SIGN = -1.0      # on kol one dogru bukulur (bu cizim duzleminde nega
 ELBOW_REST_DEG = -12.0      # hafif dirsek bukumu: on kol one dogru (apply_angular_spring isaretinde ileri = negatif)
 ELBOW_STIFFNESS = 0.04
 ELBOW_DAMPING = 0.25
+ELBOW_BRACE_REST_DEG = -15.0   # Adim 30: koruyucu refleks -- dirsek hafif bukuk kilitlenir
 
 
 def _angle_from_down(vec: np.ndarray) -> float:
@@ -116,10 +117,14 @@ class PhysicalArms:
         return float(np.arctan2(np.sin(a_now - a_prev), np.cos(a_now - a_prev)))
 
     def drive(self, leg_angles: dict, enabled: bool = True, reflex_target_deg: float | None = None,
-              reflex_weight: float = 1.0, exit_damping: float = 0.0) -> None:
+              reflex_weight: float = 1.0, exit_damping: float = 0.0, passive_base: bool = False,
+              skip: tuple = ()) -> None:
         """Her kol icin PD omuz torku. `leg_angles[side]`: o taraftaki bacagin
         kalca->ayak acisi (radyan, asagiya gore, + ileri). Refleks verilirse
-        hedef, bacaktan bagimsiz sabit bir aciya doner (hiz hedefi 0)."""
+        hedef, bacaktan bagimsiz sabit bir aciya doner (hiz hedefi 0).
+        Adim 30: `passive_base` -- refleks yuruyus hedefine degil SIFIR torka
+        karisir (yigilmis govdede kollar yuruyus salinimina geri surulmez);
+        `skip` -- o kollar surulmez (eli yere dayali, yuk alan kol)."""
         g = self.gains
         p, q = self.body.points, self.body.prev_points
         masses = self.body.masses
@@ -128,7 +133,7 @@ class PhysicalArms:
             prev = self.prev_leg_angle[side]
             leg_w = 0.0 if prev is None else leg_a - prev
             self.prev_leg_angle[side] = leg_a
-            if not enabled:
+            if not enabled or side in skip:
                 self.last_torque[side] = 0.0
                 continue
             lw = float(np.clip(leg_w, -g.max_leg_rate, g.max_leg_rate))
@@ -137,8 +142,11 @@ class PhysicalArms:
                 # Adim 21: refleks hedefi, yuruyus hedefine reflex_weight ile
                 # karisir; agirlik ustel sondugunde kol yumusakca geri doner.
                 wr = float(np.clip(reflex_weight, 0.0, 1.0))
-                target = wr * np.radians(reflex_target_deg) + (1.0 - wr) * target
-                target_w = (1.0 - wr) * target_w
+                if passive_base:
+                    target, target_w = np.radians(reflex_target_deg), 0.0
+                else:
+                    target = wr * np.radians(reflex_target_deg) + (1.0 - wr) * target
+                    target_w = (1.0 - wr) * target_w
             self.last_target[side] = target
             a = self.arm_angle(side)
             w = self.arm_angular_velocity(side)
@@ -147,6 +155,8 @@ class PhysicalArms:
             if reflex_target_deg is not None:
                 cap = g.max_accel + float(np.clip(reflex_weight, 0.0, 1.0)) * (g.reflex_max_accel - g.max_accel)
             alpha = float(np.clip(alpha, -cap, cap))
+            if reflex_target_deg is not None and passive_base:
+                alpha *= float(np.clip(reflex_weight, 0.0, 1.0))
             self.last_torque[side] = alpha
             e, _ = self.idx[side]
             r = float(np.linalg.norm(p[e] - p[self.shoulder]))
@@ -196,8 +206,15 @@ class PhysicalArms:
             self.last_torque[side] = alpha
             self._apply_alpha(side, alpha)
 
-    def constrain(self) -> None:
-        """body.step()'ten SONRA: koni sinirlari + dirsek yay-sonumu."""
+    def constrain(self, fallen: bool = False, brace_k: float = 0.0, brace_c: float = 0.0,
+                  skip: tuple = ()) -> None:
+        """body.step()'ten SONRA: koni sinirlari + dirsek yay-sonumu.
+        Adim 30: `fallen` iken dirsek menteşesi ve pasif yay burada UYGULANMAZ
+        (fabrik.clamp_joint_angle_points yalnizca eli oynatir; zemine dayanmis
+        elde momentum sizdirip surunme uretir -- Adim 29 diz bulgusu). Menteşe
+        step14._fallen_constraints'te momentum koruyarak cozulur. `brace_k/c`:
+        koruyucu refleksteki dirsek ekstansor tonusu -- momentum koruyan kuvvet
+        cifti (apply_angular_couple)."""
         p, q = self.body.points, self.body.prev_points
         for side in ("l", "r"):
             e, h = self.idx[side]
@@ -218,6 +235,11 @@ class PhysicalArms:
                         q[h] = q[h] + shift
             clamp_direction(p, q, self.shoulder, e, DOWN, SHOULDER_CONE_DEG, preserve_momentum="inelastic")
             upper_dir = p[e] - p[self.shoulder]
+            if fallen:
+                if (brace_k > 0.0 or brace_c > 0.0) and side not in skip:
+                    apply_angular_couple(p, q, self.body.masses, e, h, upper_dir, ELBOW_BRACE_REST_DEG,
+                                         brace_k, brace_c)
+                continue
             apply_angular_spring(p, q, e, h, upper_dir, ELBOW_REST_DEG, ELBOW_STIFFNESS, ELBOW_DAMPING)
             clamp_joint_angle_points(p, q, self.shoulder, e, h, ELBOW_MIN_BEND_DEG, ELBOW_MAX_BEND_DEG,
                                      bend_sign=ELBOW_BEND_SIGN, inelastic=True)
