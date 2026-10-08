@@ -146,6 +146,7 @@ import numpy as np
 from physics.gait import FootPlantingLeg
 from physics.leg_mass import THIGH_MASS, SHANK_MASS, THIGH_AXIS_FRAC, SHANK_AXIS_FRAC
 from physics.hill import force_velocity
+from physics.gravity import LEGACY_WALK_GRAVITY
 
 # 12. tur -- Dinamik Salinim Suresi v2 parametreleri.
 DST_BASE_VX = 2.0       # referans hiz (demo/step14'teki TARGET_VX ile ayni)
@@ -316,7 +317,9 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
                 # yuzlerce piksel ileriye atiyordu -- bunun yerine sikistirilmis
                 # yakalama salinimi.
                 self.launch_catch_step(hip_pos[0], hip_vx)
-            elif xcp - self.planted[0] > self.support_margin:
+            elif (xcp - self.planted[0] > self.support_margin or
+                  (getattr(self, "balance_recovery", False) and
+                   xcp - self.planted[0] < -self.support_margin)):
                 self.state = "swing"
                 self.swing_start = self.planted.copy()
                 self.swing_target = np.array([self._reach_clamp(xcp + self.swing_lead_margin, hip_pos[0]), self.ground_y])
@@ -328,7 +331,11 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
             # tahmini kalca konumuna dogru her karede sinirli hizla kayar
             # (sikistirilmis salinimda kalca ayagi gecmeye devam ediyor).
             eta = self._servo_eta(hip_pos) if getattr(self, "catch_servo", False) else None
-            desired = self._catch_target_x(hip_pos[0], hip_vx, remaining=eta)
+            # Commit the predicted landing point. Chasing an advancing hip
+            # kept postponing the downward phase until support was too low.
+            # The next step can choose a new target after contact.
+            desired = (self.swing_target[0] if getattr(self, "balance_recovery", False)
+                       else self._catch_target_x(hip_pos[0], hip_vx, remaining=eta))
             delta = desired - self.swing_target[0]
             cap = FAZB_MAX_RETARGET_PX + abs(hip_vx)   # kalcanin kendi hizindan geri kalmasin
             self.swing_target[0] += max(-cap, min(cap, delta))
@@ -524,7 +531,9 @@ class ActiveFootPlantingLeg(FootPlantingLeg):
     def servo_accel_limit(self, hip_pos: np.ndarray) -> float:
         d = self.servo_pos - np.asarray(hip_pos, float)
         L = max(float(np.linalg.norm(d)), 1.0)
-        g = 0.065
+        # Biped callers supply the same gravity used by body integration and
+        # inverse leg dynamics. Standalone legacy demos retain their default.
+        g = getattr(self, "gravity_y", LEGACY_WALK_GRAVITY)
         tau_g = abs(d[0]) * g * (THIGH_MASS * THIGH_AXIS_FRAC + SHANK_MASS * SHANK_AXIS_FRAC)
         return max(self._hip_torque_max() - tau_g, 0.0) / (LEG_INERTIA_J * L)
 

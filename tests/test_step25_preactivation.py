@@ -16,7 +16,7 @@ KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
 def run(push_ms, t=7.0, n=420, **kw):
     kw.setdefault("shock_mode", "servo")   # Adim 24-26 sok servosu (Adim 27: "force")
     kw.setdefault("hill", False)          # Adim 28 oncesi kas modeli
-    sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
+    sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
     for _ in range(n):
         sim.step()
     return sim
@@ -33,8 +33,8 @@ def sag_and_recovery(sim, bp=210):
 
 class PreactivationTest(unittest.TestCase):
     def test_undisturbed_walk_unchanged(self):
-        a = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0)
-        b = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, preactivation=0)
+        a = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0)
+        b = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0, preactivation=0)
         for _ in range(900):
             a.step()
             b.step()
@@ -55,7 +55,7 @@ class PreactivationTest(unittest.TestCase):
             self.assertLessEqual(on[1], off[1], dv)
 
     def test_time_to_contact_prediction(self):
-        sim = s14.ActiveBipedSim(big_push_kick_px=150.0, big_push_t=7.0)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=150.0, big_push_t=7.0)
         preds = []
         for f in range(300):
             sim.step()

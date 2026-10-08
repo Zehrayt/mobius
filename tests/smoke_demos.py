@@ -21,10 +21,10 @@ def main():
     paths = sorted(ROOT.glob('demo/step*.py'), key=lambda p: int(p.stem.split('_')[0][4:]))
     with tempfile.TemporaryDirectory(prefix='mobius-demo-smoke-') as tmp:
         for path in paths:
-            # step6/step17 scene.export.render_video kullanir: kendi gecici
+            # These demos use scene.export.render_video with its own temporary
             # dosyasini yazip kare sayisini KENDISI dogrular -- buradaki
             # VideoWriter yonlendirmesi o dogrulamayi bozar.
-            if path.name.startswith(('step6_', 'step17_')):
+            if path.name.startswith(('step6_', 'step17_', 'step30_', 'step31_', 'step32_', 'step33_', 'step34_', 'step35_', 'step36_', 'step37_', 'step38_', 'step39_')):
                 continue
             spec = importlib.util.spec_from_file_location(path.stem, path)
             module = importlib.util.module_from_spec(spec)

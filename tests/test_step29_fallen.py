@@ -15,7 +15,7 @@ KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
 
 
 def run_collapse(push_px, n=420):
-    sim = s14.ActiveBipedSim(big_push_kick_px=push_px, big_push_t=7.0)
+    sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push_px, big_push_t=7.0)
     pts = []
     for _ in range(n):
         sim.step()
@@ -63,7 +63,7 @@ class FallenStateTest(unittest.TestCase):
                     self.assertAlmostEqual(np.linalg.norm(P[f_i] - P[k_i]), s14.LEG_SEGMENT_LEN, delta=2.0)
 
     def test_render_torso_and_head_above_ground(self):
-        frames, sim = simulate(320, big_push_kick_px=150.0, big_push_t=7.0)
+        frames, sim = simulate(320, gravity_mode="legacy", big_push_kick_px=150.0, big_push_t=7.0)
         rig = PhysicsBilgeRig()
         for snap in frames[sim.collapse_frame:]:
             pts = rig.pose(snap)["points"]

@@ -17,7 +17,7 @@ OFF = dict(rocker=False, hip_strategy_gain=0.0)
 def min_height(push_ms, t=7.0, n=420, **kw):
     kw.setdefault("shock_mode", "servo")   # Adim 26 olcumu sok servosuyla (Adim 27: "force")
     kw.setdefault("hill", False)          # Adim 28 oncesi kas modeli
-    sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
+    sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
     for _ in range(n):
         sim.step()
     return s14.GROUND_Y - max(sim.hip_y_log[210:]), sim
@@ -25,7 +25,7 @@ def min_height(push_ms, t=7.0, n=420, **kw):
 
 class StanceStrategyTest(unittest.TestCase):
     def test_rocker_inactive_in_normal_gait(self):
-        sim = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0)
         for f in range(900):
             n = len(sim.rocker_log)
             sim.step()

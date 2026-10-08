@@ -1,0 +1,93 @@
+"""Two-segment fall-only torso, with a mass-weighted passive waist hinge.
+
+Units match the 30 FPS point-mass solver. Limits are animation constraints,
+not a validated anatomical model. Walking keeps its original rigid torso.
+"""
+from __future__ import annotations
+import numpy as np
+
+MIN_BEND = np.radians(-30.0)
+MAX_BEND = np.radians(75.0)
+WAIST_RADIUS = 12.0
+STIFFNESS = 0.008
+DAMPING = 0.25
+
+
+def cross(a, b):
+    return a[..., 0] * b[..., 1] - a[..., 1] * b[..., 0]
+
+
+class FallenSpine:
+    def __init__(self, body, hip, shoulder):
+        self.body = body
+        self.hip, self.shoulder = hip, shoulder
+        p, q = body.points, body.prev_points
+        endpoints = [hip, shoulder]
+        old_m = body.masses[endpoints].copy()
+        old_p, old_v = p[endpoints].copy(), (p-q)[endpoints].copy()
+        center = np.average(old_p, axis=0, weights=old_m)
+        angular_before = float(np.sum(old_m * cross(old_p-center, old_v)))
+        kinetic_before = float(np.sum(old_m[:, None] * old_v**2) / 2)
+        # Equal mass is transferred from both endpoints to their midpoint.
+        # This preserves total mass and COM, unlike adding a fresh torso mass.
+        transfer = 0.1 * min(old_m)
+        waist = (p[hip] + p[shoulder]) / 2
+        waist_v = (old_v[0] + old_v[1]) / 2
+        self.waist = body.add_point(waist, mass=2*transfer)
+        body.prev_points[self.waist] = waist-waist_v
+        body.masses[endpoints] -= transfer
+        self.ids = [hip, self.waist, shoulder]
+        p, q, m = body.points, body.prev_points, body.masses
+        # Repartitioning changes rotational inertia. Restore angular as well
+        # as linear momentum with a zero-net-impulse rotational correction.
+        r = p[self.ids]-center
+        v = (p-q)[self.ids]
+        angular_after = float(np.sum(m[self.ids]*cross(r, v)))
+        inertia = float(np.sum(m[self.ids, None]*r*r))
+        dw = (angular_before-angular_after)/max(inertia, 1e-9)
+        q[self.ids] -= dw*np.column_stack((-r[:, 1], r[:, 0]))
+        self.transition = dict(
+            mass_before=float(old_m.sum()), mass_after=float(m[self.ids].sum()),
+            angular_before=angular_before,
+            angular_after=float(np.sum(m[self.ids]*cross(r, (p-q)[self.ids]))),
+            kinetic_before=kinetic_before,
+            kinetic_after=float(np.sum(m[self.ids, None]*(p-q)[self.ids]**2)/2))
+        for index, (i, j, length, compliance) in enumerate(body.sticks):
+            if {i, j} == {hip, shoulder}:
+                body.sticks[index] = (hip, self.waist, length/2, compliance)
+                body.add_stick(self.waist, shoulder, length=length/2, compliance=compliance)
+                self.segment_length = length/2
+                break
+        else:
+            raise ValueError('Rigid torso stick not found')
+
+    def geometry(self):
+        p = self.body.points
+        a = p[self.waist]-p[self.hip]
+        b = p[self.shoulder]-p[self.waist]
+        a2, b2 = float(a@a), float(b@b)
+        if min(a2,b2) < 1e-9:
+            return 0.0, np.zeros((3,2))
+        theta = float(np.arctan2(cross(a,b), a@b))
+        ga = np.array([-a[1],a[0]])/a2
+        gb = np.array([-b[1],b[0]])/b2
+        return theta, np.array([ga,-ga-gb,gb])
+
+    def drive(self):
+        theta, gradient = self.geometry()
+        p,q,m = self.body.points,self.body.prev_points,self.body.masses
+        velocity = (p-q)[self.ids]
+        omega = float(np.sum(gradient*velocity))
+        inverse_mass = 1/m[self.ids]
+        effective = float(np.sum(inverse_mass[:,None]*gradient**2))
+        alpha = float(np.clip(-STIFFNESS*theta-DAMPING*omega,-.08,.08))
+        impulse = alpha/max(effective,1e-9)
+        q[self.ids] -= impulse*inverse_mass[:,None]*gradient
+
+    def constrain(self):
+        theta, gradient = self.geometry()
+        error = theta-float(np.clip(theta,MIN_BEND,MAX_BEND))
+        inverse_mass = 1/self.body.masses[self.ids]
+        effective = float(np.sum(inverse_mass[:,None]*gradient**2))
+        correction = -float(np.clip(error,-.2,.2))/max(effective,1e-9)
+        self.body.points[self.ids] += correction*inverse_mass[:,None]*gradient

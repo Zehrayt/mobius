@@ -1,0 +1,2750 @@
+{
+  "previous": {
+    "collapse_frame": 218,
+    "state": "half_kneeling",
+    "start_frame": 307,
+    "support_frame": 454,
+    "events": [
+      [
+        307,
+        "rising"
+      ],
+      [
+        454,
+        "supported"
+      ],
+      [
+        514,
+        "foot_placing"
+      ],
+      [
+        783,
+        "transferring"
+      ],
+      [
+        932,
+        "half_kneeling"
+      ]
+    ],
+    "reason": null,
+    "support_contacts": 4,
+    "com_margin_px": 41.6560980315254,
+    "hip_height_px": 89.8398920339317,
+    "chest_height_px": 48.09782388175819,
+    "head_height_px": 55.3449863895064,
+    "tail_max_speed_px_frame": 5.415256431706515e-07,
+    "max_recovery_speed_px_frame": 10.710649926422873,
+    "min_supported_contacts": 4,
+    "tail_all_supported": false,
+    "torque_limit_ratio": 1.0,
+    "force_limit_ratio": 1.0,
+    "gravity_values": [
+      2.2284444444444444
+    ],
+    "max_penetration_px": 0.0,
+    "finite": true,
+    "push_px": 150.0,
+    "phase": 0,
+    "frames": 2100
+  },
+  "recovery": {
+    "collapse_frame": 218,
+    "state": "upright_kneeling",
+    "start_frame": 307,
+    "support_frame": 454,
+    "events": [
+      [
+        307,
+        "rising"
+      ],
+      [
+        454,
+        "supported"
+      ],
+      [
+        514,
+        "foot_placing"
+      ],
+      [
+        783,
+        "transferring"
+      ],
+      [
+        932,
+        "half_kneeling"
+      ],
+      [
+        992,
+        "torso_raising"
+      ],
+      [
+        1326,
+        "upright_kneeling"
+      ]
+    ],
+    "reason": null,
+    "support_contacts": 2,
+    "com_margin_px": 13.833721350530709,
+    "hip_height_px": 103.20107738876018,
+    "chest_height_px": 156.3170973591273,
+    "head_height_px": 186.31458909207637,
+    "tail_max_speed_px_frame": 0.000408536915837986,
+    "max_recovery_speed_px_frame": 10.710649926422873,
+    "min_supported_contacts": 2,
+    "tail_all_supported": false,
+    "torque_limit_ratio": 1.0,
+    "force_limit_ratio": 1.0,
+    "gravity_values": [
+      2.2284444444444444
+    ],
+    "max_penetration_px": 0.0,
+    "finite": true,
+    "push_px": 150.0,
+    "phase": 0,
+    "frames": 2100,
+    "raise_frame": 992,
+    "upright_frame": 1326,
+    "hip_height_before_raise": 89.83999427499882,
+    "tail_all_upright": true,
+    "min_lower_contacts": 2,
+    "max_arm_contacts": 0,
+    "min_hand_clearance_px": 85.32572216752885,
+    "max_abs_torso_tilt_deg": 0.547419802028095,
+    "min_lower_margin_px": 13.819030847438512,
+    "min_unassisted_transition_margin_px": -6.085662284471823,
+    "foot_share_final": 0.23475056345151493,
+    "tail_foot_travel_px": 0.000888785470010589,
+    "tail_knee_travel_px": 0.024039957831405445
+  },
+  "notes": [
+    "Opt-in recovery_rise=True requires all earlier recovery stages.",
+    "Keeps previous motor commands; prepares rear leg over 120 frames and raises torso over 240 frames after a 60-frame delay.",
+    "Success requires front foot/rear knee contact, no hand/elbow contact, raised hands, upright torso and COM inside their support interval.",
+    "Rear foot may touch passively; it is excluded from the two-point balance test.",
+    "Entry needs 30 quiet frames. Contact/geometry loss revokes success immediately; excess motion must persist for 5 frames.",
+    "Contact projections are numerical diagnostics, not physical force measurements.",
+    "Same motor limits and gravity. No new pins, teleport or walking restart.",
+    "Only the new raise/hold states use 128 rather than 64 coupled constraint iterations to reduce projection drift.",
+    "Same 36 push/phase cases; 2100 frames (70 seconds). Stops in upright kneeling, not standing."
+  ],
+  "sweep": [
+    {
+      "collapse_frame": 227,
+      "state": "upright_kneeling",
+      "start_frame": 316,
+      "support_frame": 456,
+      "events": [
+        [
+          316,
+          "rising"
+        ],
+        [
+          456,
+          "supported"
+        ],
+        [
+          516,
+          "foot_placing"
+        ],
+        [
+          792,
+          "transferring"
+        ],
+        [
+          941,
+          "half_kneeling"
+        ],
+        [
+          1001,
+          "torso_raising"
+        ],
+        [
+          1343,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.178183158949878,
+      "hip_height_px": 103.14918317796753,
+      "chest_height_px": 156.26521518978285,
+      "head_height_px": 186.26266976713015,
+      "tail_max_speed_px_frame": 0.0013689621260444705,
+      "max_recovery_speed_px_frame": 8.117626891634814,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 0,
+      "frames": 2100,
+      "raise_frame": 1001,
+      "upright_frame": 1343,
+      "hip_height_before_raise": 89.86107117723114,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.27386319517754,
+      "max_abs_torso_tilt_deg": 0.556685367854955,
+      "min_lower_margin_px": 14.164747203725483,
+      "min_unassisted_transition_margin_px": -6.1775069749480735,
+      "foot_share_final": 0.23459826529667538,
+      "tail_foot_travel_px": 0.000915657123073288,
+      "tail_knee_travel_px": 0.024536302776027696
+    },
+    {
+      "collapse_frame": 230,
+      "state": "upright_kneeling",
+      "start_frame": 319,
+      "support_frame": 460,
+      "events": [
+        [
+          319,
+          "rising"
+        ],
+        [
+          460,
+          "supported"
+        ],
+        [
+          520,
+          "foot_placing"
+        ],
+        [
+          789,
+          "transferring"
+        ],
+        [
+          938,
+          "half_kneeling"
+        ],
+        [
+          998,
+          "torso_raising"
+        ],
+        [
+          1338,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.130666835723446,
+      "hip_height_px": 103.15638097977217,
+      "chest_height_px": 156.27241347351728,
+      "head_height_px": 186.26987482647385,
+      "tail_max_speed_px_frame": 0.00041584872501784385,
+      "max_recovery_speed_px_frame": 10.922493577894329,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 5,
+      "frames": 2100,
+      "raise_frame": 998,
+      "upright_frame": 1338,
+      "hip_height_before_raise": 89.8628832612502,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.2810596556647,
+      "max_abs_torso_tilt_deg": 0.5539616160345262,
+      "min_lower_margin_px": 14.115781725080183,
+      "min_unassisted_transition_margin_px": -6.435547481513595,
+      "foot_share_final": 0.23448505764250402,
+      "tail_foot_travel_px": 0.0009114627824828858,
+      "tail_knee_travel_px": 0.024465290852731414
+    },
+    {
+      "collapse_frame": 235,
+      "state": "upright_kneeling",
+      "start_frame": 324,
+      "support_frame": 467,
+      "events": [
+        [
+          324,
+          "rising"
+        ],
+        [
+          467,
+          "supported"
+        ],
+        [
+          527,
+          "foot_placing"
+        ],
+        [
+          807,
+          "transferring"
+        ],
+        [
+          956,
+          "half_kneeling"
+        ],
+        [
+          1016,
+          "torso_raising"
+        ],
+        [
+          1350,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 13.827765569011149,
+      "hip_height_px": 103.20195778332968,
+      "chest_height_px": 156.31797787263233,
+      "head_height_px": 186.3154703407555,
+      "tail_max_speed_px_frame": 0.00040837793807344084,
+      "max_recovery_speed_px_frame": 10.599699265431468,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 10,
+      "frames": 2100,
+      "raise_frame": 1016,
+      "upright_frame": 1350,
+      "hip_height_before_raise": 89.90767155354095,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.32660227924666,
+      "max_abs_torso_tilt_deg": 0.547268934817006,
+      "min_lower_margin_px": 13.81308072175068,
+      "min_unassisted_transition_margin_px": -6.099965573674808,
+      "foot_share_final": 0.23473779549454754,
+      "tail_foot_travel_px": 0.0008882370004812401,
+      "tail_knee_travel_px": 0.024030700226262525
+    },
+    {
+      "collapse_frame": 238,
+      "state": "upright_kneeling",
+      "start_frame": 327,
+      "support_frame": 471,
+      "events": [
+        [
+          327,
+          "rising"
+        ],
+        [
+          471,
+          "supported"
+        ],
+        [
+          531,
+          "foot_placing"
+        ],
+        [
+          800,
+          "transferring"
+        ],
+        [
+          949,
+          "half_kneeling"
+        ],
+        [
+          1009,
+          "torso_raising"
+        ],
+        [
+          1349,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.126293102161867,
+      "hip_height_px": 103.15704549813739,
+      "chest_height_px": 156.27307804054692,
+      "head_height_px": 186.2705399204747,
+      "tail_max_speed_px_frame": 0.0004157321051550489,
+      "max_recovery_speed_px_frame": 9.344608384917667,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 15,
+      "frames": 2100,
+      "raise_frame": 1009,
+      "upright_frame": 1349,
+      "hip_height_before_raise": 89.83575272124952,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.28172392085747,
+      "max_abs_torso_tilt_deg": 0.5538521988382852,
+      "min_lower_margin_px": 14.111278322568637,
+      "min_unassisted_transition_margin_px": -6.446663042213572,
+      "foot_share_final": 0.2344755763414096,
+      "tail_foot_travel_px": 0.0009110796129334631,
+      "tail_knee_travel_px": 0.024458788611354976
+    },
+    {
+      "collapse_frame": 242,
+      "state": "upright_kneeling",
+      "start_frame": 331,
+      "support_frame": 477,
+      "events": [
+        [
+          331,
+          "rising"
+        ],
+        [
+          477,
+          "supported"
+        ],
+        [
+          537,
+          "foot_placing"
+        ],
+        [
+          806,
+          "transferring"
+        ],
+        [
+          955,
+          "half_kneeling"
+        ],
+        [
+          1015,
+          "torso_raising"
+        ],
+        [
+          1355,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.126797057935391,
+      "hip_height_px": 103.15696890456306,
+      "chest_height_px": 156.27300144863605,
+      "head_height_px": 186.27046327080467,
+      "tail_max_speed_px_frame": 0.0004157472074508792,
+      "max_recovery_speed_px_frame": 9.498811600039048,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 20,
+      "frames": 2100,
+      "raise_frame": 1015,
+      "upright_frame": 1355,
+      "hip_height_before_raise": 89.83287682165854,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.28164736346812,
+      "max_abs_torso_tilt_deg": 0.5538640229897839,
+      "min_lower_margin_px": 14.111803155325902,
+      "min_unassisted_transition_margin_px": -6.444703209934914,
+      "foot_share_final": 0.2344766704729291,
+      "tail_foot_travel_px": 0.0009111234717238403,
+      "tail_knee_travel_px": 0.024459544480237128
+    },
+    {
+      "collapse_frame": 259,
+      "state": "upright_kneeling",
+      "start_frame": 348,
+      "support_frame": 493,
+      "events": [
+        [
+          348,
+          "rising"
+        ],
+        [
+          493,
+          "supported"
+        ],
+        [
+          553,
+          "foot_placing"
+        ],
+        [
+          822,
+          "transferring"
+        ],
+        [
+          972,
+          "half_kneeling"
+        ],
+        [
+          1032,
+          "torso_raising"
+        ],
+        [
+          1366,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 13.806023596369073,
+      "hip_height_px": 103.20516754190297,
+      "chest_height_px": 156.32118806661902,
+      "head_height_px": 186.31868321706037,
+      "tail_max_speed_px_frame": 0.0004077967725005664,
+      "max_recovery_speed_px_frame": 15.563068806553195,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 25,
+      "frames": 2100,
+      "raise_frame": 1032,
+      "upright_frame": 1366,
+      "hip_height_before_raise": 89.88270293230084,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.32981100781515,
+      "max_abs_torso_tilt_deg": 0.5467181511813968,
+      "min_lower_margin_px": 13.791359368475696,
+      "min_unassisted_transition_margin_px": -6.152284027068845,
+      "foot_share_final": 0.2346912181436491,
+      "tail_foot_travel_px": 0.0008862314140287708,
+      "tail_knee_travel_px": 0.023996855961740948
+    },
+    {
+      "collapse_frame": 227,
+      "state": "upright_kneeling",
+      "start_frame": 316,
+      "support_frame": 942,
+      "events": [
+        [
+          316,
+          "repositioning"
+        ],
+        [
+          556,
+          "repositioning"
+        ],
+        [
+          796,
+          "rising"
+        ],
+        [
+          942,
+          "supported"
+        ],
+        [
+          1002,
+          "foot_placing"
+        ],
+        [
+          1271,
+          "transferring"
+        ],
+        [
+          1420,
+          "half_kneeling"
+        ],
+        [
+          1480,
+          "torso_raising"
+        ],
+        [
+          1820,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.004764558062252,
+      "hip_height_px": 103.17572849167965,
+      "chest_height_px": 156.291767181164,
+      "head_height_px": 186.28924530323968,
+      "tail_max_speed_px_frame": 0.00041230365226579534,
+      "max_recovery_speed_px_frame": 7.445584186882908,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 0,
+      "frames": 2100,
+      "raise_frame": 1480,
+      "upright_frame": 1820,
+      "hip_height_before_raise": 89.76994388278288,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.30040536877812,
+      "max_abs_torso_tilt_deg": 0.5507351541321311,
+      "min_lower_margin_px": 13.989975490877658,
+      "min_unassisted_transition_margin_px": -6.454595139944644,
+      "foot_share_final": 0.23515008697778242,
+      "tail_foot_travel_px": 0.0009024707657339093,
+      "tail_knee_travel_px": 0.024259084723347257
+    },
+    {
+      "collapse_frame": 230,
+      "state": "upright_kneeling",
+      "start_frame": 319,
+      "support_frame": 945,
+      "events": [
+        [
+          319,
+          "repositioning"
+        ],
+        [
+          559,
+          "repositioning"
+        ],
+        [
+          799,
+          "rising"
+        ],
+        [
+          945,
+          "supported"
+        ],
+        [
+          1005,
+          "foot_placing"
+        ],
+        [
+          1274,
+          "transferring"
+        ],
+        [
+          1423,
+          "half_kneeling"
+        ],
+        [
+          1483,
+          "torso_raising"
+        ],
+        [
+          1823,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.004012244839203,
+      "hip_height_px": 103.17584147370542,
+      "chest_height_px": 156.29188017112645,
+      "head_height_px": 186.28935838428282,
+      "tail_max_speed_px_frame": 0.000412284176113464,
+      "max_recovery_speed_px_frame": 7.606748003266009,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 5,
+      "frames": 2100,
+      "raise_frame": 1483,
+      "upright_frame": 1823,
+      "hip_height_before_raise": 89.76994388461708,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.300518307006,
+      "max_abs_torso_tilt_deg": 0.5507164144494796,
+      "min_lower_margin_px": 13.98922386415962,
+      "min_unassisted_transition_margin_px": -6.454595138320304,
+      "foot_share_final": 0.23514845274333956,
+      "tail_foot_travel_px": 0.0009024036344307262,
+      "tail_knee_travel_px": 0.024257951414632828
+    },
+    {
+      "collapse_frame": 238,
+      "state": "upright_kneeling",
+      "start_frame": 327,
+      "support_frame": 714,
+      "events": [
+        [
+          327,
+          "repositioning"
+        ],
+        [
+          567,
+          "rising"
+        ],
+        [
+          714,
+          "supported"
+        ],
+        [
+          774,
+          "foot_placing"
+        ],
+        [
+          1043,
+          "transferring"
+        ],
+        [
+          1192,
+          "half_kneeling"
+        ],
+        [
+          1252,
+          "torso_raising"
+        ],
+        [
+          1592,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.062042985475559,
+      "hip_height_px": 103.16710336732783,
+      "chest_height_px": 156.28314146101678,
+      "head_height_px": 186.28061264133993,
+      "tail_max_speed_px_frame": 0.0004137818963254135,
+      "max_recovery_speed_px_frame": 9.695646598889253,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 10,
+      "frames": 2100,
+      "raise_frame": 1252,
+      "upright_frame": 1592,
+      "hip_height_before_raise": 89.76991140387264,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.29178359472769,
+      "max_abs_torso_tilt_deg": 0.5521616488223356,
+      "min_lower_margin_px": 14.047201658078341,
+      "min_unassisted_transition_margin_px": -6.454592604511195,
+      "foot_share_final": 0.2352746947240482,
+      "tail_foot_travel_px": 0.0009075629710366684,
+      "tail_knee_travel_px": 0.024345092518874623
+    },
+    {
+      "collapse_frame": 239,
+      "state": "upright_kneeling",
+      "start_frame": 328,
+      "support_frame": 716,
+      "events": [
+        [
+          328,
+          "repositioning"
+        ],
+        [
+          568,
+          "rising"
+        ],
+        [
+          716,
+          "supported"
+        ],
+        [
+          776,
+          "foot_placing"
+        ],
+        [
+          1045,
+          "transferring"
+        ],
+        [
+          1195,
+          "half_kneeling"
+        ],
+        [
+          1255,
+          "torso_raising"
+        ],
+        [
+          1595,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.064247953932636,
+      "hip_height_px": 103.16677042711254,
+      "chest_height_px": 156.28280849819694,
+      "head_height_px": 186.28027941100842,
+      "tail_max_speed_px_frame": 0.00041383862071515834,
+      "max_recovery_speed_px_frame": 7.386295530189737,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 15,
+      "frames": 2100,
+      "raise_frame": 1255,
+      "upright_frame": 1595,
+      "hip_height_before_raise": 89.90565655911439,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.29145078409948,
+      "max_abs_torso_tilt_deg": 0.55221655185678,
+      "min_lower_margin_px": 14.049404622066675,
+      "min_unassisted_transition_margin_px": -6.401834066623849,
+      "foot_share_final": 0.2352794988019062,
+      "tail_foot_travel_px": 0.0009077582515715221,
+      "tail_knee_travel_px": 0.024348392453134693
+    },
+    {
+      "collapse_frame": 252,
+      "state": "upright_kneeling",
+      "start_frame": 341,
+      "support_frame": 967,
+      "events": [
+        [
+          341,
+          "repositioning"
+        ],
+        [
+          581,
+          "repositioning"
+        ],
+        [
+          821,
+          "rising"
+        ],
+        [
+          967,
+          "supported"
+        ],
+        [
+          1027,
+          "foot_placing"
+        ],
+        [
+          1296,
+          "transferring"
+        ],
+        [
+          1445,
+          "half_kneeling"
+        ],
+        [
+          1505,
+          "torso_raising"
+        ],
+        [
+          1845,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 13.998496347671335,
+      "hip_height_px": 103.17666960840336,
+      "chest_height_px": 156.29270836409563,
+      "head_height_px": 186.2901872449707,
+      "tail_max_speed_px_frame": 0.0004121413315965508,
+      "max_recovery_speed_px_frame": 7.410386029636067,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 20,
+      "frames": 2100,
+      "raise_frame": 1505,
+      "upright_frame": 1845,
+      "hip_height_before_raise": 89.76994373347168,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.3013461207369,
+      "max_abs_torso_tilt_deg": 0.5505790146728565,
+      "min_lower_margin_px": 13.983713039553265,
+      "min_unassisted_transition_margin_px": -6.454595161034177,
+      "foot_share_final": 0.2351364725737405,
+      "tail_foot_travel_px": 0.000901911236944386,
+      "tail_knee_travel_px": 0.024249639197620354
+    },
+    {
+      "collapse_frame": 276,
+      "state": "upright_kneeling",
+      "start_frame": 365,
+      "support_frame": 762,
+      "events": [
+        [
+          365,
+          "repositioning"
+        ],
+        [
+          605,
+          "rising"
+        ],
+        [
+          762,
+          "supported"
+        ],
+        [
+          822,
+          "foot_placing"
+        ],
+        [
+          1091,
+          "transferring"
+        ],
+        [
+          1240,
+          "half_kneeling"
+        ],
+        [
+          1300,
+          "torso_raising"
+        ],
+        [
+          1640,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.052246896598788,
+      "hip_height_px": 103.16858171585685,
+      "chest_height_px": 156.28461991026674,
+      "head_height_px": 186.28209227881786,
+      "tail_max_speed_px_frame": 0.0004135297221892722,
+      "max_recovery_speed_px_frame": 11.420854527917779,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 25,
+      "frames": 2100,
+      "raise_frame": 1300,
+      "upright_frame": 1640,
+      "hip_height_before_raise": 89.80363045083868,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.29326136808513,
+      "max_abs_torso_tilt_deg": 0.5519177196124262,
+      "min_lower_margin_px": 14.037414481042646,
+      "min_unassisted_transition_margin_px": -6.437405032955432,
+      "foot_share_final": 0.23525335796300723,
+      "tail_foot_travel_px": 0.0009066947212446053,
+      "tail_knee_travel_px": 0.024330421932418744
+    },
+    {
+      "collapse_frame": 223,
+      "state": "upright_kneeling",
+      "start_frame": 312,
+      "support_frame": 459,
+      "events": [
+        [
+          312,
+          "rising"
+        ],
+        [
+          459,
+          "supported"
+        ],
+        [
+          519,
+          "foot_placing"
+        ],
+        [
+          788,
+          "transferring"
+        ],
+        [
+          937,
+          "half_kneeling"
+        ],
+        [
+          997,
+          "torso_raising"
+        ],
+        [
+          1337,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.130242804595468,
+      "hip_height_px": 103.15644541437413,
+      "chest_height_px": 156.27247791326212,
+      "head_height_px": 186.2699393179026,
+      "tail_max_speed_px_frame": 0.0004158386547072844,
+      "max_recovery_speed_px_frame": 9.601527270677085,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 0,
+      "frames": 2100,
+      "raise_frame": 997,
+      "upright_frame": 1337,
+      "hip_height_before_raise": 89.76988969289974,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.28112406605626,
+      "max_abs_torso_tilt_deg": 0.5539509614618056,
+      "min_lower_margin_px": 14.115363492565848,
+      "min_unassisted_transition_margin_px": -6.4545959969532305,
+      "foot_share_final": 0.23448413827119857,
+      "tail_foot_travel_px": 0.0009114254473843175,
+      "tail_knee_travel_px": 0.02446466325682195
+    },
+    {
+      "collapse_frame": 228,
+      "state": "upright_kneeling",
+      "start_frame": 317,
+      "support_frame": 464,
+      "events": [
+        [
+          317,
+          "rising"
+        ],
+        [
+          464,
+          "supported"
+        ],
+        [
+          524,
+          "foot_placing"
+        ],
+        [
+          793,
+          "transferring"
+        ],
+        [
+          942,
+          "half_kneeling"
+        ],
+        [
+          1002,
+          "torso_raising"
+        ],
+        [
+          1342,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.130037207181772,
+      "hip_height_px": 103.15647665225268,
+      "chest_height_px": 156.27250915422212,
+      "head_height_px": 186.26997058410603,
+      "tail_max_speed_px_frame": 0.00041583375733714515,
+      "max_recovery_speed_px_frame": 9.519738988300858,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 5,
+      "frames": 2100,
+      "raise_frame": 1002,
+      "upright_frame": 1342,
+      "hip_height_before_raise": 89.81999802453544,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.28115529277324,
+      "max_abs_torso_tilt_deg": 0.5539457322514882,
+      "min_lower_margin_px": 14.115158819929093,
+      "min_unassisted_transition_margin_px": -6.447098079321108,
+      "foot_share_final": 0.23448369267457053,
+      "tail_foot_travel_px": 0.0009114073438922787,
+      "tail_knee_travel_px": 0.024464359173975936
+    },
+    {
+      "collapse_frame": 231,
+      "state": "upright_kneeling",
+      "start_frame": 320,
+      "support_frame": 461,
+      "events": [
+        [
+          320,
+          "rising"
+        ],
+        [
+          461,
+          "supported"
+        ],
+        [
+          521,
+          "foot_placing"
+        ],
+        [
+          790,
+          "transferring"
+        ],
+        [
+          939,
+          "half_kneeling"
+        ],
+        [
+          999,
+          "torso_raising"
+        ],
+        [
+          1330,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 13.838415178847754,
+      "hip_height_px": 103.20038319147008,
+      "chest_height_px": 156.31640306820358,
+      "head_height_px": 186.313894221629,
+      "tail_max_speed_px_frame": 0.00040866214137418,
+      "max_recovery_speed_px_frame": 9.678657329362068,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 10,
+      "frames": 2100,
+      "raise_frame": 999,
+      "upright_frame": 1330,
+      "hip_height_before_raise": 89.90026933800087,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.32502819336923,
+      "max_abs_torso_tilt_deg": 0.5475386997841447,
+      "min_lower_margin_px": 13.823720220934092,
+      "min_unassisted_transition_margin_px": -6.107429706245398,
+      "foot_share_final": 0.23476062877635362,
+      "tail_foot_travel_px": 0.0008892174480479298,
+      "tail_knee_travel_px": 0.02404724981909112
+    },
+    {
+      "collapse_frame": 236,
+      "state": "upright_kneeling",
+      "start_frame": 325,
+      "support_frame": 470,
+      "events": [
+        [
+          325,
+          "rising"
+        ],
+        [
+          470,
+          "supported"
+        ],
+        [
+          530,
+          "foot_placing"
+        ],
+        [
+          799,
+          "transferring"
+        ],
+        [
+          948,
+          "half_kneeling"
+        ],
+        [
+          1008,
+          "torso_raising"
+        ],
+        [
+          1348,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.128945550289586,
+      "hip_height_px": 103.15664250234065,
+      "chest_height_px": 156.27267502116894,
+      "head_height_px": 186.27013658483722,
+      "tail_max_speed_px_frame": 0.0004158066425251978,
+      "max_recovery_speed_px_frame": 9.795918002084136,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 15,
+      "frames": 2100,
+      "raise_frame": 1008,
+      "upright_frame": 1348,
+      "hip_height_before_raise": 89.82618991953572,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.28132108415701,
+      "max_abs_torso_tilt_deg": 0.5539179141255623,
+      "min_lower_margin_px": 14.114053099185867,
+      "min_unassisted_transition_margin_px": -6.42908407328639,
+      "foot_share_final": 0.23448132708656735,
+      "tail_foot_travel_px": 0.0009113113812873053,
+      "tail_knee_travel_px": 0.024462742471882848
+    },
+    {
+      "collapse_frame": 241,
+      "state": "upright_kneeling",
+      "start_frame": 330,
+      "support_frame": 474,
+      "events": [
+        [
+          330,
+          "rising"
+        ],
+        [
+          474,
+          "supported"
+        ],
+        [
+          534,
+          "foot_placing"
+        ],
+        [
+          804,
+          "transferring"
+        ],
+        [
+          953,
+          "half_kneeling"
+        ],
+        [
+          1013,
+          "torso_raising"
+        ],
+        [
+          1345,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 13.853797876795966,
+      "hip_height_px": 103.19810601205793,
+      "chest_height_px": 156.31412558255653,
+      "head_height_px": 186.31161483599433,
+      "tail_max_speed_px_frame": 0.0004090721201587128,
+      "max_recovery_speed_px_frame": 9.18806133989915,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 20,
+      "frames": 2100,
+      "raise_frame": 1013,
+      "upright_frame": 1345,
+      "hip_height_before_raise": 89.83273309517881,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.3227517465098,
+      "max_abs_torso_tilt_deg": 0.5479283372940866,
+      "min_lower_margin_px": 13.83908833625378,
+      "min_unassisted_transition_margin_px": -6.018726392685153,
+      "foot_share_final": 0.2347936319291477,
+      "tail_foot_travel_px": 0.0008906314063779064,
+      "tail_knee_travel_px": 0.024071122222153463
+    },
+    {
+      "collapse_frame": 252,
+      "state": "upright_kneeling",
+      "start_frame": 341,
+      "support_frame": 489,
+      "events": [
+        [
+          341,
+          "rising"
+        ],
+        [
+          489,
+          "supported"
+        ],
+        [
+          549,
+          "foot_placing"
+        ],
+        [
+          819,
+          "transferring"
+        ],
+        [
+          968,
+          "half_kneeling"
+        ],
+        [
+          1028,
+          "torso_raising"
+        ],
+        [
+          1358,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.144278412846802,
+      "hip_height_px": 103.15431083128448,
+      "chest_height_px": 156.2703432432289,
+      "head_height_px": 186.26780297207938,
+      "tail_max_speed_px_frame": 0.000416195398936495,
+      "max_recovery_speed_px_frame": 9.144753340685611,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 25,
+      "frames": 2100,
+      "raise_frame": 1028,
+      "upright_frame": 1358,
+      "hip_height_before_raise": 89.92949426968619,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.27899036485897,
+      "max_abs_torso_tilt_deg": 0.5542947013894165,
+      "min_lower_margin_px": 14.129349469695626,
+      "min_unassisted_transition_margin_px": -6.304771869578758,
+      "foot_share_final": 0.23451459977334346,
+      "tail_foot_travel_px": 0.000912655974275367,
+      "tail_knee_travel_px": 0.02448550418898776
+    },
+    {
+      "collapse_frame": 223,
+      "state": "upright_kneeling",
+      "start_frame": 312,
+      "support_frame": 938,
+      "events": [
+        [
+          312,
+          "repositioning"
+        ],
+        [
+          552,
+          "repositioning"
+        ],
+        [
+          792,
+          "rising"
+        ],
+        [
+          938,
+          "supported"
+        ],
+        [
+          998,
+          "foot_placing"
+        ],
+        [
+          1267,
+          "transferring"
+        ],
+        [
+          1416,
+          "half_kneeling"
+        ],
+        [
+          1476,
+          "torso_raising"
+        ],
+        [
+          1816,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.005767694976726,
+      "hip_height_px": 103.17557782885083,
+      "chest_height_px": 156.2916165077569,
+      "head_height_px": 186.28909450838145,
+      "tail_max_speed_px_frame": 0.00041232961935363843,
+      "max_recovery_speed_px_frame": 7.330245479427687,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 0,
+      "frames": 2100,
+      "raise_frame": 1476,
+      "upright_frame": 1816,
+      "hip_height_before_raise": 89.76994375334786,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.30025476435787,
+      "max_abs_torso_tilt_deg": 0.5507601415408581,
+      "min_lower_margin_px": 13.990977710710652,
+      "min_unassisted_transition_margin_px": -6.4545951580111165,
+      "foot_share_final": 0.23515226616826015,
+      "tail_foot_travel_px": 0.0009025602687984247,
+      "tail_knee_travel_px": 0.024260595733380796
+    },
+    {
+      "collapse_frame": 227,
+      "state": "upright_kneeling",
+      "start_frame": 316,
+      "support_frame": 942,
+      "events": [
+        [
+          316,
+          "repositioning"
+        ],
+        [
+          556,
+          "repositioning"
+        ],
+        [
+          796,
+          "rising"
+        ],
+        [
+          942,
+          "supported"
+        ],
+        [
+          1002,
+          "foot_placing"
+        ],
+        [
+          1271,
+          "transferring"
+        ],
+        [
+          1420,
+          "half_kneeling"
+        ],
+        [
+          1480,
+          "torso_raising"
+        ],
+        [
+          1820,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.004764557548636,
+      "hip_height_px": 103.17572849175684,
+      "chest_height_px": 156.29176718124123,
+      "head_height_px": 186.28924530331693,
+      "tail_max_speed_px_frame": 0.0004123036522399685,
+      "max_recovery_speed_px_frame": 7.441435244304112,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 5,
+      "frames": 2100,
+      "raise_frame": 1480,
+      "upright_frame": 1820,
+      "hip_height_before_raise": 89.7699438425407,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.30040536885528,
+      "max_abs_torso_tilt_deg": 0.5507351541195622,
+      "min_lower_margin_px": 13.989975490364781,
+      "min_unassisted_transition_margin_px": -6.454595144391508,
+      "foot_share_final": 0.23515008697666706,
+      "tail_foot_travel_px": 0.0009024707657117048,
+      "tail_knee_travel_px": 0.0242590847224875
+    },
+    {
+      "collapse_frame": 233,
+      "state": "upright_kneeling",
+      "start_frame": 322,
+      "support_frame": 948,
+      "events": [
+        [
+          322,
+          "repositioning"
+        ],
+        [
+          562,
+          "repositioning"
+        ],
+        [
+          802,
+          "rising"
+        ],
+        [
+          948,
+          "supported"
+        ],
+        [
+          1008,
+          "foot_placing"
+        ],
+        [
+          1277,
+          "transferring"
+        ],
+        [
+          1426,
+          "half_kneeling"
+        ],
+        [
+          1486,
+          "torso_raising"
+        ],
+        [
+          1826,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.003259964709052,
+      "hip_height_px": 103.17595444290455,
+      "chest_height_px": 156.29199314826448,
+      "head_height_px": 186.28947145249487,
+      "tail_max_speed_px_frame": 0.00041226469918473216,
+      "max_recovery_speed_px_frame": 7.366027861242314,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 10,
+      "frames": 2100,
+      "raise_frame": 1486,
+      "upright_frame": 1826,
+      "hip_height_before_raise": 89.76994378522193,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.30063123241413,
+      "max_abs_torso_tilt_deg": 0.5506976755286828,
+      "min_lower_margin_px": 13.988472269920358,
+      "min_unassisted_transition_margin_px": -6.454595153470862,
+      "foot_share_final": 0.23514681864296072,
+      "tail_foot_travel_px": 0.0009023364998057559,
+      "tail_knee_travel_px": 0.024256818060919727
+    },
+    {
+      "collapse_frame": 237,
+      "state": "upright_kneeling",
+      "start_frame": 326,
+      "support_frame": 714,
+      "events": [
+        [
+          326,
+          "repositioning"
+        ],
+        [
+          566,
+          "rising"
+        ],
+        [
+          714,
+          "supported"
+        ],
+        [
+          774,
+          "foot_placing"
+        ],
+        [
+          1043,
+          "transferring"
+        ],
+        [
+          1193,
+          "half_kneeling"
+        ],
+        [
+          1253,
+          "torso_raising"
+        ],
+        [
+          1593,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.064751361224268,
+      "hip_height_px": 103.16669440543163,
+      "chest_height_px": 156.2827324713588,
+      "head_height_px": 186.28020332309285,
+      "tail_max_speed_px_frame": 0.0004138515693750632,
+      "max_recovery_speed_px_frame": 7.540122456477256,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 15,
+      "frames": 2100,
+      "raise_frame": 1253,
+      "upright_frame": 1593,
+      "hip_height_before_raise": 89.90565559973933,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.29137479201054,
+      "max_abs_torso_tilt_deg": 0.5522290864310393,
+      "min_lower_margin_px": 14.049907571802493,
+      "min_unassisted_transition_margin_px": -6.4018340082485,
+      "foot_share_final": 0.23528059567635878,
+      "tail_foot_travel_px": 0.0009078028276974237,
+      "tail_knee_travel_px": 0.02434914573288438
+    },
+    {
+      "collapse_frame": 242,
+      "state": "upright_kneeling",
+      "start_frame": 331,
+      "support_frame": 722,
+      "events": [
+        [
+          331,
+          "repositioning"
+        ],
+        [
+          573,
+          "rising"
+        ],
+        [
+          722,
+          "supported"
+        ],
+        [
+          782,
+          "foot_placing"
+        ],
+        [
+          1051,
+          "transferring"
+        ],
+        [
+          1200,
+          "half_kneeling"
+        ],
+        [
+          1260,
+          "torso_raising"
+        ],
+        [
+          1600,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.061923382283936,
+      "hip_height_px": 103.16712142493546,
+      "chest_height_px": 156.2831595198513,
+      "head_height_px": 186.28063071468435,
+      "tail_max_speed_px_frame": 0.0004137788191065753,
+      "max_recovery_speed_px_frame": 11.637775860405178,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 20,
+      "frames": 2100,
+      "raise_frame": 1260,
+      "upright_frame": 1600,
+      "hip_height_before_raise": 89.83968690711887,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.29180164530752,
+      "max_abs_torso_tilt_deg": 0.5521586707161564,
+      "min_lower_margin_px": 14.047082163629256,
+      "min_unassisted_transition_margin_px": -6.427525151789837,
+      "foot_share_final": 0.23527443415377744,
+      "tail_foot_travel_px": 0.0009075523770434302,
+      "tail_knee_travel_px": 0.02434491349870882
+    },
+    {
+      "collapse_frame": 250,
+      "state": "upright_kneeling",
+      "start_frame": 339,
+      "support_frame": 965,
+      "events": [
+        [
+          339,
+          "repositioning"
+        ],
+        [
+          579,
+          "repositioning"
+        ],
+        [
+          819,
+          "rising"
+        ],
+        [
+          965,
+          "supported"
+        ],
+        [
+          1025,
+          "foot_placing"
+        ],
+        [
+          1294,
+          "transferring"
+        ],
+        [
+          1443,
+          "half_kneeling"
+        ],
+        [
+          1503,
+          "torso_raising"
+        ],
+        [
+          1843,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 13.998997713855541,
+      "hip_height_px": 103.17659435275408,
+      "chest_height_px": 156.29263310314224,
+      "head_height_px": 186.2901119233301,
+      "tail_max_speed_px_frame": 0.000412154318550635,
+      "max_recovery_speed_px_frame": 7.260149806874943,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 25,
+      "frames": 2100,
+      "raise_frame": 1503,
+      "upright_frame": 1843,
+      "hip_height_before_raise": 89.76994370053478,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.30127089424883,
+      "max_abs_torso_tilt_deg": 0.5505915039278572,
+      "min_lower_margin_px": 13.984213941812808,
+      "min_unassisted_transition_margin_px": -6.454595169985694,
+      "foot_share_final": 0.23513756136989497,
+      "tail_foot_travel_px": 0.0009019560077661026,
+      "tail_knee_travel_px": 0.024250394943727827
+    },
+    {
+      "collapse_frame": 218,
+      "state": "upright_kneeling",
+      "start_frame": 307,
+      "support_frame": 454,
+      "events": [
+        [
+          307,
+          "rising"
+        ],
+        [
+          454,
+          "supported"
+        ],
+        [
+          514,
+          "foot_placing"
+        ],
+        [
+          783,
+          "transferring"
+        ],
+        [
+          932,
+          "half_kneeling"
+        ],
+        [
+          992,
+          "torso_raising"
+        ],
+        [
+          1326,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 13.833721350530709,
+      "hip_height_px": 103.20107738876018,
+      "chest_height_px": 156.3170973591273,
+      "head_height_px": 186.31458909207637,
+      "tail_max_speed_px_frame": 0.000408536915837986,
+      "max_recovery_speed_px_frame": 10.710649926422873,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 0,
+      "frames": 2100,
+      "raise_frame": 992,
+      "upright_frame": 1326,
+      "hip_height_before_raise": 89.83999427499882,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.32572216752885,
+      "max_abs_torso_tilt_deg": 0.547419802028095,
+      "min_lower_margin_px": 13.819030847438512,
+      "min_unassisted_transition_margin_px": -6.085662284471823,
+      "foot_share_final": 0.23475056345151493,
+      "tail_foot_travel_px": 0.000888785470010589,
+      "tail_knee_travel_px": 0.024039957831405445
+    },
+    {
+      "collapse_frame": 224,
+      "state": "upright_kneeling",
+      "start_frame": 313,
+      "support_frame": 461,
+      "events": [
+        [
+          313,
+          "rising"
+        ],
+        [
+          461,
+          "supported"
+        ],
+        [
+          521,
+          "foot_placing"
+        ],
+        [
+          790,
+          "transferring"
+        ],
+        [
+          940,
+          "half_kneeling"
+        ],
+        [
+          1000,
+          "torso_raising"
+        ],
+        [
+          1340,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.128013697369738,
+      "hip_height_px": 103.15678405193071,
+      "chest_height_px": 156.27281658665635,
+      "head_height_px": 186.27027826435,
+      "tail_max_speed_px_frame": 0.0004157817080449889,
+      "max_recovery_speed_px_frame": 10.448291490822967,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 5,
+      "frames": 2100,
+      "raise_frame": 1000,
+      "upright_frame": 1340,
+      "hip_height_before_raise": 89.86614397931297,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.2814625852294,
+      "max_abs_torso_tilt_deg": 0.5538940074073655,
+      "min_lower_margin_px": 14.113076684014231,
+      "min_unassisted_transition_margin_px": -6.466010620009911,
+      "foot_share_final": 0.23447930858993818,
+      "tail_foot_travel_px": 0.0009112297266256064,
+      "tail_knee_travel_px": 0.024461359362476287
+    },
+    {
+      "collapse_frame": 227,
+      "state": "upright_kneeling",
+      "start_frame": 316,
+      "support_frame": 466,
+      "events": [
+        [
+          316,
+          "rising"
+        ],
+        [
+          466,
+          "supported"
+        ],
+        [
+          526,
+          "foot_placing"
+        ],
+        [
+          795,
+          "transferring"
+        ],
+        [
+          944,
+          "half_kneeling"
+        ],
+        [
+          1004,
+          "torso_raising"
+        ],
+        [
+          1344,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.130164236420228,
+      "hip_height_px": 103.15645735546272,
+      "chest_height_px": 156.27248985486156,
+      "head_height_px": 186.26995126888391,
+      "tail_max_speed_px_frame": 0.00041583664694255204,
+      "max_recovery_speed_px_frame": 12.727339461831452,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 10,
+      "frames": 2100,
+      "raise_frame": 1004,
+      "upright_frame": 1344,
+      "hip_height_before_raise": 89.90474127750173,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.28113600223494,
+      "max_abs_torso_tilt_deg": 0.55394903491307,
+      "min_lower_margin_px": 14.115284995172033,
+      "min_unassisted_transition_margin_px": -6.433143735147496,
+      "foot_share_final": 0.23448396782280861,
+      "tail_foot_travel_px": 0.0009114185550060938,
+      "tail_knee_travel_px": 0.024464546491230976
+    },
+    {
+      "collapse_frame": 233,
+      "state": "upright_kneeling",
+      "start_frame": 322,
+      "support_frame": 468,
+      "events": [
+        [
+          322,
+          "rising"
+        ],
+        [
+          468,
+          "supported"
+        ],
+        [
+          528,
+          "foot_placing"
+        ],
+        [
+          797,
+          "transferring"
+        ],
+        [
+          946,
+          "half_kneeling"
+        ],
+        [
+          1006,
+          "torso_raising"
+        ],
+        [
+          1339,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 13.807665131737622,
+      "hip_height_px": 103.20492543170027,
+      "chest_height_px": 156.32094592347735,
+      "head_height_px": 186.31844087148482,
+      "tail_max_speed_px_frame": 0.0004078406978666347,
+      "max_recovery_speed_px_frame": 5.024035008934595,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 15,
+      "frames": 2100,
+      "raise_frame": 1006,
+      "upright_frame": 1339,
+      "hip_height_before_raise": 89.84376062293398,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.32956897524042,
+      "max_abs_torso_tilt_deg": 0.5467597372761487,
+      "min_lower_margin_px": 13.79299938892268,
+      "min_unassisted_transition_margin_px": -6.147228295231685,
+      "foot_share_final": 0.23469473296608845,
+      "tail_foot_travel_px": 0.0008863830211112145,
+      "tail_knee_travel_px": 0.02399941390751792
+    },
+    {
+      "collapse_frame": 238,
+      "state": "upright_kneeling",
+      "start_frame": 327,
+      "support_frame": 474,
+      "events": [
+        [
+          327,
+          "rising"
+        ],
+        [
+          474,
+          "supported"
+        ],
+        [
+          534,
+          "foot_placing"
+        ],
+        [
+          803,
+          "transferring"
+        ],
+        [
+          954,
+          "half_kneeling"
+        ],
+        [
+          1014,
+          "torso_raising"
+        ],
+        [
+          1366,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.132349683552889,
+      "hip_height_px": 103.15612517473357,
+      "chest_height_px": 156.27215765900687,
+      "head_height_px": 186.26961881081075,
+      "tail_max_speed_px_frame": 0.00041588991218470154,
+      "max_recovery_speed_px_frame": 10.737038360210079,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 20,
+      "frames": 2100,
+      "raise_frame": 1014,
+      "upright_frame": 1366,
+      "hip_height_before_raise": 89.95148453225494,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.2808039573568,
+      "max_abs_torso_tilt_deg": 0.5540027244334208,
+      "min_lower_margin_px": 14.117430212068143,
+      "min_unassisted_transition_margin_px": -6.401593923088171,
+      "foot_share_final": 0.23448870939750877,
+      "tail_foot_travel_px": 0.0009116106787132594,
+      "tail_knee_travel_px": 0.024467788493666376
+    },
+    {
+      "collapse_frame": 243,
+      "state": "upright_kneeling",
+      "start_frame": 332,
+      "support_frame": 482,
+      "events": [
+        [
+          332,
+          "rising"
+        ],
+        [
+          482,
+          "supported"
+        ],
+        [
+          542,
+          "foot_placing"
+        ],
+        [
+          811,
+          "transferring"
+        ],
+        [
+          961,
+          "half_kneeling"
+        ],
+        [
+          1021,
+          "torso_raising"
+        ],
+        [
+          1361,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.12270943536123,
+      "hip_height_px": 103.15759023238888,
+      "chest_height_px": 156.2736227340476,
+      "head_height_px": 186.27108502563294,
+      "tail_max_speed_px_frame": 0.00041565271520963124,
+      "max_recovery_speed_px_frame": 13.140096839733406,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 25,
+      "frames": 2100,
+      "raise_frame": 1021,
+      "upright_frame": 1361,
+      "hip_height_before_raise": 89.86607529870241,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.28226836771532,
+      "max_abs_torso_tilt_deg": 0.5538275375815928,
+      "min_lower_margin_px": 14.108073186835668,
+      "min_unassisted_transition_margin_px": -6.466006740890293,
+      "foot_share_final": 0.23446778423497244,
+      "tail_foot_travel_px": 0.0009107634012934795,
+      "tail_knee_travel_px": 0.024453455788943756
+    },
+    {
+      "collapse_frame": 219,
+      "state": "upright_kneeling",
+      "start_frame": 308,
+      "support_frame": 934,
+      "events": [
+        [
+          308,
+          "repositioning"
+        ],
+        [
+          548,
+          "repositioning"
+        ],
+        [
+          788,
+          "rising"
+        ],
+        [
+          934,
+          "supported"
+        ],
+        [
+          994,
+          "foot_placing"
+        ],
+        [
+          1263,
+          "transferring"
+        ],
+        [
+          1412,
+          "half_kneeling"
+        ],
+        [
+          1472,
+          "torso_raising"
+        ],
+        [
+          1812,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.006770890787081,
+      "hip_height_px": 103.1754271432008,
+      "chest_height_px": 156.29146581153347,
+      "head_height_px": 186.28894369069548,
+      "tail_max_speed_px_frame": 0.0004123555850263585,
+      "max_recovery_speed_px_frame": 7.565078026862413,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 0,
+      "frames": 2100,
+      "raise_frame": 1472,
+      "upright_frame": 1812,
+      "hip_height_before_raise": 89.76994344676774,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.30010413712978,
+      "max_abs_torso_tilt_deg": 0.550785130218235,
+      "min_lower_margin_px": 13.991979987694556,
+      "min_unassisted_transition_margin_px": -6.454595204793478,
+      "foot_share_final": 0.23515444559750678,
+      "tail_foot_travel_px": 0.0009026497656776655,
+      "tail_knee_travel_px": 0.024262106663563543
+    },
+    {
+      "collapse_frame": 223,
+      "state": "upright_kneeling",
+      "start_frame": 312,
+      "support_frame": 938,
+      "events": [
+        [
+          312,
+          "repositioning"
+        ],
+        [
+          552,
+          "repositioning"
+        ],
+        [
+          792,
+          "rising"
+        ],
+        [
+          938,
+          "supported"
+        ],
+        [
+          998,
+          "foot_placing"
+        ],
+        [
+          1267,
+          "transferring"
+        ],
+        [
+          1416,
+          "half_kneeling"
+        ],
+        [
+          1476,
+          "torso_raising"
+        ],
+        [
+          1816,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.005767700665047,
+      "hip_height_px": 103.17557782799648,
+      "chest_height_px": 156.2916165069025,
+      "head_height_px": 186.28909450752639,
+      "tail_max_speed_px_frame": 0.00041232961949377194,
+      "max_recovery_speed_px_frame": 7.449699679034486,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 5,
+      "frames": 2100,
+      "raise_frame": 1476,
+      "upright_frame": 1816,
+      "hip_height_before_raise": 89.76994409899291,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.30025476350392,
+      "max_abs_torso_tilt_deg": 0.5507601416822261,
+      "min_lower_margin_px": 13.990977716393417,
+      "min_unassisted_transition_margin_px": -6.454595108686036,
+      "foot_share_final": 0.23515226618062157,
+      "tail_foot_travel_px": 0.0009025602692958046,
+      "tail_knee_travel_px": 0.0242605957418931
+    },
+    {
+      "collapse_frame": 228,
+      "state": "upright_kneeling",
+      "start_frame": 317,
+      "support_frame": 943,
+      "events": [
+        [
+          317,
+          "repositioning"
+        ],
+        [
+          557,
+          "repositioning"
+        ],
+        [
+          797,
+          "rising"
+        ],
+        [
+          943,
+          "supported"
+        ],
+        [
+          1003,
+          "foot_placing"
+        ],
+        [
+          1272,
+          "transferring"
+        ],
+        [
+          1421,
+          "half_kneeling"
+        ],
+        [
+          1481,
+          "torso_raising"
+        ],
+        [
+          1821,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.004513786636295,
+      "hip_height_px": 103.17576615328085,
+      "chest_height_px": 156.29180484541047,
+      "head_height_px": 186.28928299784667,
+      "tail_max_speed_px_frame": 0.000412297160409434,
+      "max_recovery_speed_px_frame": 7.449681750582749,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 10,
+      "frames": 2100,
+      "raise_frame": 1481,
+      "upright_frame": 1821,
+      "hip_height_before_raise": 89.76994409881794,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.30044301577942,
+      "max_abs_torso_tilt_deg": 0.5507289075712934,
+      "min_lower_margin_px": 13.989724948394539,
+      "min_unassisted_transition_margin_px": -6.454595108711985,
+      "foot_share_final": 0.23514954222528694,
+      "tail_foot_travel_px": 0.0009024483893398383,
+      "tail_knee_travel_px": 0.02425870696387733
+    },
+    {
+      "collapse_frame": 233,
+      "state": "upright_kneeling",
+      "start_frame": 322,
+      "support_frame": 949,
+      "events": [
+        [
+          322,
+          "repositioning"
+        ],
+        [
+          562,
+          "repositioning"
+        ],
+        [
+          802,
+          "rising"
+        ],
+        [
+          949,
+          "supported"
+        ],
+        [
+          1009,
+          "foot_placing"
+        ],
+        [
+          1278,
+          "transferring"
+        ],
+        [
+          1427,
+          "half_kneeling"
+        ],
+        [
+          1487,
+          "torso_raising"
+        ],
+        [
+          1827,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.003008901307552,
+      "hip_height_px": 103.17599214311099,
+      "chest_height_px": 156.29203085112098,
+      "head_height_px": 186.28950918574557,
+      "tail_max_speed_px_frame": 0.00041225819861406414,
+      "max_recovery_speed_px_frame": 7.516338167155418,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 15,
+      "frames": 2100,
+      "raise_frame": 1487,
+      "upright_frame": 1827,
+      "hip_height_before_raise": 89.77000694488711,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.30066891800709,
+      "max_abs_torso_tilt_deg": 0.5506914216551232,
+      "min_lower_margin_px": 13.988221435466613,
+      "min_unassisted_transition_margin_px": -6.454597771413091,
+      "foot_share_final": 0.2351462732977376,
+      "tail_foot_travel_px": 0.0009023140929969031,
+      "tail_knee_travel_px": 0.02425643979810843
+    },
+    {
+      "collapse_frame": 238,
+      "state": "upright_kneeling",
+      "start_frame": 327,
+      "support_frame": 726,
+      "events": [
+        [
+          327,
+          "repositioning"
+        ],
+        [
+          567,
+          "rising"
+        ],
+        [
+          726,
+          "supported"
+        ],
+        [
+          786,
+          "foot_placing"
+        ],
+        [
+          1055,
+          "transferring"
+        ],
+        [
+          1207,
+          "half_kneeling"
+        ],
+        [
+          1267,
+          "torso_raising"
+        ],
+        [
+          1607,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.059811749912711,
+      "hip_height_px": 103.1674402050223,
+      "chest_height_px": 156.2834783216098,
+      "head_height_px": 186.2809497726099,
+      "tail_max_speed_px_frame": 0.0004137244825429528,
+      "max_recovery_speed_px_frame": 9.70545516175548,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 20,
+      "frames": 2100,
+      "raise_frame": 1267,
+      "upright_frame": 1607,
+      "hip_height_before_raise": 89.9351678903343,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.29212030133749,
+      "max_abs_torso_tilt_deg": 0.5521060909349302,
+      "min_lower_margin_px": 14.044972451412036,
+      "min_unassisted_transition_margin_px": -6.43700030335026,
+      "foot_share_final": 0.23526983396234213,
+      "tail_foot_travel_px": 0.0009073653074551657,
+      "tail_knee_travel_px": 0.024341752443945097
+    },
+    {
+      "collapse_frame": 244,
+      "state": "upright_kneeling",
+      "start_frame": 333,
+      "support_frame": 959,
+      "events": [
+        [
+          333,
+          "repositioning"
+        ],
+        [
+          573,
+          "repositioning"
+        ],
+        [
+          813,
+          "rising"
+        ],
+        [
+          959,
+          "supported"
+        ],
+        [
+          1019,
+          "foot_placing"
+        ],
+        [
+          1288,
+          "transferring"
+        ],
+        [
+          1437,
+          "half_kneeling"
+        ],
+        [
+          1497,
+          "torso_raising"
+        ],
+        [
+          1837,
+          "upright_kneeling"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 14.000501910226696,
+      "hip_height_px": 103.17636855015903,
+      "chest_height_px": 156.29240728464526,
+      "head_height_px": 186.28988592275454,
+      "tail_max_speed_px_frame": 0.0004121932781654378,
+      "max_recovery_speed_px_frame": 7.268054725399478,
+      "min_supported_contacts": 2,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 25,
+      "frames": 2100,
+      "raise_frame": 1497,
+      "upright_frame": 1837,
+      "hip_height_before_raise": 89.7699437737532,
+      "tail_all_upright": true,
+      "min_lower_contacts": 2,
+      "max_arm_contacts": 0,
+      "min_hand_clearance_px": 85.3010451791611,
+      "max_abs_torso_tilt_deg": 0.5506289734651466,
+      "min_lower_margin_px": 13.985716743918928,
+      "min_unassisted_transition_margin_px": -6.454595156082576,
+      "foot_share_final": 0.23514082813768455,
+      "tail_foot_travel_px": 0.0009020903113849954,
+      "tail_knee_travel_px": 0.024252662079618403
+    }
+  ],
+  "summary": {
+    "cases": 36,
+    "states": {
+      "upright_kneeling": 36
+    },
+    "all_finite": true,
+    "all_upright_hold": true,
+    "max_penetration_px": 0.0,
+    "max_torque_ratio": 1.0,
+    "max_force_ratio": 1.0,
+    "max_tail_speed_px_frame": 0.0013689621260444705,
+    "max_tail_foot_travel_px": 0.000915657123073288,
+    "max_tail_knee_travel_px": 0.024536302776027696
+  }
+}

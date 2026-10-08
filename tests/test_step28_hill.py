@@ -16,7 +16,7 @@ KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
 
 
 def run(push_ms, t=7.0, n=420, **kw):
-    sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
+    sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
     for _ in range(n):
         sim.step()
     return sim
@@ -35,8 +35,8 @@ class HillCurveTest(unittest.TestCase):
 
 class HillSimTest(unittest.TestCase):
     def test_undisturbed_walk_unchanged(self):
-        a = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0)
-        b = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, hill=False)
+        a = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0)
+        b = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0, hill=False)
         for _ in range(900):
             a.step()
             b.step()

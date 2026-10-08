@@ -1,0 +1,6729 @@
+{
+  "previous": {
+    "collapse_frame": 218,
+    "state": "standing",
+    "start_frame": 307,
+    "support_frame": 454,
+    "events": [
+      [
+        307,
+        "rising"
+      ],
+      [
+        454,
+        "supported"
+      ],
+      [
+        514,
+        "foot_placing"
+      ],
+      [
+        783,
+        "transferring"
+      ],
+      [
+        932,
+        "half_kneeling"
+      ],
+      [
+        992,
+        "torso_raising"
+      ],
+      [
+        1326,
+        "upright_kneeling"
+      ],
+      [
+        1386,
+        "standing_rising"
+      ],
+      [
+        1734,
+        "standing"
+      ]
+    ],
+    "reason": null,
+    "support_contacts": 2,
+    "com_margin_px": 25.441197241642953,
+    "hip_height_px": 186.34368255755808,
+    "chest_height_px": 239.46617271466755,
+    "head_height_px": 269.46507526403667,
+    "tail_max_speed_px_frame": 0.0006211526101237541,
+    "max_recovery_speed_px_frame": 10.710649926422873,
+    "min_supported_contacts": 2,
+    "tail_all_supported": false,
+    "torque_limit_ratio": 1.0,
+    "force_limit_ratio": 1.0,
+    "gravity_values": [
+      2.2284444444444444
+    ],
+    "max_penetration_px": 0.0,
+    "finite": true,
+    "push_px": 150.0,
+    "phase": 0,
+    "frames": 3700
+  },
+  "recovery": {
+    "collapse_frame": 218,
+    "state": "walk_swing",
+    "start_frame": 307,
+    "support_frame": 454,
+    "events": [
+      [
+        307,
+        "rising"
+      ],
+      [
+        454,
+        "supported"
+      ],
+      [
+        514,
+        "foot_placing"
+      ],
+      [
+        783,
+        "transferring"
+      ],
+      [
+        932,
+        "half_kneeling"
+      ],
+      [
+        992,
+        "torso_raising"
+      ],
+      [
+        1326,
+        "upright_kneeling"
+      ],
+      [
+        1386,
+        "standing_rising"
+      ],
+      [
+        1734,
+        "standing"
+      ],
+      [
+        1794,
+        "walk_shift"
+      ],
+      [
+        1794,
+        "walk_prepare"
+      ],
+      [
+        1974,
+        "walk_shift"
+      ],
+      [
+        2094,
+        "walk_swing"
+      ],
+      [
+        2214,
+        "walk_land"
+      ],
+      [
+        2294,
+        "walk_shift"
+      ],
+      [
+        2414,
+        "walk_swing"
+      ],
+      [
+        2534,
+        "walk_land"
+      ],
+      [
+        2614,
+        "walk_shift"
+      ],
+      [
+        2734,
+        "walk_swing"
+      ],
+      [
+        2854,
+        "walk_land"
+      ],
+      [
+        2934,
+        "walk_shift"
+      ],
+      [
+        3054,
+        "walk_swing"
+      ],
+      [
+        3174,
+        "walk_land"
+      ],
+      [
+        3254,
+        "walk_shift"
+      ],
+      [
+        3374,
+        "walk_swing"
+      ],
+      [
+        3494,
+        "walk_land"
+      ],
+      [
+        3574,
+        "walk_shift"
+      ],
+      [
+        3694,
+        "walk_swing"
+      ]
+    ],
+    "reason": null,
+    "support_contacts": 1,
+    "com_margin_px": -4.072110872180133,
+    "hip_height_px": 189.95949973387062,
+    "chest_height_px": 243.04918332912263,
+    "head_height_px": 273.04434544422736,
+    "tail_max_speed_px_frame": 0.5461979963683827,
+    "max_recovery_speed_px_frame": 10.710649926422873,
+    "min_supported_contacts": 1,
+    "tail_all_supported": false,
+    "torque_limit_ratio": 1.0,
+    "force_limit_ratio": 1.0,
+    "gravity_values": [
+      2.2284444444444444
+    ],
+    "max_penetration_px": 0.0,
+    "finite": true,
+    "push_px": 150.0,
+    "phase": 0,
+    "frames": 3700,
+    "walk_start_frame": 1794,
+    "steps": [
+      {
+        "frame": 2294,
+        "side": "r",
+        "clearance_px": 46.56247001917012,
+        "stance_travel_px": 0.0036927121423104836,
+        "advance_px": 106.04645893427846
+      },
+      {
+        "frame": 2614,
+        "side": "l",
+        "clearance_px": 21.039340204952282,
+        "stance_travel_px": 0.16497946401875652,
+        "advance_px": 89.03388535063709
+      },
+      {
+        "frame": 2934,
+        "side": "r",
+        "clearance_px": 49.55589669250418,
+        "stance_travel_px": 0.17029262107121212,
+        "advance_px": 89.26090813167468
+      },
+      {
+        "frame": 3254,
+        "side": "l",
+        "clearance_px": 21.050428834773072,
+        "stance_travel_px": 0.1650857824540708,
+        "advance_px": 89.23381147946111
+      },
+      {
+        "frame": 3574,
+        "side": "r",
+        "clearance_px": 49.55565190891639,
+        "stance_travel_px": 0.17029978354207742,
+        "advance_px": 89.25198741749762
+      }
+    ],
+    "completed_steps": 5,
+    "alternating": true,
+    "distance_px": 250.82394638904157,
+    "min_foot_contacts": 1,
+    "max_other_contacts": 0,
+    "min_hip_height_px": 173.30064413197806,
+    "max_hip_delta_px": 1.3986663927096374,
+    "max_vertical_hip_delta_px": 1.398547928101408,
+    "max_stance_travel_px": 0.17029978354207742,
+    "min_step_clearance_px": 21.039340204952282,
+    "max_abs_torso_tilt_deg": 1.6731040744500667,
+    "max_walk_force_ratio": 0.8436521462805061,
+    "tail_all_walking": true,
+    "passed": true
+  },
+  "notes": [
+    "Opt-in recovery_walk requires recovery_stand and all previous stages; old defaults remain unchanged.",
+    "180-frame force cross-fade after 60 standing frames; 120-frame load transfer, 120-frame swing, at least 80-frame landing.",
+    "Slow alternating physical steps, not the former pinned-anchor IK gait or normal walking speed.",
+    "Hip-foot vector impulses conserve linear momentum, but are simplified world-reference servos, not an angular-momentum-conserving muscle model.",
+    "No point-position, mass, pin, gravity or topology reset; historical collapsed/fell flags retain the explicit-body solver.",
+    "Step completion requires measured clearance, forward travel and both feet loaded for five frames; timeout or loss of support fails the attempt.",
+    "Projection contact shares are numerical diagnostics, not physical body-weight percentages.",
+    "Existing earlier torso-raise COM margin deficit is unchanged. Walking balance is dynamic; single-foot COM interval margin is not a static success criterion.",
+    "36 original push/phase cases; 3700 frames each; video simulation seconds 58-100."
+  ],
+  "sweep": [
+    {
+      "collapse_frame": 227,
+      "state": "walk_shift",
+      "start_frame": 316,
+      "support_frame": 456,
+      "events": [
+        [
+          316,
+          "rising"
+        ],
+        [
+          456,
+          "supported"
+        ],
+        [
+          516,
+          "foot_placing"
+        ],
+        [
+          792,
+          "transferring"
+        ],
+        [
+          941,
+          "half_kneeling"
+        ],
+        [
+          1001,
+          "torso_raising"
+        ],
+        [
+          1343,
+          "upright_kneeling"
+        ],
+        [
+          1403,
+          "standing_rising"
+        ],
+        [
+          1751,
+          "standing"
+        ],
+        [
+          1811,
+          "walk_shift"
+        ],
+        [
+          1811,
+          "walk_prepare"
+        ],
+        [
+          1991,
+          "walk_shift"
+        ],
+        [
+          2111,
+          "walk_swing"
+        ],
+        [
+          2231,
+          "walk_land"
+        ],
+        [
+          2311,
+          "walk_shift"
+        ],
+        [
+          2431,
+          "walk_swing"
+        ],
+        [
+          2551,
+          "walk_land"
+        ],
+        [
+          2631,
+          "walk_shift"
+        ],
+        [
+          2751,
+          "walk_swing"
+        ],
+        [
+          2871,
+          "walk_land"
+        ],
+        [
+          2951,
+          "walk_shift"
+        ],
+        [
+          3071,
+          "walk_swing"
+        ],
+        [
+          3191,
+          "walk_land"
+        ],
+        [
+          3271,
+          "walk_shift"
+        ],
+        [
+          3391,
+          "walk_swing"
+        ],
+        [
+          3511,
+          "walk_land"
+        ],
+        [
+          3591,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -5.89432350435618,
+      "hip_height_px": 189.94766637436916,
+      "chest_height_px": 243.03738386567505,
+      "head_height_px": 273.03256095793074,
+      "tail_max_speed_px_frame": 0.5504305438026431,
+      "max_recovery_speed_px_frame": 8.117626891634814,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 0,
+      "frames": 3700,
+      "walk_start_frame": 1811,
+      "steps": [
+        {
+          "frame": 2311,
+          "side": "r",
+          "clearance_px": 46.563215688234266,
+          "stance_travel_px": 0.0036927874106140735,
+          "advance_px": 106.07406752648399
+        },
+        {
+          "frame": 2631,
+          "side": "l",
+          "clearance_px": 21.03933994665033,
+          "stance_travel_px": 0.16497945999014973,
+          "advance_px": 89.03388080600325
+        },
+        {
+          "frame": 2951,
+          "side": "r",
+          "clearance_px": 49.55589669887729,
+          "stance_travel_px": 0.17029262109406318,
+          "advance_px": 89.26090836414073
+        },
+        {
+          "frame": 3271,
+          "side": "l",
+          "clearance_px": 21.050428834768297,
+          "stance_travel_px": 0.1650857824539571,
+          "advance_px": 89.23381147940313
+        },
+        {
+          "frame": 3591,
+          "side": "r",
+          "clearance_px": 49.555651908917014,
+          "stance_travel_px": 0.17029978354196373,
+          "advance_px": 89.25198741750535
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 248.61867789605947,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30019665616314,
+      "max_hip_delta_px": 1.3986663927664618,
+      "max_vertical_hip_delta_px": 1.3985479281515723,
+      "max_stance_travel_px": 0.17029978354196373,
+      "min_step_clearance_px": 21.03933994665033,
+      "max_abs_torso_tilt_deg": 1.6730816182855008,
+      "max_walk_force_ratio": 0.8436521472340147,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 230,
+      "state": "walk_shift",
+      "start_frame": 319,
+      "support_frame": 460,
+      "events": [
+        [
+          319,
+          "rising"
+        ],
+        [
+          460,
+          "supported"
+        ],
+        [
+          520,
+          "foot_placing"
+        ],
+        [
+          789,
+          "transferring"
+        ],
+        [
+          938,
+          "half_kneeling"
+        ],
+        [
+          998,
+          "torso_raising"
+        ],
+        [
+          1338,
+          "upright_kneeling"
+        ],
+        [
+          1398,
+          "standing_rising"
+        ],
+        [
+          1746,
+          "standing"
+        ],
+        [
+          1806,
+          "walk_shift"
+        ],
+        [
+          1806,
+          "walk_prepare"
+        ],
+        [
+          1986,
+          "walk_shift"
+        ],
+        [
+          2106,
+          "walk_swing"
+        ],
+        [
+          2226,
+          "walk_land"
+        ],
+        [
+          2306,
+          "walk_shift"
+        ],
+        [
+          2426,
+          "walk_swing"
+        ],
+        [
+          2546,
+          "walk_land"
+        ],
+        [
+          2626,
+          "walk_shift"
+        ],
+        [
+          2746,
+          "walk_swing"
+        ],
+        [
+          2866,
+          "walk_land"
+        ],
+        [
+          2946,
+          "walk_shift"
+        ],
+        [
+          3066,
+          "walk_swing"
+        ],
+        [
+          3186,
+          "walk_land"
+        ],
+        [
+          3266,
+          "walk_shift"
+        ],
+        [
+          3386,
+          "walk_swing"
+        ],
+        [
+          3506,
+          "walk_land"
+        ],
+        [
+          3586,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -4.929131806952,
+      "hip_height_px": 189.95741910612057,
+      "chest_height_px": 243.04712011023173,
+      "head_height_px": 273.0422672720819,
+      "tail_max_speed_px_frame": 0.5504305438027596,
+      "max_recovery_speed_px_frame": 10.922493577894329,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 5,
+      "frames": 3700,
+      "walk_start_frame": 1806,
+      "steps": [
+        {
+          "frame": 2306,
+          "side": "r",
+          "clearance_px": 46.56320783933245,
+          "stance_travel_px": 0.003692785360499329,
+          "advance_px": 106.07378766590807
+        },
+        {
+          "frame": 2626,
+          "side": "l",
+          "clearance_px": 21.03933994921249,
+          "stance_travel_px": 0.1649794600302812,
+          "advance_px": 89.0338808509332
+        },
+        {
+          "frame": 2946,
+          "side": "r",
+          "clearance_px": 49.55589669881442,
+          "stance_travel_px": 0.17029262109417687,
+          "advance_px": 89.26090836183982
+        },
+        {
+          "frame": 3266,
+          "side": "l",
+          "clearance_px": 21.050428834773072,
+          "stance_travel_px": 0.16508578245418448,
+          "advance_px": 89.23381147939597
+        },
+        {
+          "frame": 3586,
+          "side": "r",
+          "clearance_px": 49.55565190891724,
+          "stance_travel_px": 0.1702997835421911,
+          "advance_px": 89.25198741750194
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 249.82770638147122,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.3002207858131,
+      "max_hip_delta_px": 1.398666392767654,
+      "max_vertical_hip_delta_px": 1.3985479281526239,
+      "max_stance_travel_px": 0.1702997835421911,
+      "min_step_clearance_px": 21.03933994921249,
+      "max_abs_torso_tilt_deg": 1.6730818761353987,
+      "max_walk_force_ratio": 0.8436521472245543,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 235,
+      "state": "walk_shift",
+      "start_frame": 324,
+      "support_frame": 467,
+      "events": [
+        [
+          324,
+          "rising"
+        ],
+        [
+          467,
+          "supported"
+        ],
+        [
+          527,
+          "foot_placing"
+        ],
+        [
+          807,
+          "transferring"
+        ],
+        [
+          956,
+          "half_kneeling"
+        ],
+        [
+          1016,
+          "torso_raising"
+        ],
+        [
+          1350,
+          "upright_kneeling"
+        ],
+        [
+          1410,
+          "standing_rising"
+        ],
+        [
+          1758,
+          "standing"
+        ],
+        [
+          1818,
+          "walk_shift"
+        ],
+        [
+          1818,
+          "walk_prepare"
+        ],
+        [
+          1998,
+          "walk_shift"
+        ],
+        [
+          2118,
+          "walk_swing"
+        ],
+        [
+          2238,
+          "walk_land"
+        ],
+        [
+          2318,
+          "walk_shift"
+        ],
+        [
+          2438,
+          "walk_swing"
+        ],
+        [
+          2558,
+          "walk_land"
+        ],
+        [
+          2638,
+          "walk_shift"
+        ],
+        [
+          2758,
+          "walk_swing"
+        ],
+        [
+          2878,
+          "walk_land"
+        ],
+        [
+          2958,
+          "walk_shift"
+        ],
+        [
+          3078,
+          "walk_swing"
+        ],
+        [
+          3198,
+          "walk_land"
+        ],
+        [
+          3278,
+          "walk_shift"
+        ],
+        [
+          3398,
+          "walk_swing"
+        ],
+        [
+          3518,
+          "walk_land"
+        ],
+        [
+          3598,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -7.883002484819258,
+      "hip_height_px": 189.90260853126185,
+      "chest_height_px": 242.9923407120247,
+      "head_height_px": 272.9875992095754,
+      "tail_max_speed_px_frame": 0.5504305438022068,
+      "max_recovery_speed_px_frame": 10.599699265431468,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 10,
+      "frames": 3700,
+      "walk_start_frame": 1818,
+      "steps": [
+        {
+          "frame": 2318,
+          "side": "r",
+          "clearance_px": 46.56246990468105,
+          "stance_travel_px": 0.0036927121299186183,
+          "advance_px": 106.04645468912838
+        },
+        {
+          "frame": 2638,
+          "side": "l",
+          "clearance_px": 21.03934020498781,
+          "stance_travel_px": 0.16497946401852914,
+          "advance_px": 89.03388535133888
+        },
+        {
+          "frame": 2958,
+          "side": "r",
+          "clearance_px": 49.555896692502756,
+          "stance_travel_px": 0.17029262107155319,
+          "advance_px": 89.26090813163853
+        },
+        {
+          "frame": 3278,
+          "side": "l",
+          "clearance_px": 21.05042883477256,
+          "stance_travel_px": 0.16508578245452554,
+          "advance_px": 89.23381147946259
+        },
+        {
+          "frame": 3598,
+          "side": "r",
+          "clearance_px": 49.55565190891764,
+          "stance_travel_px": 0.1702997835421911,
+          "advance_px": 89.25198741750057
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 246.11268105380134,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30064419100754,
+      "max_hip_delta_px": 1.3986663927080007,
+      "max_vertical_hip_delta_px": 1.3985479281000153,
+      "max_stance_travel_px": 0.1702997835421911,
+      "min_step_clearance_px": 21.03934020498781,
+      "max_abs_torso_tilt_deg": 1.6731040778793382,
+      "max_walk_force_ratio": 0.8436521462803667,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 238,
+      "state": "walk_shift",
+      "start_frame": 327,
+      "support_frame": 471,
+      "events": [
+        [
+          327,
+          "rising"
+        ],
+        [
+          471,
+          "supported"
+        ],
+        [
+          531,
+          "foot_placing"
+        ],
+        [
+          800,
+          "transferring"
+        ],
+        [
+          949,
+          "half_kneeling"
+        ],
+        [
+          1009,
+          "torso_raising"
+        ],
+        [
+          1349,
+          "upright_kneeling"
+        ],
+        [
+          1409,
+          "standing_rising"
+        ],
+        [
+          1757,
+          "standing"
+        ],
+        [
+          1817,
+          "walk_shift"
+        ],
+        [
+          1817,
+          "walk_prepare"
+        ],
+        [
+          1997,
+          "walk_shift"
+        ],
+        [
+          2117,
+          "walk_swing"
+        ],
+        [
+          2237,
+          "walk_land"
+        ],
+        [
+          2317,
+          "walk_shift"
+        ],
+        [
+          2437,
+          "walk_swing"
+        ],
+        [
+          2557,
+          "walk_land"
+        ],
+        [
+          2637,
+          "walk_shift"
+        ],
+        [
+          2757,
+          "walk_swing"
+        ],
+        [
+          2877,
+          "walk_land"
+        ],
+        [
+          2957,
+          "walk_shift"
+        ],
+        [
+          3077,
+          "walk_swing"
+        ],
+        [
+          3197,
+          "walk_land"
+        ],
+        [
+          3277,
+          "walk_shift"
+        ],
+        [
+          3397,
+          "walk_swing"
+        ],
+        [
+          3517,
+          "walk_land"
+        ],
+        [
+          3597,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -7.552853008281886,
+      "hip_height_px": 189.9124344714595,
+      "chest_height_px": 243.00220098296927,
+      "head_height_px": 272.997451501434,
+      "tail_max_speed_px_frame": 0.5504305438026394,
+      "max_recovery_speed_px_frame": 9.344608384917667,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 15,
+      "frames": 3700,
+      "walk_start_frame": 1817,
+      "steps": [
+        {
+          "frame": 2317,
+          "side": "r",
+          "clearance_px": 46.56320770146226,
+          "stance_travel_px": 0.0036927853453789794,
+          "advance_px": 106.07378255325261
+        },
+        {
+          "frame": 2637,
+          "side": "l",
+          "clearance_px": 21.039339949254725,
+          "stance_travel_px": 0.1649794600309633,
+          "advance_px": 89.0338808517721
+        },
+        {
+          "frame": 2957,
+          "side": "r",
+          "clearance_px": 49.555896698813626,
+          "stance_travel_px": 0.17029262109406318,
+          "advance_px": 89.26090836179651
+        },
+        {
+          "frame": 3277,
+          "side": "l",
+          "clearance_px": 21.050428834762954,
+          "stance_travel_px": 0.16508578245361605,
+          "advance_px": 89.23381147940574
+        },
+        {
+          "frame": 3597,
+          "side": "r",
+          "clearance_px": 49.5556519089169,
+          "stance_travel_px": 0.17029978354162267,
+          "advance_px": 89.2519874175083
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 246.54158878988574,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022085709973,
+      "max_hip_delta_px": 1.398666392766952,
+      "max_vertical_hip_delta_px": 1.398547928152027,
+      "max_stance_travel_px": 0.17029978354162267,
+      "min_step_clearance_px": 21.039339949254725,
+      "max_abs_torso_tilt_deg": 1.6730818802747627,
+      "max_walk_force_ratio": 0.843652147224329,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 242,
+      "state": "walk_shift",
+      "start_frame": 331,
+      "support_frame": 477,
+      "events": [
+        [
+          331,
+          "rising"
+        ],
+        [
+          477,
+          "supported"
+        ],
+        [
+          537,
+          "foot_placing"
+        ],
+        [
+          806,
+          "transferring"
+        ],
+        [
+          955,
+          "half_kneeling"
+        ],
+        [
+          1015,
+          "torso_raising"
+        ],
+        [
+          1355,
+          "upright_kneeling"
+        ],
+        [
+          1415,
+          "standing_rising"
+        ],
+        [
+          1763,
+          "standing"
+        ],
+        [
+          1823,
+          "walk_shift"
+        ],
+        [
+          1823,
+          "walk_prepare"
+        ],
+        [
+          2003,
+          "walk_shift"
+        ],
+        [
+          2123,
+          "walk_swing"
+        ],
+        [
+          2243,
+          "walk_land"
+        ],
+        [
+          2323,
+          "walk_shift"
+        ],
+        [
+          2443,
+          "walk_swing"
+        ],
+        [
+          2563,
+          "walk_land"
+        ],
+        [
+          2643,
+          "walk_shift"
+        ],
+        [
+          2763,
+          "walk_swing"
+        ],
+        [
+          2883,
+          "walk_land"
+        ],
+        [
+          2963,
+          "walk_shift"
+        ],
+        [
+          3083,
+          "walk_swing"
+        ],
+        [
+          3203,
+          "walk_land"
+        ],
+        [
+          3283,
+          "walk_shift"
+        ],
+        [
+          3403,
+          "walk_swing"
+        ],
+        [
+          3523,
+          "walk_land"
+        ],
+        [
+          3603,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -9.74955611867938,
+      "hip_height_px": 189.83273421030856,
+      "chest_height_px": 242.9227374212557,
+      "head_height_px": 272.91803596760514,
+      "tail_max_speed_px_frame": 0.5504305438026504,
+      "max_recovery_speed_px_frame": 9.498811600039048,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 20,
+      "frames": 3700,
+      "walk_start_frame": 1823,
+      "steps": [
+        {
+          "frame": 2323,
+          "side": "r",
+          "clearance_px": 46.56320787613015,
+          "stance_travel_px": 0.003692785365160489,
+          "advance_px": 106.0737890304672
+        },
+        {
+          "frame": 2643,
+          "side": "l",
+          "clearance_px": 21.039339949194698,
+          "stance_travel_px": 0.16497946003062225,
+          "advance_px": 89.03388085070435
+        },
+        {
+          "frame": 2963,
+          "side": "r",
+          "clearance_px": 49.55589669881516,
+          "stance_travel_px": 0.17029262109451793,
+          "advance_px": 89.26090836185108
+        },
+        {
+          "frame": 3283,
+          "side": "l",
+          "clearance_px": 21.05042883476466,
+          "stance_travel_px": 0.1650857824539571,
+          "advance_px": 89.23381147939779
+        },
+        {
+          "frame": 3603,
+          "side": "r",
+          "clearance_px": 49.55565190891747,
+          "stance_travel_px": 0.170299783541509,
+          "advance_px": 89.25198741750262
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 243.83367960922794,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022076678318,
+      "max_hip_delta_px": 1.3986663927672445,
+      "max_vertical_hip_delta_px": 1.3985479281522544,
+      "max_stance_travel_px": 0.170299783541509,
+      "min_step_clearance_px": 21.039339949194698,
+      "max_abs_torso_tilt_deg": 1.6730818750337668,
+      "max_walk_force_ratio": 0.8436521472245666,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 259,
+      "state": "walk_shift",
+      "start_frame": 348,
+      "support_frame": 493,
+      "events": [
+        [
+          348,
+          "rising"
+        ],
+        [
+          493,
+          "supported"
+        ],
+        [
+          553,
+          "foot_placing"
+        ],
+        [
+          822,
+          "transferring"
+        ],
+        [
+          972,
+          "half_kneeling"
+        ],
+        [
+          1032,
+          "torso_raising"
+        ],
+        [
+          1366,
+          "upright_kneeling"
+        ],
+        [
+          1426,
+          "standing_rising"
+        ],
+        [
+          1774,
+          "standing"
+        ],
+        [
+          1834,
+          "walk_shift"
+        ],
+        [
+          1834,
+          "walk_prepare"
+        ],
+        [
+          2014,
+          "walk_shift"
+        ],
+        [
+          2134,
+          "walk_swing"
+        ],
+        [
+          2254,
+          "walk_land"
+        ],
+        [
+          2334,
+          "walk_shift"
+        ],
+        [
+          2454,
+          "walk_swing"
+        ],
+        [
+          2574,
+          "walk_land"
+        ],
+        [
+          2654,
+          "walk_shift"
+        ],
+        [
+          2774,
+          "walk_swing"
+        ],
+        [
+          2894,
+          "walk_land"
+        ],
+        [
+          2974,
+          "walk_shift"
+        ],
+        [
+          3094,
+          "walk_swing"
+        ],
+        [
+          3214,
+          "walk_land"
+        ],
+        [
+          3294,
+          "walk_shift"
+        ],
+        [
+          3414,
+          "walk_swing"
+        ],
+        [
+          3534,
+          "walk_land"
+        ],
+        [
+          3614,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -14.364865637483604,
+      "hip_height_px": 189.52465446483072,
+      "chest_height_px": 242.6173119844904,
+      "head_height_px": 272.61307860476063,
+      "tail_max_speed_px_frame": 0.5504305438020812,
+      "max_recovery_speed_px_frame": 15.563068806553195,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 25,
+      "frames": 3700,
+      "walk_start_frame": 1834,
+      "steps": [
+        {
+          "frame": 2334,
+          "side": "r",
+          "clearance_px": 46.562464893519916,
+          "stance_travel_px": 0.0036927115805838184,
+          "advance_px": 106.04626887543043
+        },
+        {
+          "frame": 2654,
+          "side": "l",
+          "clearance_px": 21.039340206740235,
+          "stance_travel_px": 0.16497946404592767,
+          "advance_px": 89.03388538195361
+        },
+        {
+          "frame": 2974,
+          "side": "r",
+          "clearance_px": 49.55589669246035,
+          "stance_travel_px": 0.1702926210713258,
+          "advance_px": 89.26090813006499
+        },
+        {
+          "frame": 3294,
+          "side": "l",
+          "clearance_px": 21.05042883477097,
+          "stance_travel_px": 0.16508578245441186,
+          "advance_px": 89.23381147946566
+        },
+        {
+          "frame": 3614,
+          "side": "r",
+          "clearance_px": 49.5556519089173,
+          "stance_travel_px": 0.17029978354162267,
+          "advance_px": 89.25198741750012
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 237.95052620997558,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30064677489875,
+      "max_hip_delta_px": 1.3986663927074356,
+      "max_vertical_hip_delta_px": 1.3985479280994753,
+      "max_stance_travel_px": 0.17029978354162267,
+      "min_step_clearance_px": 21.039340206740235,
+      "max_abs_torso_tilt_deg": 1.6731042280096633,
+      "max_walk_force_ratio": 0.843652146273856,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 227,
+      "state": "walk_land",
+      "start_frame": 316,
+      "support_frame": 942,
+      "events": [
+        [
+          316,
+          "repositioning"
+        ],
+        [
+          556,
+          "repositioning"
+        ],
+        [
+          796,
+          "rising"
+        ],
+        [
+          942,
+          "supported"
+        ],
+        [
+          1002,
+          "foot_placing"
+        ],
+        [
+          1271,
+          "transferring"
+        ],
+        [
+          1420,
+          "half_kneeling"
+        ],
+        [
+          1480,
+          "torso_raising"
+        ],
+        [
+          1820,
+          "upright_kneeling"
+        ],
+        [
+          1880,
+          "standing_rising"
+        ],
+        [
+          2228,
+          "standing"
+        ],
+        [
+          2288,
+          "walk_shift"
+        ],
+        [
+          2288,
+          "walk_prepare"
+        ],
+        [
+          2468,
+          "walk_shift"
+        ],
+        [
+          2588,
+          "walk_swing"
+        ],
+        [
+          2708,
+          "walk_land"
+        ],
+        [
+          2788,
+          "walk_shift"
+        ],
+        [
+          2908,
+          "walk_swing"
+        ],
+        [
+          3028,
+          "walk_land"
+        ],
+        [
+          3108,
+          "walk_shift"
+        ],
+        [
+          3228,
+          "walk_swing"
+        ],
+        [
+          3348,
+          "walk_land"
+        ],
+        [
+          3428,
+          "walk_shift"
+        ],
+        [
+          3548,
+          "walk_swing"
+        ],
+        [
+          3668,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.3636911671291045,
+      "hip_height_px": 185.0509520356976,
+      "chest_height_px": 238.16836527794686,
+      "head_height_px": 268.165322805992,
+      "tail_max_speed_px_frame": 3.002022420119025,
+      "max_recovery_speed_px_frame": 7.445584186882908,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 0,
+      "frames": 3700,
+      "walk_start_frame": 2288,
+      "steps": [
+        {
+          "frame": 2788,
+          "side": "r",
+          "clearance_px": 46.56320777859628,
+          "stance_travel_px": 0.0036927853542607636,
+          "advance_px": 106.07378541363488
+        },
+        {
+          "frame": 3108,
+          "side": "l",
+          "clearance_px": 21.039339949223233,
+          "stance_travel_px": 0.164979460030807,
+          "advance_px": 89.03388085130709
+        },
+        {
+          "frame": 3428,
+          "side": "r",
+          "clearance_px": 49.555896698814365,
+          "stance_travel_px": 0.17029262109555532,
+          "advance_px": 89.2609083618219
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 162.00307780273724,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721614,
+      "max_hip_delta_px": 1.3986663927688747,
+      "max_vertical_hip_delta_px": 1.3985479281537323,
+      "max_stance_travel_px": 0.17029262109555532,
+      "min_step_clearance_px": 21.039339949223233,
+      "max_abs_torso_tilt_deg": 1.6730818779587369,
+      "max_walk_force_ratio": 0.8436521472245021,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 230,
+      "state": "walk_land",
+      "start_frame": 319,
+      "support_frame": 945,
+      "events": [
+        [
+          319,
+          "repositioning"
+        ],
+        [
+          559,
+          "repositioning"
+        ],
+        [
+          799,
+          "rising"
+        ],
+        [
+          945,
+          "supported"
+        ],
+        [
+          1005,
+          "foot_placing"
+        ],
+        [
+          1274,
+          "transferring"
+        ],
+        [
+          1423,
+          "half_kneeling"
+        ],
+        [
+          1483,
+          "torso_raising"
+        ],
+        [
+          1823,
+          "upright_kneeling"
+        ],
+        [
+          1883,
+          "standing_rising"
+        ],
+        [
+          2231,
+          "standing"
+        ],
+        [
+          2291,
+          "walk_shift"
+        ],
+        [
+          2291,
+          "walk_prepare"
+        ],
+        [
+          2471,
+          "walk_shift"
+        ],
+        [
+          2591,
+          "walk_swing"
+        ],
+        [
+          2711,
+          "walk_land"
+        ],
+        [
+          2791,
+          "walk_shift"
+        ],
+        [
+          2911,
+          "walk_swing"
+        ],
+        [
+          3031,
+          "walk_land"
+        ],
+        [
+          3111,
+          "walk_shift"
+        ],
+        [
+          3231,
+          "walk_swing"
+        ],
+        [
+          3351,
+          "walk_land"
+        ],
+        [
+          3431,
+          "walk_shift"
+        ],
+        [
+          3551,
+          "walk_swing"
+        ],
+        [
+          3671,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.394796396423388,
+      "hip_height_px": 185.08014362614207,
+      "chest_height_px": 238.19835981016718,
+      "head_height_px": 268.1954560736066,
+      "tail_max_speed_px_frame": 3.0020224201171892,
+      "max_recovery_speed_px_frame": 7.606748003266009,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 5,
+      "frames": 3700,
+      "walk_start_frame": 2291,
+      "steps": [
+        {
+          "frame": 2791,
+          "side": "r",
+          "clearance_px": 46.56320777859639,
+          "stance_travel_px": 0.0036927853542589872,
+          "advance_px": 106.07378541363587
+        },
+        {
+          "frame": 3111,
+          "side": "l",
+          "clearance_px": 21.039339949223233,
+          "stance_travel_px": 0.16497946003090647,
+          "advance_px": 89.0338808513081
+        },
+        {
+          "frame": 3431,
+          "side": "r",
+          "clearance_px": 49.555896698814195,
+          "stance_travel_px": 0.17029262109559795,
+          "advance_px": 89.26090836182269
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 162.08696310457412,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721592,
+      "max_hip_delta_px": 1.3986663927689327,
+      "max_vertical_hip_delta_px": 1.3985479281537891,
+      "max_stance_travel_px": 0.17029262109559795,
+      "min_step_clearance_px": 21.039339949223233,
+      "max_abs_torso_tilt_deg": 1.673081877958902,
+      "max_walk_force_ratio": 0.843652147224493,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 238,
+      "state": "walk_swing",
+      "start_frame": 327,
+      "support_frame": 714,
+      "events": [
+        [
+          327,
+          "repositioning"
+        ],
+        [
+          567,
+          "rising"
+        ],
+        [
+          714,
+          "supported"
+        ],
+        [
+          774,
+          "foot_placing"
+        ],
+        [
+          1043,
+          "transferring"
+        ],
+        [
+          1192,
+          "half_kneeling"
+        ],
+        [
+          1252,
+          "torso_raising"
+        ],
+        [
+          1592,
+          "upright_kneeling"
+        ],
+        [
+          1652,
+          "standing_rising"
+        ],
+        [
+          2000,
+          "standing"
+        ],
+        [
+          2060,
+          "walk_shift"
+        ],
+        [
+          2060,
+          "walk_prepare"
+        ],
+        [
+          2240,
+          "walk_shift"
+        ],
+        [
+          2360,
+          "walk_swing"
+        ],
+        [
+          2480,
+          "walk_land"
+        ],
+        [
+          2560,
+          "walk_shift"
+        ],
+        [
+          2680,
+          "walk_swing"
+        ],
+        [
+          2800,
+          "walk_land"
+        ],
+        [
+          2880,
+          "walk_shift"
+        ],
+        [
+          3000,
+          "walk_swing"
+        ],
+        [
+          3120,
+          "walk_land"
+        ],
+        [
+          3200,
+          "walk_shift"
+        ],
+        [
+          3320,
+          "walk_swing"
+        ],
+        [
+          3440,
+          "walk_land"
+        ],
+        [
+          3520,
+          "walk_shift"
+        ],
+        [
+          3640,
+          "walk_swing"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -4.619348330869514,
+      "hip_height_px": 189.967239742008,
+      "chest_height_px": 243.05104334941313,
+      "head_height_px": 273.0450772082645,
+      "tail_max_speed_px_frame": 1.0926757212409663,
+      "max_recovery_speed_px_frame": 9.695646598889253,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 10,
+      "frames": 3700,
+      "walk_start_frame": 2060,
+      "steps": [
+        {
+          "frame": 2560,
+          "side": "r",
+          "clearance_px": 46.56320777862078,
+          "stance_travel_px": 0.0036927853542110256,
+          "advance_px": 106.07378541455827
+        },
+        {
+          "frame": 2880,
+          "side": "l",
+          "clearance_px": 21.039339949223006,
+          "stance_travel_px": 0.16497946003087804,
+          "advance_px": 89.03388085130754
+        },
+        {
+          "frame": 3200,
+          "side": "r",
+          "clearance_px": 49.555896698814195,
+          "stance_travel_px": 0.1702926210956548,
+          "advance_px": 89.26090836182208
+        },
+        {
+          "frame": 3520,
+          "side": "l",
+          "clearance_px": 21.05042883477114,
+          "stance_travel_px": 0.16508578245438343,
+          "advance_px": 89.23381147939664
+        }
+      ],
+      "completed_steps": 4,
+      "alternating": true,
+      "distance_px": 204.49284506697407,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081720335,
+      "max_hip_delta_px": 1.3986663927689749,
+      "max_vertical_hip_delta_px": 1.3985479281538176,
+      "max_stance_travel_px": 0.1702926210956548,
+      "min_step_clearance_px": 21.039339949223006,
+      "max_abs_torso_tilt_deg": 1.6730818779581165,
+      "max_walk_force_ratio": 0.8436521472245032,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 239,
+      "state": "walk_swing",
+      "start_frame": 328,
+      "support_frame": 716,
+      "events": [
+        [
+          328,
+          "repositioning"
+        ],
+        [
+          568,
+          "rising"
+        ],
+        [
+          716,
+          "supported"
+        ],
+        [
+          776,
+          "foot_placing"
+        ],
+        [
+          1045,
+          "transferring"
+        ],
+        [
+          1195,
+          "half_kneeling"
+        ],
+        [
+          1255,
+          "torso_raising"
+        ],
+        [
+          1595,
+          "upright_kneeling"
+        ],
+        [
+          1655,
+          "standing_rising"
+        ],
+        [
+          2003,
+          "standing"
+        ],
+        [
+          2063,
+          "walk_shift"
+        ],
+        [
+          2063,
+          "walk_prepare"
+        ],
+        [
+          2243,
+          "walk_shift"
+        ],
+        [
+          2363,
+          "walk_swing"
+        ],
+        [
+          2483,
+          "walk_land"
+        ],
+        [
+          2563,
+          "walk_shift"
+        ],
+        [
+          2683,
+          "walk_swing"
+        ],
+        [
+          2803,
+          "walk_land"
+        ],
+        [
+          2883,
+          "walk_shift"
+        ],
+        [
+          3003,
+          "walk_swing"
+        ],
+        [
+          3123,
+          "walk_land"
+        ],
+        [
+          3203,
+          "walk_shift"
+        ],
+        [
+          3323,
+          "walk_swing"
+        ],
+        [
+          3443,
+          "walk_land"
+        ],
+        [
+          3523,
+          "walk_shift"
+        ],
+        [
+          3643,
+          "walk_swing"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -4.224486270469811,
+      "hip_height_px": 189.9670568325685,
+      "chest_height_px": 243.0510670264615,
+      "head_height_px": 273.045157864266,
+      "tail_max_speed_px_frame": 1.0926757212411373,
+      "max_recovery_speed_px_frame": 7.386295530189737,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 15,
+      "frames": 3700,
+      "walk_start_frame": 2063,
+      "steps": [
+        {
+          "frame": 2563,
+          "side": "r",
+          "clearance_px": 46.56320803385756,
+          "stance_travel_px": 0.0036927853822703582,
+          "advance_px": 106.07379487947685
+        },
+        {
+          "frame": 2883,
+          "side": "l",
+          "clearance_px": 21.03933994913109,
+          "stance_travel_px": 0.1649794600293717,
+          "advance_px": 89.0338808497491
+        },
+        {
+          "frame": 3203,
+          "side": "r",
+          "clearance_px": 49.55589669881613,
+          "stance_travel_px": 0.17029262109542742,
+          "advance_px": 89.26090836190639
+        },
+        {
+          "frame": 3523,
+          "side": "l",
+          "clearance_px": 21.050428834772276,
+          "stance_travel_px": 0.16508578245401395,
+          "advance_px": 89.23381147940154
+        }
+      ],
+      "completed_steps": 4,
+      "alternating": true,
+      "distance_px": 204.49770166715678,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022068523004,
+      "max_hip_delta_px": 1.3986663927678633,
+      "max_vertical_hip_delta_px": 1.3985479281528512,
+      "max_stance_travel_px": 0.17029262109542742,
+      "min_step_clearance_px": 21.03933994913109,
+      "max_abs_torso_tilt_deg": 1.6730818702924355,
+      "max_walk_force_ratio": 0.8436521472248346,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 252,
+      "state": "walk_land",
+      "start_frame": 341,
+      "support_frame": 967,
+      "events": [
+        [
+          341,
+          "repositioning"
+        ],
+        [
+          581,
+          "repositioning"
+        ],
+        [
+          821,
+          "rising"
+        ],
+        [
+          967,
+          "supported"
+        ],
+        [
+          1027,
+          "foot_placing"
+        ],
+        [
+          1296,
+          "transferring"
+        ],
+        [
+          1445,
+          "half_kneeling"
+        ],
+        [
+          1505,
+          "torso_raising"
+        ],
+        [
+          1845,
+          "upright_kneeling"
+        ],
+        [
+          1905,
+          "standing_rising"
+        ],
+        [
+          2253,
+          "standing"
+        ],
+        [
+          2313,
+          "walk_shift"
+        ],
+        [
+          2313,
+          "walk_prepare"
+        ],
+        [
+          2493,
+          "walk_shift"
+        ],
+        [
+          2613,
+          "walk_swing"
+        ],
+        [
+          2733,
+          "walk_land"
+        ],
+        [
+          2813,
+          "walk_shift"
+        ],
+        [
+          2933,
+          "walk_swing"
+        ],
+        [
+          3053,
+          "walk_land"
+        ],
+        [
+          3133,
+          "walk_shift"
+        ],
+        [
+          3253,
+          "walk_swing"
+        ],
+        [
+          3373,
+          "walk_land"
+        ],
+        [
+          3453,
+          "walk_shift"
+        ],
+        [
+          3573,
+          "walk_swing"
+        ],
+        [
+          3693,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -7.178305756766278,
+      "hip_height_px": 186.4262500464646,
+      "chest_height_px": 239.54430113357296,
+      "head_height_px": 269.54189678599914,
+      "tail_max_speed_px_frame": 3.0020224201159684,
+      "max_recovery_speed_px_frame": 7.410386029636067,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 20,
+      "frames": 3700,
+      "walk_start_frame": 2313,
+      "steps": [
+        {
+          "frame": 2813,
+          "side": "r",
+          "clearance_px": 46.56320777859611,
+          "stance_travel_px": 0.0036927853542607636,
+          "advance_px": 106.07378541362682
+        },
+        {
+          "frame": 3133,
+          "side": "l",
+          "clearance_px": 21.039339949223802,
+          "stance_travel_px": 0.1649794600309029,
+          "advance_px": 89.03388085130754
+        },
+        {
+          "frame": 3453,
+          "side": "r",
+          "clearance_px": 49.555896698814024,
+          "stance_travel_px": 0.17029262109564058,
+          "advance_px": 89.26090836182217
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 162.16531947900938,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721614,
+      "max_hip_delta_px": 1.3986663927694754,
+      "max_vertical_hip_delta_px": 1.3985479281542723,
+      "max_stance_travel_px": 0.17029262109564058,
+      "min_step_clearance_px": 21.039339949223802,
+      "max_abs_torso_tilt_deg": 1.6730818779589207,
+      "max_walk_force_ratio": 0.8436521472244942,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 276,
+      "state": "walk_swing",
+      "start_frame": 365,
+      "support_frame": 762,
+      "events": [
+        [
+          365,
+          "repositioning"
+        ],
+        [
+          605,
+          "rising"
+        ],
+        [
+          762,
+          "supported"
+        ],
+        [
+          822,
+          "foot_placing"
+        ],
+        [
+          1091,
+          "transferring"
+        ],
+        [
+          1240,
+          "half_kneeling"
+        ],
+        [
+          1300,
+          "torso_raising"
+        ],
+        [
+          1640,
+          "upright_kneeling"
+        ],
+        [
+          1700,
+          "standing_rising"
+        ],
+        [
+          2048,
+          "standing"
+        ],
+        [
+          2108,
+          "walk_shift"
+        ],
+        [
+          2108,
+          "walk_prepare"
+        ],
+        [
+          2288,
+          "walk_shift"
+        ],
+        [
+          2408,
+          "walk_swing"
+        ],
+        [
+          2528,
+          "walk_land"
+        ],
+        [
+          2608,
+          "walk_shift"
+        ],
+        [
+          2728,
+          "walk_swing"
+        ],
+        [
+          2848,
+          "walk_land"
+        ],
+        [
+          2928,
+          "walk_shift"
+        ],
+        [
+          3048,
+          "walk_swing"
+        ],
+        [
+          3168,
+          "walk_land"
+        ],
+        [
+          3248,
+          "walk_shift"
+        ],
+        [
+          3368,
+          "walk_swing"
+        ],
+        [
+          3488,
+          "walk_land"
+        ],
+        [
+          3568,
+          "walk_shift"
+        ],
+        [
+          3688,
+          "walk_swing"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -1.048064087090225,
+      "hip_height_px": 189.96323700637677,
+      "chest_height_px": 243.0529711376778,
+      "head_height_px": 273.0480979874824,
+      "tail_max_speed_px_frame": 1.7074711257963917,
+      "max_recovery_speed_px_frame": 11.420854527917779,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 25,
+      "frames": 3700,
+      "walk_start_frame": 2108,
+      "steps": [
+        {
+          "frame": 2608,
+          "side": "r",
+          "clearance_px": 46.563207976106185,
+          "stance_travel_px": 0.00369278537581863,
+          "advance_px": 106.07379273790717
+        },
+        {
+          "frame": 2928,
+          "side": "l",
+          "clearance_px": 21.03933994915468,
+          "stance_travel_px": 0.16497946002979003,
+          "advance_px": 89.03388085010096
+        },
+        {
+          "frame": 3248,
+          "side": "r",
+          "clearance_px": 49.55589669881584,
+          "stance_travel_px": 0.17029262109560506,
+          "advance_px": 89.26090836188408
+        },
+        {
+          "frame": 3568,
+          "side": "l",
+          "clearance_px": 21.050428834772788,
+          "stance_travel_px": 0.16508578245417027,
+          "advance_px": 89.23381147939467
+        }
+      ],
+      "completed_steps": 4,
+      "alternating": true,
+      "distance_px": 204.8369329198677,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.3002207150917,
+      "max_hip_delta_px": 1.398666392769596,
+      "max_vertical_hip_delta_px": 1.398547928154386,
+      "max_stance_travel_px": 0.17029262109560506,
+      "min_step_clearance_px": 21.03933994915468,
+      "max_abs_torso_tilt_deg": 1.6730818720270046,
+      "max_walk_force_ratio": 0.8436521472247448,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 223,
+      "state": "walk_shift",
+      "start_frame": 312,
+      "support_frame": 459,
+      "events": [
+        [
+          312,
+          "rising"
+        ],
+        [
+          459,
+          "supported"
+        ],
+        [
+          519,
+          "foot_placing"
+        ],
+        [
+          788,
+          "transferring"
+        ],
+        [
+          937,
+          "half_kneeling"
+        ],
+        [
+          997,
+          "torso_raising"
+        ],
+        [
+          1337,
+          "upright_kneeling"
+        ],
+        [
+          1397,
+          "standing_rising"
+        ],
+        [
+          1745,
+          "standing"
+        ],
+        [
+          1805,
+          "walk_shift"
+        ],
+        [
+          1805,
+          "walk_prepare"
+        ],
+        [
+          1985,
+          "walk_shift"
+        ],
+        [
+          2105,
+          "walk_swing"
+        ],
+        [
+          2225,
+          "walk_land"
+        ],
+        [
+          2305,
+          "walk_shift"
+        ],
+        [
+          2425,
+          "walk_swing"
+        ],
+        [
+          2545,
+          "walk_land"
+        ],
+        [
+          2625,
+          "walk_shift"
+        ],
+        [
+          2745,
+          "walk_swing"
+        ],
+        [
+          2865,
+          "walk_land"
+        ],
+        [
+          2945,
+          "walk_shift"
+        ],
+        [
+          3065,
+          "walk_swing"
+        ],
+        [
+          3185,
+          "walk_land"
+        ],
+        [
+          3265,
+          "walk_shift"
+        ],
+        [
+          3385,
+          "walk_swing"
+        ],
+        [
+          3505,
+          "walk_land"
+        ],
+        [
+          3585,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -4.780300877284276,
+      "hip_height_px": 189.9582111318434,
+      "chest_height_px": 243.0479063963768,
+      "head_height_px": 273.04305032817894,
+      "tail_max_speed_px_frame": 0.5504305438024195,
+      "max_recovery_speed_px_frame": 9.601527270677085,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 0,
+      "frames": 3700,
+      "walk_start_frame": 1805,
+      "steps": [
+        {
+          "frame": 2305,
+          "side": "r",
+          "clearance_px": 46.56320777858946,
+          "stance_travel_px": 0.0036927853536781186,
+          "advance_px": 106.07378541331946
+        },
+        {
+          "frame": 2625,
+          "side": "l",
+          "clearance_px": 21.039339949233693,
+          "stance_travel_px": 0.16497946003084962,
+          "advance_px": 89.0338808513037
+        },
+        {
+          "frame": 2945,
+          "side": "r",
+          "clearance_px": 49.55589669881448,
+          "stance_travel_px": 0.17029262109429055,
+          "advance_px": 89.2609083618213
+        },
+        {
+          "frame": 3265,
+          "side": "l",
+          "clearance_px": 21.050428834765512,
+          "stance_travel_px": 0.1650857824540708,
+          "advance_px": 89.2338114793996
+        },
+        {
+          "frame": 3585,
+          "side": "r",
+          "clearance_px": 49.5556519089173,
+          "stance_travel_px": 0.17029978354185005,
+          "advance_px": 89.25198741750546
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 250.01204830778374,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721881,
+      "max_hip_delta_px": 1.3986663927675287,
+      "max_vertical_hip_delta_px": 1.3985479281525386,
+      "max_stance_travel_px": 0.17029978354185005,
+      "min_step_clearance_px": 21.039339949233693,
+      "max_abs_torso_tilt_deg": 1.6730818779600007,
+      "max_walk_force_ratio": 0.8436521472244353,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 228,
+      "state": "walk_shift",
+      "start_frame": 317,
+      "support_frame": 464,
+      "events": [
+        [
+          317,
+          "rising"
+        ],
+        [
+          464,
+          "supported"
+        ],
+        [
+          524,
+          "foot_placing"
+        ],
+        [
+          793,
+          "transferring"
+        ],
+        [
+          942,
+          "half_kneeling"
+        ],
+        [
+          1002,
+          "torso_raising"
+        ],
+        [
+          1342,
+          "upright_kneeling"
+        ],
+        [
+          1402,
+          "standing_rising"
+        ],
+        [
+          1750,
+          "standing"
+        ],
+        [
+          1810,
+          "walk_shift"
+        ],
+        [
+          1810,
+          "walk_prepare"
+        ],
+        [
+          1990,
+          "walk_shift"
+        ],
+        [
+          2110,
+          "walk_swing"
+        ],
+        [
+          2230,
+          "walk_land"
+        ],
+        [
+          2310,
+          "walk_shift"
+        ],
+        [
+          2430,
+          "walk_swing"
+        ],
+        [
+          2550,
+          "walk_land"
+        ],
+        [
+          2630,
+          "walk_shift"
+        ],
+        [
+          2750,
+          "walk_swing"
+        ],
+        [
+          2870,
+          "walk_land"
+        ],
+        [
+          2950,
+          "walk_shift"
+        ],
+        [
+          3070,
+          "walk_swing"
+        ],
+        [
+          3190,
+          "walk_land"
+        ],
+        [
+          3270,
+          "walk_shift"
+        ],
+        [
+          3390,
+          "walk_swing"
+        ],
+        [
+          3510,
+          "walk_land"
+        ],
+        [
+          3590,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -5.671350752054991,
+      "hip_height_px": 189.95063274748037,
+      "chest_height_px": 243.04034836481725,
+      "head_height_px": 273.035518189258,
+      "tail_max_speed_px_frame": 0.5504305438019775,
+      "max_recovery_speed_px_frame": 9.519738988300858,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 5,
+      "frames": 3700,
+      "walk_start_frame": 1810,
+      "steps": [
+        {
+          "frame": 2310,
+          "side": "r",
+          "clearance_px": 46.563207871982684,
+          "stance_travel_px": 0.003692785364705742,
+          "advance_px": 106.07378887666857
+        },
+        {
+          "frame": 2630,
+          "side": "l",
+          "clearance_px": 21.03933994919788,
+          "stance_travel_px": 0.16497946003073594,
+          "advance_px": 89.03388085072766
+        },
+        {
+          "frame": 2950,
+          "side": "r",
+          "clearance_px": 49.555896698815275,
+          "stance_travel_px": 0.17029262109440424,
+          "advance_px": 89.26090836184665
+        },
+        {
+          "frame": 3270,
+          "side": "l",
+          "clearance_px": 21.050428834765114,
+          "stance_travel_px": 0.1650857824540708,
+          "advance_px": 89.23381147940427
+        },
+        {
+          "frame": 3590,
+          "side": "r",
+          "clearance_px": 49.55565190891741,
+          "stance_travel_px": 0.1702997835412816,
+          "advance_px": 89.25198741751171
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 248.89927900017483,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022076893104,
+      "max_hip_delta_px": 1.3986663927677359,
+      "max_vertical_hip_delta_px": 1.3985479281526807,
+      "max_stance_travel_px": 0.1702997835412816,
+      "min_step_clearance_px": 21.03933994919788,
+      "max_abs_torso_tilt_deg": 1.6730818751560617,
+      "max_walk_force_ratio": 0.8436521472245826,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 231,
+      "state": "walk_swing",
+      "start_frame": 320,
+      "support_frame": 461,
+      "events": [
+        [
+          320,
+          "rising"
+        ],
+        [
+          461,
+          "supported"
+        ],
+        [
+          521,
+          "foot_placing"
+        ],
+        [
+          790,
+          "transferring"
+        ],
+        [
+          939,
+          "half_kneeling"
+        ],
+        [
+          999,
+          "torso_raising"
+        ],
+        [
+          1330,
+          "upright_kneeling"
+        ],
+        [
+          1390,
+          "standing_rising"
+        ],
+        [
+          1738,
+          "standing"
+        ],
+        [
+          1798,
+          "walk_shift"
+        ],
+        [
+          1798,
+          "walk_prepare"
+        ],
+        [
+          1978,
+          "walk_shift"
+        ],
+        [
+          2098,
+          "walk_swing"
+        ],
+        [
+          2218,
+          "walk_land"
+        ],
+        [
+          2298,
+          "walk_shift"
+        ],
+        [
+          2418,
+          "walk_swing"
+        ],
+        [
+          2538,
+          "walk_land"
+        ],
+        [
+          2618,
+          "walk_shift"
+        ],
+        [
+          2738,
+          "walk_swing"
+        ],
+        [
+          2858,
+          "walk_land"
+        ],
+        [
+          2938,
+          "walk_shift"
+        ],
+        [
+          3058,
+          "walk_swing"
+        ],
+        [
+          3178,
+          "walk_land"
+        ],
+        [
+          3258,
+          "walk_shift"
+        ],
+        [
+          3378,
+          "walk_swing"
+        ],
+        [
+          3498,
+          "walk_land"
+        ],
+        [
+          3578,
+          "walk_shift"
+        ],
+        [
+          3698,
+          "walk_swing"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -4.140825070099595,
+      "hip_height_px": 189.9595269115086,
+      "chest_height_px": 243.04916024987588,
+      "head_height_px": 273.0443128630739,
+      "tail_max_speed_px_frame": 0.5461979963677035,
+      "max_recovery_speed_px_frame": 9.678657329362068,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 10,
+      "frames": 3700,
+      "walk_start_frame": 1798,
+      "steps": [
+        {
+          "frame": 2298,
+          "side": "r",
+          "clearance_px": 46.562472663444,
+          "stance_travel_px": 0.0036927124310750514,
+          "advance_px": 106.0465569839838
+        },
+        {
+          "frame": 2618,
+          "side": "l",
+          "clearance_px": 21.03934020405876,
+          "stance_travel_px": 0.16497946400409091,
+          "advance_px": 89.03388533445445
+        },
+        {
+          "frame": 2938,
+          "side": "r",
+          "clearance_px": 49.55589669252703,
+          "stance_travel_px": 0.17029262107166687,
+          "advance_px": 89.26090813247868
+        },
+        {
+          "frame": 3258,
+          "side": "l",
+          "clearance_px": 21.05042883477688,
+          "stance_travel_px": 0.16508578245384342,
+          "advance_px": 89.23381147946247
+        },
+        {
+          "frame": 3578,
+          "side": "r",
+          "clearance_px": 49.555651908917184,
+          "stance_travel_px": 0.17029978354207742,
+          "advance_px": 89.2519874174966
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 250.7637265569806,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30064276854424,
+      "max_hip_delta_px": 1.3986663927076877,
+      "max_vertical_hip_delta_px": 1.3985479280996458,
+      "max_stance_travel_px": 0.17029978354207742,
+      "min_step_clearance_px": 21.03934020405876,
+      "max_abs_torso_tilt_deg": 1.6731039952303899,
+      "max_walk_force_ratio": 0.8436521462837998,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 236,
+      "state": "walk_shift",
+      "start_frame": 325,
+      "support_frame": 470,
+      "events": [
+        [
+          325,
+          "rising"
+        ],
+        [
+          470,
+          "supported"
+        ],
+        [
+          530,
+          "foot_placing"
+        ],
+        [
+          799,
+          "transferring"
+        ],
+        [
+          948,
+          "half_kneeling"
+        ],
+        [
+          1008,
+          "torso_raising"
+        ],
+        [
+          1348,
+          "upright_kneeling"
+        ],
+        [
+          1408,
+          "standing_rising"
+        ],
+        [
+          1756,
+          "standing"
+        ],
+        [
+          1816,
+          "walk_shift"
+        ],
+        [
+          1816,
+          "walk_prepare"
+        ],
+        [
+          1996,
+          "walk_shift"
+        ],
+        [
+          2116,
+          "walk_swing"
+        ],
+        [
+          2236,
+          "walk_land"
+        ],
+        [
+          2316,
+          "walk_shift"
+        ],
+        [
+          2436,
+          "walk_swing"
+        ],
+        [
+          2556,
+          "walk_land"
+        ],
+        [
+          2636,
+          "walk_shift"
+        ],
+        [
+          2756,
+          "walk_swing"
+        ],
+        [
+          2876,
+          "walk_land"
+        ],
+        [
+          2956,
+          "walk_shift"
+        ],
+        [
+          3076,
+          "walk_swing"
+        ],
+        [
+          3196,
+          "walk_land"
+        ],
+        [
+          3276,
+          "walk_shift"
+        ],
+        [
+          3396,
+          "walk_swing"
+        ],
+        [
+          3516,
+          "walk_land"
+        ],
+        [
+          3596,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -7.238087162650572,
+      "hip_height_px": 189.9208920648075,
+      "chest_height_px": 243.01064884623474,
+      "head_height_px": 273.00588137513364,
+      "tail_max_speed_px_frame": 0.5504305438021995,
+      "max_recovery_speed_px_frame": 9.795918002084136,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 15,
+      "frames": 3700,
+      "walk_start_frame": 1816,
+      "steps": [
+        {
+          "frame": 2316,
+          "side": "r",
+          "clearance_px": 46.56320790798492,
+          "stance_travel_px": 0.003692785368798468,
+          "advance_px": 106.07379021179963
+        },
+        {
+          "frame": 2636,
+          "side": "l",
+          "clearance_px": 21.039339949190378,
+          "stance_travel_px": 0.16497946003050856,
+          "advance_px": 89.03388085050187
+        },
+        {
+          "frame": 2956,
+          "side": "r",
+          "clearance_px": 49.55589669881567,
+          "stance_travel_px": 0.1702926210947453,
+          "advance_px": 89.26090836185517
+        },
+        {
+          "frame": 3276,
+          "side": "l",
+          "clearance_px": 21.05042883476932,
+          "stance_travel_px": 0.1650857824540708,
+          "advance_px": 89.23381147939631
+        },
+        {
+          "frame": 3596,
+          "side": "r",
+          "clearance_px": 49.555651908917696,
+          "stance_travel_px": 0.17029978354094055,
+          "advance_px": 89.25198741750455
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 246.9349669106458,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022075031164,
+      "max_hip_delta_px": 1.3986663927669132,
+      "max_vertical_hip_delta_px": 1.3985479281519986,
+      "max_stance_travel_px": 0.17029978354094055,
+      "min_step_clearance_px": 21.039339949190378,
+      "max_abs_torso_tilt_deg": 1.6730818740736897,
+      "max_walk_force_ratio": 0.8436521472245851,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 241,
+      "state": "walk_shift",
+      "start_frame": 330,
+      "support_frame": 474,
+      "events": [
+        [
+          330,
+          "rising"
+        ],
+        [
+          474,
+          "supported"
+        ],
+        [
+          534,
+          "foot_placing"
+        ],
+        [
+          804,
+          "transferring"
+        ],
+        [
+          953,
+          "half_kneeling"
+        ],
+        [
+          1013,
+          "torso_raising"
+        ],
+        [
+          1345,
+          "upright_kneeling"
+        ],
+        [
+          1405,
+          "standing_rising"
+        ],
+        [
+          1753,
+          "standing"
+        ],
+        [
+          1813,
+          "walk_shift"
+        ],
+        [
+          1813,
+          "walk_prepare"
+        ],
+        [
+          1993,
+          "walk_shift"
+        ],
+        [
+          2113,
+          "walk_swing"
+        ],
+        [
+          2233,
+          "walk_land"
+        ],
+        [
+          2313,
+          "walk_shift"
+        ],
+        [
+          2433,
+          "walk_swing"
+        ],
+        [
+          2553,
+          "walk_land"
+        ],
+        [
+          2633,
+          "walk_shift"
+        ],
+        [
+          2753,
+          "walk_swing"
+        ],
+        [
+          2873,
+          "walk_land"
+        ],
+        [
+          2953,
+          "walk_shift"
+        ],
+        [
+          3073,
+          "walk_swing"
+        ],
+        [
+          3193,
+          "walk_land"
+        ],
+        [
+          3273,
+          "walk_shift"
+        ],
+        [
+          3393,
+          "walk_swing"
+        ],
+        [
+          3513,
+          "walk_land"
+        ],
+        [
+          3593,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -6.385928297578062,
+      "hip_height_px": 189.93962766563715,
+      "chest_height_px": 243.02935357771136,
+      "head_height_px": 273.02454713591163,
+      "tail_max_speed_px_frame": 0.5504305438023177,
+      "max_recovery_speed_px_frame": 9.18806133989915,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 20,
+      "frames": 3700,
+      "walk_start_frame": 1813,
+      "steps": [
+        {
+          "frame": 2313,
+          "side": "r",
+          "clearance_px": 46.56247362263923,
+          "stance_travel_px": 0.003692712536576437,
+          "advance_px": 106.04659255081037
+        },
+        {
+          "frame": 2633,
+          "side": "l",
+          "clearance_px": 21.039340203709628,
+          "stance_travel_px": 0.16497946399863395,
+          "advance_px": 89.03388532860436
+        },
+        {
+          "frame": 2953,
+          "side": "r",
+          "clearance_px": 49.55589669253527,
+          "stance_travel_px": 0.17029262107189425,
+          "advance_px": 89.26090813278745
+        },
+        {
+          "frame": 3273,
+          "side": "l",
+          "clearance_px": 21.050428834773243,
+          "stance_travel_px": 0.1650857824539571,
+          "advance_px": 89.23381147945975
+        },
+        {
+          "frame": 3593,
+          "side": "r",
+          "clearance_px": 49.555651908917355,
+          "stance_travel_px": 0.17029978354162267,
+          "advance_px": 89.25198741750228
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 247.9852357832906,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30064227395843,
+      "max_hip_delta_px": 1.3986663927089413,
+      "max_vertical_hip_delta_px": 1.3985479281007827,
+      "max_stance_travel_px": 0.17029978354162267,
+      "min_step_clearance_px": 21.039340203709628,
+      "max_abs_torso_tilt_deg": 1.673103966487033,
+      "max_walk_force_ratio": 0.8436521462850973,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 252,
+      "state": "walk_shift",
+      "start_frame": 341,
+      "support_frame": 489,
+      "events": [
+        [
+          341,
+          "rising"
+        ],
+        [
+          489,
+          "supported"
+        ],
+        [
+          549,
+          "foot_placing"
+        ],
+        [
+          819,
+          "transferring"
+        ],
+        [
+          968,
+          "half_kneeling"
+        ],
+        [
+          1028,
+          "torso_raising"
+        ],
+        [
+          1358,
+          "upright_kneeling"
+        ],
+        [
+          1418,
+          "standing_rising"
+        ],
+        [
+          1766,
+          "standing"
+        ],
+        [
+          1826,
+          "walk_shift"
+        ],
+        [
+          1826,
+          "walk_prepare"
+        ],
+        [
+          2006,
+          "walk_shift"
+        ],
+        [
+          2126,
+          "walk_swing"
+        ],
+        [
+          2246,
+          "walk_land"
+        ],
+        [
+          2326,
+          "walk_shift"
+        ],
+        [
+          2446,
+          "walk_swing"
+        ],
+        [
+          2566,
+          "walk_land"
+        ],
+        [
+          2646,
+          "walk_shift"
+        ],
+        [
+          2766,
+          "walk_swing"
+        ],
+        [
+          2886,
+          "walk_land"
+        ],
+        [
+          2966,
+          "walk_shift"
+        ],
+        [
+          3086,
+          "walk_swing"
+        ],
+        [
+          3206,
+          "walk_land"
+        ],
+        [
+          3286,
+          "walk_shift"
+        ],
+        [
+          3406,
+          "walk_swing"
+        ],
+        [
+          3526,
+          "walk_land"
+        ],
+        [
+          3606,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -10.993288900071889,
+      "hip_height_px": 189.7699220828851,
+      "chest_height_px": 242.8604378129669,
+      "head_height_px": 272.85580332177193,
+      "tail_max_speed_px_frame": 0.5504305438023195,
+      "max_recovery_speed_px_frame": 9.144753340685611,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 25,
+      "frames": 3700,
+      "walk_start_frame": 1826,
+      "steps": [
+        {
+          "frame": 2326,
+          "side": "r",
+          "clearance_px": 46.56320983712931,
+          "stance_travel_px": 0.003692785527732667,
+          "advance_px": 106.07386222625371
+        },
+        {
+          "frame": 2646,
+          "side": "l",
+          "clearance_px": 21.039339948504278,
+          "stance_travel_px": 0.16497946001959463,
+          "advance_px": 89.03388083859534
+        },
+        {
+          "frame": 2966,
+          "side": "r",
+          "clearance_px": 49.55589669883204,
+          "stance_travel_px": 0.17029262109508636,
+          "advance_px": 89.2609083624701
+        },
+        {
+          "frame": 3286,
+          "side": "l",
+          "clearance_px": 21.050428834761988,
+          "stance_travel_px": 0.16508578245338867,
+          "advance_px": 89.23381147939824
+        },
+        {
+          "frame": 3606,
+          "side": "r",
+          "clearance_px": 49.55565190891667,
+          "stance_travel_px": 0.17029978354082687,
+          "advance_px": 89.25198741750637
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 242.2955067354344,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.3002206060257,
+      "max_hip_delta_px": 1.3986663927683622,
+      "max_vertical_hip_delta_px": 1.3985479281532776,
+      "max_stance_travel_px": 0.17029978354082687,
+      "min_step_clearance_px": 21.039339948504278,
+      "max_abs_torso_tilt_deg": 1.6730818170758421,
+      "max_walk_force_ratio": 0.8436521472271409,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 223,
+      "state": "walk_land",
+      "start_frame": 312,
+      "support_frame": 938,
+      "events": [
+        [
+          312,
+          "repositioning"
+        ],
+        [
+          552,
+          "repositioning"
+        ],
+        [
+          792,
+          "rising"
+        ],
+        [
+          938,
+          "supported"
+        ],
+        [
+          998,
+          "foot_placing"
+        ],
+        [
+          1267,
+          "transferring"
+        ],
+        [
+          1416,
+          "half_kneeling"
+        ],
+        [
+          1476,
+          "torso_raising"
+        ],
+        [
+          1816,
+          "upright_kneeling"
+        ],
+        [
+          1876,
+          "standing_rising"
+        ],
+        [
+          2224,
+          "standing"
+        ],
+        [
+          2284,
+          "walk_shift"
+        ],
+        [
+          2284,
+          "walk_prepare"
+        ],
+        [
+          2464,
+          "walk_shift"
+        ],
+        [
+          2584,
+          "walk_swing"
+        ],
+        [
+          2704,
+          "walk_land"
+        ],
+        [
+          2784,
+          "walk_shift"
+        ],
+        [
+          2904,
+          "walk_swing"
+        ],
+        [
+          3024,
+          "walk_land"
+        ],
+        [
+          3104,
+          "walk_shift"
+        ],
+        [
+          3224,
+          "walk_swing"
+        ],
+        [
+          3344,
+          "walk_land"
+        ],
+        [
+          3424,
+          "walk_shift"
+        ],
+        [
+          3544,
+          "walk_swing"
+        ],
+        [
+          3664,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.318371476058445,
+      "hip_height_px": 185.03194225046948,
+      "chest_height_px": 238.1478036566325,
+      "head_height_px": 268.1445980789991,
+      "tail_max_speed_px_frame": 3.0020224201159964,
+      "max_recovery_speed_px_frame": 7.330245479427687,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 0,
+      "frames": 3700,
+      "walk_start_frame": 2284,
+      "steps": [
+        {
+          "frame": 2784,
+          "side": "r",
+          "clearance_px": 46.56320777859622,
+          "stance_travel_px": 0.003692785354253658,
+          "advance_px": 106.07378541362874
+        },
+        {
+          "frame": 3104,
+          "side": "l",
+          "clearance_px": 21.039339949223802,
+          "stance_travel_px": 0.16497946003089403,
+          "advance_px": 89.03388085130797
+        },
+        {
+          "frame": 3424,
+          "side": "r",
+          "clearance_px": 49.555896698814195,
+          "stance_travel_px": 0.1702926210955482,
+          "advance_px": 89.26090836182252
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 161.9332868097248,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.3002208172166,
+      "max_hip_delta_px": 1.3986663927694374,
+      "max_vertical_hip_delta_px": 1.398547928154244,
+      "max_stance_travel_px": 0.1702926210955482,
+      "min_step_clearance_px": 21.039339949223802,
+      "max_abs_torso_tilt_deg": 1.673081877958837,
+      "max_walk_force_ratio": 0.8436521472244964,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 227,
+      "state": "walk_land",
+      "start_frame": 316,
+      "support_frame": 942,
+      "events": [
+        [
+          316,
+          "repositioning"
+        ],
+        [
+          556,
+          "repositioning"
+        ],
+        [
+          796,
+          "rising"
+        ],
+        [
+          942,
+          "supported"
+        ],
+        [
+          1002,
+          "foot_placing"
+        ],
+        [
+          1271,
+          "transferring"
+        ],
+        [
+          1420,
+          "half_kneeling"
+        ],
+        [
+          1480,
+          "torso_raising"
+        ],
+        [
+          1820,
+          "upright_kneeling"
+        ],
+        [
+          1880,
+          "standing_rising"
+        ],
+        [
+          2228,
+          "standing"
+        ],
+        [
+          2288,
+          "walk_shift"
+        ],
+        [
+          2288,
+          "walk_prepare"
+        ],
+        [
+          2468,
+          "walk_shift"
+        ],
+        [
+          2588,
+          "walk_swing"
+        ],
+        [
+          2708,
+          "walk_land"
+        ],
+        [
+          2788,
+          "walk_shift"
+        ],
+        [
+          2908,
+          "walk_swing"
+        ],
+        [
+          3028,
+          "walk_land"
+        ],
+        [
+          3108,
+          "walk_shift"
+        ],
+        [
+          3228,
+          "walk_swing"
+        ],
+        [
+          3348,
+          "walk_land"
+        ],
+        [
+          3428,
+          "walk_shift"
+        ],
+        [
+          3548,
+          "walk_swing"
+        ],
+        [
+          3668,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.363691167128451,
+      "hip_height_px": 185.0509520356977,
+      "chest_height_px": 238.16836527794698,
+      "head_height_px": 268.1653228059921,
+      "tail_max_speed_px_frame": 3.0020224201186703,
+      "max_recovery_speed_px_frame": 7.441435244304112,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 5,
+      "frames": 3700,
+      "walk_start_frame": 2288,
+      "steps": [
+        {
+          "frame": 2788,
+          "side": "r",
+          "clearance_px": 46.56320777859611,
+          "stance_travel_px": 0.0036927853542891853,
+          "advance_px": 106.07378541363325
+        },
+        {
+          "frame": 3108,
+          "side": "l",
+          "clearance_px": 21.039339949223915,
+          "stance_travel_px": 0.16497946003085673,
+          "advance_px": 89.03388085130801
+        },
+        {
+          "frame": 3428,
+          "side": "r",
+          "clearance_px": 49.55589669881391,
+          "stance_travel_px": 0.17029262109544163,
+          "advance_px": 89.26090836182334
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 162.00307780273704,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.3002208172161,
+      "max_hip_delta_px": 1.3986663927688208,
+      "max_vertical_hip_delta_px": 1.3985479281536755,
+      "max_stance_travel_px": 0.17029262109544163,
+      "min_step_clearance_px": 21.039339949223915,
+      "max_abs_torso_tilt_deg": 1.6730818779588263,
+      "max_walk_force_ratio": 0.8436521472244897,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 233,
+      "state": "walk_land",
+      "start_frame": 322,
+      "support_frame": 948,
+      "events": [
+        [
+          322,
+          "repositioning"
+        ],
+        [
+          562,
+          "repositioning"
+        ],
+        [
+          802,
+          "rising"
+        ],
+        [
+          948,
+          "supported"
+        ],
+        [
+          1008,
+          "foot_placing"
+        ],
+        [
+          1277,
+          "transferring"
+        ],
+        [
+          1426,
+          "half_kneeling"
+        ],
+        [
+          1486,
+          "torso_raising"
+        ],
+        [
+          1826,
+          "upright_kneeling"
+        ],
+        [
+          1886,
+          "standing_rising"
+        ],
+        [
+          2234,
+          "standing"
+        ],
+        [
+          2294,
+          "walk_shift"
+        ],
+        [
+          2294,
+          "walk_prepare"
+        ],
+        [
+          2474,
+          "walk_shift"
+        ],
+        [
+          2594,
+          "walk_swing"
+        ],
+        [
+          2714,
+          "walk_land"
+        ],
+        [
+          2794,
+          "walk_shift"
+        ],
+        [
+          2914,
+          "walk_swing"
+        ],
+        [
+          3034,
+          "walk_land"
+        ],
+        [
+          3114,
+          "walk_shift"
+        ],
+        [
+          3234,
+          "walk_swing"
+        ],
+        [
+          3354,
+          "walk_land"
+        ],
+        [
+          3434,
+          "walk_shift"
+        ],
+        [
+          3554,
+          "walk_swing"
+        ],
+        [
+          3674,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.3667833141597185,
+      "hip_height_px": 185.28494944717457,
+      "chest_height_px": 238.40296093559374,
+      "head_height_px": 268.40011140034426,
+      "tail_max_speed_px_frame": 3.0020224201175973,
+      "max_recovery_speed_px_frame": 7.366027861242314,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 10,
+      "frames": 3700,
+      "walk_start_frame": 2294,
+      "steps": [
+        {
+          "frame": 2794,
+          "side": "r",
+          "clearance_px": 46.56320777859628,
+          "stance_travel_px": 0.0036927853542749745,
+          "advance_px": 106.07378541362968
+        },
+        {
+          "frame": 3114,
+          "side": "l",
+          "clearance_px": 21.039339949223574,
+          "stance_travel_px": 0.16497946003093844,
+          "advance_px": 89.03388085130753
+        },
+        {
+          "frame": 3434,
+          "side": "r",
+          "clearance_px": 49.55589669881391,
+          "stance_travel_px": 0.17029262109560506,
+          "advance_px": 89.26090836182235
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 162.11280627797535,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721592,
+      "max_hip_delta_px": 1.3986663927693133,
+      "max_vertical_hip_delta_px": 1.3985479281541302,
+      "max_stance_travel_px": 0.17029262109560506,
+      "min_step_clearance_px": 21.039339949223574,
+      "max_abs_torso_tilt_deg": 1.6730818779587087,
+      "max_walk_force_ratio": 0.8436521472244971,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 237,
+      "state": "walk_swing",
+      "start_frame": 326,
+      "support_frame": 714,
+      "events": [
+        [
+          326,
+          "repositioning"
+        ],
+        [
+          566,
+          "rising"
+        ],
+        [
+          714,
+          "supported"
+        ],
+        [
+          774,
+          "foot_placing"
+        ],
+        [
+          1043,
+          "transferring"
+        ],
+        [
+          1193,
+          "half_kneeling"
+        ],
+        [
+          1253,
+          "torso_raising"
+        ],
+        [
+          1593,
+          "upright_kneeling"
+        ],
+        [
+          1653,
+          "standing_rising"
+        ],
+        [
+          2001,
+          "standing"
+        ],
+        [
+          2061,
+          "walk_shift"
+        ],
+        [
+          2061,
+          "walk_prepare"
+        ],
+        [
+          2241,
+          "walk_shift"
+        ],
+        [
+          2361,
+          "walk_swing"
+        ],
+        [
+          2481,
+          "walk_land"
+        ],
+        [
+          2561,
+          "walk_shift"
+        ],
+        [
+          2681,
+          "walk_swing"
+        ],
+        [
+          2801,
+          "walk_land"
+        ],
+        [
+          2881,
+          "walk_shift"
+        ],
+        [
+          3001,
+          "walk_swing"
+        ],
+        [
+          3121,
+          "walk_land"
+        ],
+        [
+          3201,
+          "walk_shift"
+        ],
+        [
+          3321,
+          "walk_swing"
+        ],
+        [
+          3441,
+          "walk_land"
+        ],
+        [
+          3521,
+          "walk_shift"
+        ],
+        [
+          3641,
+          "walk_swing"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -4.488613624235313,
+      "hip_height_px": 189.96718012720362,
+      "chest_height_px": 243.05103615523186,
+      "head_height_px": 273.04508665114787,
+      "tail_max_speed_px_frame": 1.0926757212405396,
+      "max_recovery_speed_px_frame": 7.540122456477256,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 15,
+      "frames": 3700,
+      "walk_start_frame": 2061,
+      "steps": [
+        {
+          "frame": 2561,
+          "side": "r",
+          "clearance_px": 46.56320803385745,
+          "stance_travel_px": 0.003692785382099828,
+          "advance_px": 106.07379487950112
+        },
+        {
+          "frame": 2881,
+          "side": "l",
+          "clearance_px": 21.03933994913308,
+          "stance_travel_px": 0.16497946002948538,
+          "advance_px": 89.03388084974827
+        },
+        {
+          "frame": 3201,
+          "side": "r",
+          "clearance_px": 49.55589669881607,
+          "stance_travel_px": 0.1702926210956548,
+          "advance_px": 89.26090836190531
+        },
+        {
+          "frame": 3521,
+          "side": "l",
+          "clearance_px": 21.050428834771992,
+          "stance_travel_px": 0.16508578245412764,
+          "advance_px": 89.23381147940268
+        }
+      ],
+      "completed_steps": 4,
+      "alternating": true,
+      "distance_px": 204.49398368915908,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022068523138,
+      "max_hip_delta_px": 1.3986663927664875,
+      "max_vertical_hip_delta_px": 1.398547928151629,
+      "max_stance_travel_px": 0.1702926210956548,
+      "min_step_clearance_px": 21.03933994913308,
+      "max_abs_torso_tilt_deg": 1.67308187029311,
+      "max_walk_force_ratio": 0.843652147224826,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 242,
+      "state": "walk_swing",
+      "start_frame": 331,
+      "support_frame": 722,
+      "events": [
+        [
+          331,
+          "repositioning"
+        ],
+        [
+          573,
+          "rising"
+        ],
+        [
+          722,
+          "supported"
+        ],
+        [
+          782,
+          "foot_placing"
+        ],
+        [
+          1051,
+          "transferring"
+        ],
+        [
+          1200,
+          "half_kneeling"
+        ],
+        [
+          1260,
+          "torso_raising"
+        ],
+        [
+          1600,
+          "upright_kneeling"
+        ],
+        [
+          1660,
+          "standing_rising"
+        ],
+        [
+          2008,
+          "standing"
+        ],
+        [
+          2068,
+          "walk_shift"
+        ],
+        [
+          2068,
+          "walk_prepare"
+        ],
+        [
+          2248,
+          "walk_shift"
+        ],
+        [
+          2368,
+          "walk_swing"
+        ],
+        [
+          2488,
+          "walk_land"
+        ],
+        [
+          2568,
+          "walk_shift"
+        ],
+        [
+          2688,
+          "walk_swing"
+        ],
+        [
+          2808,
+          "walk_land"
+        ],
+        [
+          2888,
+          "walk_shift"
+        ],
+        [
+          3008,
+          "walk_swing"
+        ],
+        [
+          3128,
+          "walk_land"
+        ],
+        [
+          3208,
+          "walk_shift"
+        ],
+        [
+          3328,
+          "walk_swing"
+        ],
+        [
+          3448,
+          "walk_land"
+        ],
+        [
+          3528,
+          "walk_shift"
+        ],
+        [
+          3648,
+          "walk_swing"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -3.545424263840175,
+      "hip_height_px": 189.96671436866433,
+      "chest_height_px": 243.05133303369416,
+      "head_height_px": 273.045550493974,
+      "tail_max_speed_px_frame": 1.0926757212406772,
+      "max_recovery_speed_px_frame": 11.637775860405178,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 20,
+      "frames": 3700,
+      "walk_start_frame": 2068,
+      "steps": [
+        {
+          "frame": 2568,
+          "side": "r",
+          "clearance_px": 46.56320794326518,
+          "stance_travel_px": 0.003692785372038543,
+          "advance_px": 106.07379152005552
+        },
+        {
+          "frame": 2888,
+          "side": "l",
+          "clearance_px": 21.03933994916315,
+          "stance_travel_px": 0.16497946002931485,
+          "advance_px": 89.03388085030537
+        },
+        {
+          "frame": 3208,
+          "side": "r",
+          "clearance_px": 49.555896698815445,
+          "stance_travel_px": 0.1702926210955411,
+          "advance_px": 89.26090836187944
+        },
+        {
+          "frame": 3528,
+          "side": "l",
+          "clearance_px": 21.050428834774607,
+          "stance_travel_px": 0.16508578245424133,
+          "advance_px": 89.23381147939836
+        }
+      ],
+      "completed_steps": 4,
+      "alternating": true,
+      "distance_px": 204.50748792433106,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022073207317,
+      "max_hip_delta_px": 1.3986663927662155,
+      "max_vertical_hip_delta_px": 1.3985479281513733,
+      "max_stance_travel_px": 0.1702926210955411,
+      "min_step_clearance_px": 21.03933994916315,
+      "max_abs_torso_tilt_deg": 1.673081873012166,
+      "max_walk_force_ratio": 0.8436521472247173,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 250,
+      "state": "walk_land",
+      "start_frame": 339,
+      "support_frame": 965,
+      "events": [
+        [
+          339,
+          "repositioning"
+        ],
+        [
+          579,
+          "repositioning"
+        ],
+        [
+          819,
+          "rising"
+        ],
+        [
+          965,
+          "supported"
+        ],
+        [
+          1025,
+          "foot_placing"
+        ],
+        [
+          1294,
+          "transferring"
+        ],
+        [
+          1443,
+          "half_kneeling"
+        ],
+        [
+          1503,
+          "torso_raising"
+        ],
+        [
+          1843,
+          "upright_kneeling"
+        ],
+        [
+          1903,
+          "standing_rising"
+        ],
+        [
+          2251,
+          "standing"
+        ],
+        [
+          2311,
+          "walk_shift"
+        ],
+        [
+          2311,
+          "walk_prepare"
+        ],
+        [
+          2491,
+          "walk_shift"
+        ],
+        [
+          2611,
+          "walk_swing"
+        ],
+        [
+          2731,
+          "walk_land"
+        ],
+        [
+          2811,
+          "walk_shift"
+        ],
+        [
+          2931,
+          "walk_swing"
+        ],
+        [
+          3051,
+          "walk_land"
+        ],
+        [
+          3131,
+          "walk_shift"
+        ],
+        [
+          3251,
+          "walk_swing"
+        ],
+        [
+          3371,
+          "walk_land"
+        ],
+        [
+          3451,
+          "walk_shift"
+        ],
+        [
+          3571,
+          "walk_swing"
+        ],
+        [
+          3691,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -7.1719806328121365,
+      "hip_height_px": 186.41641848823892,
+      "chest_height_px": 239.53487669794364,
+      "head_height_px": 269.53252151935254,
+      "tail_max_speed_px_frame": 3.002022420119053,
+      "max_recovery_speed_px_frame": 7.260149806874943,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 25,
+      "frames": 3700,
+      "walk_start_frame": 2311,
+      "steps": [
+        {
+          "frame": 2811,
+          "side": "r",
+          "clearance_px": 46.563207778595995,
+          "stance_travel_px": 0.003692785354118655,
+          "advance_px": 106.0737854136233
+        },
+        {
+          "frame": 3131,
+          "side": "l",
+          "clearance_px": 21.039339949223063,
+          "stance_travel_px": 0.1649794600308354,
+          "advance_px": 89.03388085130723
+        },
+        {
+          "frame": 3451,
+          "side": "r",
+          "clearance_px": 49.555896698814365,
+          "stance_travel_px": 0.170292621095399,
+          "advance_px": 89.26090836182199
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 162.14576339102726,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721646,
+      "max_hip_delta_px": 1.3986663927706757,
+      "max_vertical_hip_delta_px": 1.3985479281553523,
+      "max_stance_travel_px": 0.170292621095399,
+      "min_step_clearance_px": 21.039339949223063,
+      "max_abs_torso_tilt_deg": 1.6730818779590035,
+      "max_walk_force_ratio": 0.8436521472245045,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 218,
+      "state": "walk_swing",
+      "start_frame": 307,
+      "support_frame": 454,
+      "events": [
+        [
+          307,
+          "rising"
+        ],
+        [
+          454,
+          "supported"
+        ],
+        [
+          514,
+          "foot_placing"
+        ],
+        [
+          783,
+          "transferring"
+        ],
+        [
+          932,
+          "half_kneeling"
+        ],
+        [
+          992,
+          "torso_raising"
+        ],
+        [
+          1326,
+          "upright_kneeling"
+        ],
+        [
+          1386,
+          "standing_rising"
+        ],
+        [
+          1734,
+          "standing"
+        ],
+        [
+          1794,
+          "walk_shift"
+        ],
+        [
+          1794,
+          "walk_prepare"
+        ],
+        [
+          1974,
+          "walk_shift"
+        ],
+        [
+          2094,
+          "walk_swing"
+        ],
+        [
+          2214,
+          "walk_land"
+        ],
+        [
+          2294,
+          "walk_shift"
+        ],
+        [
+          2414,
+          "walk_swing"
+        ],
+        [
+          2534,
+          "walk_land"
+        ],
+        [
+          2614,
+          "walk_shift"
+        ],
+        [
+          2734,
+          "walk_swing"
+        ],
+        [
+          2854,
+          "walk_land"
+        ],
+        [
+          2934,
+          "walk_shift"
+        ],
+        [
+          3054,
+          "walk_swing"
+        ],
+        [
+          3174,
+          "walk_land"
+        ],
+        [
+          3254,
+          "walk_shift"
+        ],
+        [
+          3374,
+          "walk_swing"
+        ],
+        [
+          3494,
+          "walk_land"
+        ],
+        [
+          3574,
+          "walk_shift"
+        ],
+        [
+          3694,
+          "walk_swing"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -4.072110872180133,
+      "hip_height_px": 189.95949973387062,
+      "chest_height_px": 243.04918332912263,
+      "head_height_px": 273.04434544422736,
+      "tail_max_speed_px_frame": 0.5461979963683827,
+      "max_recovery_speed_px_frame": 10.710649926422873,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 0,
+      "frames": 3700,
+      "walk_start_frame": 1794,
+      "steps": [
+        {
+          "frame": 2294,
+          "side": "r",
+          "clearance_px": 46.56247001917012,
+          "stance_travel_px": 0.0036927121423104836,
+          "advance_px": 106.04645893427846
+        },
+        {
+          "frame": 2614,
+          "side": "l",
+          "clearance_px": 21.039340204952282,
+          "stance_travel_px": 0.16497946401875652,
+          "advance_px": 89.03388535063709
+        },
+        {
+          "frame": 2934,
+          "side": "r",
+          "clearance_px": 49.55589669250418,
+          "stance_travel_px": 0.17029262107121212,
+          "advance_px": 89.26090813167468
+        },
+        {
+          "frame": 3254,
+          "side": "l",
+          "clearance_px": 21.050428834773072,
+          "stance_travel_px": 0.1650857824540708,
+          "advance_px": 89.23381147946111
+        },
+        {
+          "frame": 3574,
+          "side": "r",
+          "clearance_px": 49.55565190891639,
+          "stance_travel_px": 0.17029978354207742,
+          "advance_px": 89.25198741749762
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 250.82394638904157,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30064413197806,
+      "max_hip_delta_px": 1.3986663927096374,
+      "max_vertical_hip_delta_px": 1.398547928101408,
+      "max_stance_travel_px": 0.17029978354207742,
+      "min_step_clearance_px": 21.039340204952282,
+      "max_abs_torso_tilt_deg": 1.6731040744500667,
+      "max_walk_force_ratio": 0.8436521462805061,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 224,
+      "state": "walk_shift",
+      "start_frame": 313,
+      "support_frame": 461,
+      "events": [
+        [
+          313,
+          "rising"
+        ],
+        [
+          461,
+          "supported"
+        ],
+        [
+          521,
+          "foot_placing"
+        ],
+        [
+          790,
+          "transferring"
+        ],
+        [
+          940,
+          "half_kneeling"
+        ],
+        [
+          1000,
+          "torso_raising"
+        ],
+        [
+          1340,
+          "upright_kneeling"
+        ],
+        [
+          1400,
+          "standing_rising"
+        ],
+        [
+          1748,
+          "standing"
+        ],
+        [
+          1808,
+          "walk_shift"
+        ],
+        [
+          1808,
+          "walk_prepare"
+        ],
+        [
+          1988,
+          "walk_shift"
+        ],
+        [
+          2108,
+          "walk_swing"
+        ],
+        [
+          2228,
+          "walk_land"
+        ],
+        [
+          2308,
+          "walk_shift"
+        ],
+        [
+          2428,
+          "walk_swing"
+        ],
+        [
+          2548,
+          "walk_land"
+        ],
+        [
+          2628,
+          "walk_shift"
+        ],
+        [
+          2748,
+          "walk_swing"
+        ],
+        [
+          2868,
+          "walk_land"
+        ],
+        [
+          2948,
+          "walk_shift"
+        ],
+        [
+          3068,
+          "walk_swing"
+        ],
+        [
+          3188,
+          "walk_land"
+        ],
+        [
+          3268,
+          "walk_shift"
+        ],
+        [
+          3388,
+          "walk_swing"
+        ],
+        [
+          3508,
+          "walk_land"
+        ],
+        [
+          3588,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -5.270581445114999,
+      "hip_height_px": 189.9548867216998,
+      "chest_height_px": 243.04459706848485,
+      "head_height_px": 273.0397538940092,
+      "tail_max_speed_px_frame": 0.5504305438026468,
+      "max_recovery_speed_px_frame": 10.448291490822967,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 5,
+      "frames": 3700,
+      "walk_start_frame": 1808,
+      "steps": [
+        {
+          "frame": 2308,
+          "side": "r",
+          "clearance_px": 46.56320765486231,
+          "stance_travel_px": 0.003692785339922011,
+          "advance_px": 106.07378082519665
+        },
+        {
+          "frame": 2628,
+          "side": "l",
+          "clearance_px": 21.03933994928383,
+          "stance_travel_px": 0.16497946003164543,
+          "advance_px": 89.03388085205518
+        },
+        {
+          "frame": 2948,
+          "side": "r",
+          "clearance_px": 49.55589669881243,
+          "stance_travel_px": 0.1702926210938358,
+          "advance_px": 89.26090836178082
+        },
+        {
+          "frame": 3268,
+          "side": "l",
+          "clearance_px": 21.050428834762783,
+          "stance_travel_px": 0.16508578245372973,
+          "advance_px": 89.23381147940415
+        },
+        {
+          "frame": 3588,
+          "side": "r",
+          "clearance_px": 49.5556519089173,
+          "stance_travel_px": 0.17029978354162267,
+          "advance_px": 89.25198741750705
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 249.40198876975478,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.300220881194,
+      "max_hip_delta_px": 1.3986663927665408,
+      "max_vertical_hip_delta_px": 1.398547928151629,
+      "max_stance_travel_px": 0.17029978354162267,
+      "min_step_clearance_px": 21.03933994928383,
+      "max_abs_torso_tilt_deg": 1.6730818816745872,
+      "max_walk_force_ratio": 0.8436521472242416,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 227,
+      "state": "walk_shift",
+      "start_frame": 316,
+      "support_frame": 466,
+      "events": [
+        [
+          316,
+          "rising"
+        ],
+        [
+          466,
+          "supported"
+        ],
+        [
+          526,
+          "foot_placing"
+        ],
+        [
+          795,
+          "transferring"
+        ],
+        [
+          944,
+          "half_kneeling"
+        ],
+        [
+          1004,
+          "torso_raising"
+        ],
+        [
+          1344,
+          "upright_kneeling"
+        ],
+        [
+          1404,
+          "standing_rising"
+        ],
+        [
+          1752,
+          "standing"
+        ],
+        [
+          1812,
+          "walk_shift"
+        ],
+        [
+          1812,
+          "walk_prepare"
+        ],
+        [
+          1992,
+          "walk_shift"
+        ],
+        [
+          2112,
+          "walk_swing"
+        ],
+        [
+          2232,
+          "walk_land"
+        ],
+        [
+          2312,
+          "walk_shift"
+        ],
+        [
+          2432,
+          "walk_swing"
+        ],
+        [
+          2552,
+          "walk_land"
+        ],
+        [
+          2632,
+          "walk_shift"
+        ],
+        [
+          2752,
+          "walk_swing"
+        ],
+        [
+          2872,
+          "walk_land"
+        ],
+        [
+          2952,
+          "walk_shift"
+        ],
+        [
+          3072,
+          "walk_swing"
+        ],
+        [
+          3192,
+          "walk_land"
+        ],
+        [
+          3272,
+          "walk_shift"
+        ],
+        [
+          3392,
+          "walk_swing"
+        ],
+        [
+          3512,
+          "walk_land"
+        ],
+        [
+          3592,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -6.132494920128806,
+      "hip_height_px": 189.94402765385433,
+      "chest_height_px": 243.0337480623187,
+      "head_height_px": 273.02893292662384,
+      "tail_max_speed_px_frame": 0.5504305438020793,
+      "max_recovery_speed_px_frame": 12.727339461831452,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 10,
+      "frames": 3700,
+      "walk_start_frame": 1812,
+      "steps": [
+        {
+          "frame": 2312,
+          "side": "r",
+          "clearance_px": 46.56320792538958,
+          "stance_travel_px": 0.003692785370276397,
+          "advance_px": 106.0737908571773
+        },
+        {
+          "frame": 2632,
+          "side": "l",
+          "clearance_px": 21.03933994918566,
+          "stance_travel_px": 0.16497946003062225,
+          "advance_px": 89.03388085039887
+        },
+        {
+          "frame": 2952,
+          "side": "r",
+          "clearance_px": 49.555896698815445,
+          "stance_travel_px": 0.1702926210946316,
+          "advance_px": 89.26090836185847
+        },
+        {
+          "frame": 3272,
+          "side": "l",
+          "clearance_px": 21.050428834772276,
+          "stance_travel_px": 0.1650857824540708,
+          "advance_px": 89.2338114793937
+        },
+        {
+          "frame": 3592,
+          "side": "r",
+          "clearance_px": 49.555651908917014,
+          "stance_travel_px": 0.17029978354196373,
+          "advance_px": 89.25198741750012
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 248.31949536459467,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022074131435,
+      "max_hip_delta_px": 1.3986663927683756,
+      "max_vertical_hip_delta_px": 1.3985479281532776,
+      "max_stance_travel_px": 0.17029978354196373,
+      "min_step_clearance_px": 21.03933994918566,
+      "max_abs_torso_tilt_deg": 1.6730818735524975,
+      "max_walk_force_ratio": 0.843652147224641,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 233,
+      "state": "walk_shift",
+      "start_frame": 322,
+      "support_frame": 468,
+      "events": [
+        [
+          322,
+          "rising"
+        ],
+        [
+          468,
+          "supported"
+        ],
+        [
+          528,
+          "foot_placing"
+        ],
+        [
+          797,
+          "transferring"
+        ],
+        [
+          946,
+          "half_kneeling"
+        ],
+        [
+          1006,
+          "torso_raising"
+        ],
+        [
+          1339,
+          "upright_kneeling"
+        ],
+        [
+          1399,
+          "standing_rising"
+        ],
+        [
+          1747,
+          "standing"
+        ],
+        [
+          1807,
+          "walk_shift"
+        ],
+        [
+          1807,
+          "walk_prepare"
+        ],
+        [
+          1987,
+          "walk_shift"
+        ],
+        [
+          2107,
+          "walk_swing"
+        ],
+        [
+          2227,
+          "walk_land"
+        ],
+        [
+          2307,
+          "walk_shift"
+        ],
+        [
+          2427,
+          "walk_swing"
+        ],
+        [
+          2547,
+          "walk_land"
+        ],
+        [
+          2627,
+          "walk_shift"
+        ],
+        [
+          2747,
+          "walk_swing"
+        ],
+        [
+          2867,
+          "walk_land"
+        ],
+        [
+          2947,
+          "walk_shift"
+        ],
+        [
+          3067,
+          "walk_swing"
+        ],
+        [
+          3187,
+          "walk_land"
+        ],
+        [
+          3267,
+          "walk_shift"
+        ],
+        [
+          3387,
+          "walk_swing"
+        ],
+        [
+          3507,
+          "walk_land"
+        ],
+        [
+          3587,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -5.092514237936598,
+      "hip_height_px": 189.95633221438257,
+      "chest_height_px": 243.04603833697155,
+      "head_height_px": 273.0411898229597,
+      "tail_max_speed_px_frame": 0.550430543802425,
+      "max_recovery_speed_px_frame": 5.024035008934595,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 15,
+      "frames": 3700,
+      "walk_start_frame": 1807,
+      "steps": [
+        {
+          "frame": 2307,
+          "side": "r",
+          "clearance_px": 46.56246458667306,
+          "stance_travel_px": 0.0036927115468188276,
+          "advance_px": 106.04625749757054
+        },
+        {
+          "frame": 2627,
+          "side": "l",
+          "clearance_px": 21.039340206846305,
+          "stance_travel_px": 0.16497946404774666,
+          "advance_px": 89.03388538382399
+        },
+        {
+          "frame": 2947,
+          "side": "r",
+          "clearance_px": 49.555896692457395,
+          "stance_travel_px": 0.17029262107155319,
+          "advance_px": 89.26090812996654
+        },
+        {
+          "frame": 3267,
+          "side": "l",
+          "clearance_px": 21.050428834769377,
+          "stance_travel_px": 0.16508578245452554,
+          "advance_px": 89.23381147946588
+        },
+        {
+          "frame": 3587,
+          "side": "r",
+          "clearance_px": 49.55565190891741,
+          "stance_travel_px": 0.1702997835413953,
+          "advance_px": 89.25198741750035
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 249.60824544560728,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30064693311166,
+      "max_hip_delta_px": 1.3986663927080063,
+      "max_vertical_hip_delta_px": 1.3985479280999868,
+      "max_stance_travel_px": 0.1702997835413953,
+      "min_step_clearance_px": 21.039340206846305,
+      "max_abs_torso_tilt_deg": 1.6731042372001423,
+      "max_walk_force_ratio": 0.8436521462735198,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 238,
+      "state": "walk_shift",
+      "start_frame": 327,
+      "support_frame": 474,
+      "events": [
+        [
+          327,
+          "rising"
+        ],
+        [
+          474,
+          "supported"
+        ],
+        [
+          534,
+          "foot_placing"
+        ],
+        [
+          803,
+          "transferring"
+        ],
+        [
+          954,
+          "half_kneeling"
+        ],
+        [
+          1014,
+          "torso_raising"
+        ],
+        [
+          1366,
+          "upright_kneeling"
+        ],
+        [
+          1426,
+          "standing_rising"
+        ],
+        [
+          1774,
+          "standing"
+        ],
+        [
+          1834,
+          "walk_shift"
+        ],
+        [
+          1834,
+          "walk_prepare"
+        ],
+        [
+          2014,
+          "walk_shift"
+        ],
+        [
+          2134,
+          "walk_swing"
+        ],
+        [
+          2254,
+          "walk_land"
+        ],
+        [
+          2334,
+          "walk_shift"
+        ],
+        [
+          2454,
+          "walk_swing"
+        ],
+        [
+          2574,
+          "walk_land"
+        ],
+        [
+          2654,
+          "walk_shift"
+        ],
+        [
+          2774,
+          "walk_swing"
+        ],
+        [
+          2894,
+          "walk_land"
+        ],
+        [
+          2974,
+          "walk_shift"
+        ],
+        [
+          3094,
+          "walk_swing"
+        ],
+        [
+          3214,
+          "walk_land"
+        ],
+        [
+          3294,
+          "walk_shift"
+        ],
+        [
+          3414,
+          "walk_swing"
+        ],
+        [
+          3534,
+          "walk_land"
+        ],
+        [
+          3614,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -14.36486563748781,
+      "hip_height_px": 189.52465446483038,
+      "chest_height_px": 242.6173119844901,
+      "head_height_px": 272.6130786047603,
+      "tail_max_speed_px_frame": 0.5504305438025395,
+      "max_recovery_speed_px_frame": 10.737038360210079,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 20,
+      "frames": 3700,
+      "walk_start_frame": 1834,
+      "steps": [
+        {
+          "frame": 2334,
+          "side": "r",
+          "clearance_px": 46.56320846800895,
+          "stance_travel_px": 0.0036927854298483,
+          "advance_px": 106.0738109791539
+        },
+        {
+          "frame": 2654,
+          "side": "l",
+          "clearance_px": 21.03933994899478,
+          "stance_travel_px": 0.16497946002698427,
+          "advance_px": 89.03388084708467
+        },
+        {
+          "frame": 2974,
+          "side": "r",
+          "clearance_px": 49.555896698819936,
+          "stance_travel_px": 0.1702926210946316,
+          "advance_px": 89.26090836202877
+        },
+        {
+          "frame": 3294,
+          "side": "l",
+          "clearance_px": 21.050428834764432,
+          "stance_travel_px": 0.16508578245418448,
+          "advance_px": 89.23381147940279
+        },
+        {
+          "frame": 3614,
+          "side": "r",
+          "clearance_px": 49.555651908917184,
+          "stance_travel_px": 0.17029978354185005,
+          "advance_px": 89.25198741750967
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 237.9666982325814,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022046074797,
+      "max_hip_delta_px": 1.3986663927658098,
+      "max_vertical_hip_delta_px": 1.398547928150947,
+      "max_stance_travel_px": 0.17029978354185005,
+      "min_step_clearance_px": 21.03933994899478,
+      "max_abs_torso_tilt_deg": 1.6730818572554438,
+      "max_walk_force_ratio": 0.8436521472252883,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 243,
+      "state": "walk_shift",
+      "start_frame": 332,
+      "support_frame": 482,
+      "events": [
+        [
+          332,
+          "rising"
+        ],
+        [
+          482,
+          "supported"
+        ],
+        [
+          542,
+          "foot_placing"
+        ],
+        [
+          811,
+          "transferring"
+        ],
+        [
+          961,
+          "half_kneeling"
+        ],
+        [
+          1021,
+          "torso_raising"
+        ],
+        [
+          1361,
+          "upright_kneeling"
+        ],
+        [
+          1421,
+          "standing_rising"
+        ],
+        [
+          1769,
+          "standing"
+        ],
+        [
+          1829,
+          "walk_shift"
+        ],
+        [
+          1829,
+          "walk_prepare"
+        ],
+        [
+          2009,
+          "walk_shift"
+        ],
+        [
+          2129,
+          "walk_swing"
+        ],
+        [
+          2249,
+          "walk_land"
+        ],
+        [
+          2329,
+          "walk_shift"
+        ],
+        [
+          2449,
+          "walk_swing"
+        ],
+        [
+          2569,
+          "walk_land"
+        ],
+        [
+          2649,
+          "walk_shift"
+        ],
+        [
+          2769,
+          "walk_swing"
+        ],
+        [
+          2889,
+          "walk_land"
+        ],
+        [
+          2969,
+          "walk_shift"
+        ],
+        [
+          3089,
+          "walk_swing"
+        ],
+        [
+          3209,
+          "walk_land"
+        ],
+        [
+          3289,
+          "walk_shift"
+        ],
+        [
+          3409,
+          "walk_swing"
+        ],
+        [
+          3529,
+          "walk_land"
+        ],
+        [
+          3609,
+          "walk_shift"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -12.27472913198676,
+      "hip_height_px": 189.6903388341418,
+      "chest_height_px": 242.7816274974145,
+      "head_height_px": 272.77709675581093,
+      "tail_max_speed_px_frame": 0.5504305438018648,
+      "max_recovery_speed_px_frame": 13.140096839733406,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 25,
+      "frames": 3700,
+      "walk_start_frame": 1829,
+      "steps": [
+        {
+          "frame": 2329,
+          "side": "r",
+          "clearance_px": 46.5632076549,
+          "stance_travel_px": 0.003692785340035698,
+          "advance_px": 106.07378082659727
+        },
+        {
+          "frame": 2649,
+          "side": "l",
+          "clearance_px": 21.039339949285818,
+          "stance_travel_px": 0.16497946003164543,
+          "advance_px": 89.03388085204551
+        },
+        {
+          "frame": 2969,
+          "side": "r",
+          "clearance_px": 49.555896698812546,
+          "stance_travel_px": 0.1702926210947453,
+          "advance_px": 89.26090836177173
+        },
+        {
+          "frame": 3289,
+          "side": "l",
+          "clearance_px": 21.050428834768866,
+          "stance_travel_px": 0.16508578245418448,
+          "advance_px": 89.23381147939563
+        },
+        {
+          "frame": 3609,
+          "side": "r",
+          "clearance_px": 49.55565190891741,
+          "stance_travel_px": 0.17029978354196373,
+          "advance_px": 89.25198741749944
+        }
+      ],
+      "completed_steps": 5,
+      "alternating": true,
+      "distance_px": 240.68121693469755,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.300220881175,
+      "max_hip_delta_px": 1.3986663927667844,
+      "max_vertical_hip_delta_px": 1.3985479281518565,
+      "max_stance_travel_px": 0.17029978354196373,
+      "min_step_clearance_px": 21.039339949285818,
+      "max_abs_torso_tilt_deg": 1.6730818816736057,
+      "max_walk_force_ratio": 0.8436521472242156,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 219,
+      "state": "walk_land",
+      "start_frame": 308,
+      "support_frame": 934,
+      "events": [
+        [
+          308,
+          "repositioning"
+        ],
+        [
+          548,
+          "repositioning"
+        ],
+        [
+          788,
+          "rising"
+        ],
+        [
+          934,
+          "supported"
+        ],
+        [
+          994,
+          "foot_placing"
+        ],
+        [
+          1263,
+          "transferring"
+        ],
+        [
+          1412,
+          "half_kneeling"
+        ],
+        [
+          1472,
+          "torso_raising"
+        ],
+        [
+          1812,
+          "upright_kneeling"
+        ],
+        [
+          1872,
+          "standing_rising"
+        ],
+        [
+          2220,
+          "standing"
+        ],
+        [
+          2280,
+          "walk_shift"
+        ],
+        [
+          2280,
+          "walk_prepare"
+        ],
+        [
+          2460,
+          "walk_shift"
+        ],
+        [
+          2580,
+          "walk_swing"
+        ],
+        [
+          2700,
+          "walk_land"
+        ],
+        [
+          2780,
+          "walk_shift"
+        ],
+        [
+          2900,
+          "walk_swing"
+        ],
+        [
+          3020,
+          "walk_land"
+        ],
+        [
+          3100,
+          "walk_shift"
+        ],
+        [
+          3220,
+          "walk_swing"
+        ],
+        [
+          3340,
+          "walk_land"
+        ],
+        [
+          3420,
+          "walk_shift"
+        ],
+        [
+          3540,
+          "walk_swing"
+        ],
+        [
+          3660,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.266867424231748,
+      "hip_height_px": 185.00584354839214,
+      "chest_height_px": 238.12081424432535,
+      "head_height_px": 268.1174674137493,
+      "tail_max_speed_px_frame": 0.6466001861677028,
+      "max_recovery_speed_px_frame": 7.565078026862413,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 0,
+      "frames": 3700,
+      "walk_start_frame": 2280,
+      "steps": [
+        {
+          "frame": 2780,
+          "side": "r",
+          "clearance_px": 46.56320777859514,
+          "stance_travel_px": 0.003692785354104444,
+          "advance_px": 106.07378541361123
+        },
+        {
+          "frame": 3100,
+          "side": "l",
+          "clearance_px": 21.039339949226985,
+          "stance_travel_px": 0.16497946003104857,
+          "advance_px": 89.033880851306
+        },
+        {
+          "frame": 3420,
+          "side": "r",
+          "clearance_px": 49.555896698814195,
+          "stance_travel_px": 0.1702926210955411,
+          "advance_px": 89.26090836182064
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 161.83331467440166,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721606,
+      "max_hip_delta_px": 1.3986663927703464,
+      "max_vertical_hip_delta_px": 1.3985479281550397,
+      "max_stance_travel_px": 0.1702926210955411,
+      "min_step_clearance_px": 21.039339949226985,
+      "max_abs_torso_tilt_deg": 1.6730818779588357,
+      "max_walk_force_ratio": 0.843652147224492,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 223,
+      "state": "walk_land",
+      "start_frame": 312,
+      "support_frame": 938,
+      "events": [
+        [
+          312,
+          "repositioning"
+        ],
+        [
+          552,
+          "repositioning"
+        ],
+        [
+          792,
+          "rising"
+        ],
+        [
+          938,
+          "supported"
+        ],
+        [
+          998,
+          "foot_placing"
+        ],
+        [
+          1267,
+          "transferring"
+        ],
+        [
+          1416,
+          "half_kneeling"
+        ],
+        [
+          1476,
+          "torso_raising"
+        ],
+        [
+          1816,
+          "upright_kneeling"
+        ],
+        [
+          1876,
+          "standing_rising"
+        ],
+        [
+          2224,
+          "standing"
+        ],
+        [
+          2284,
+          "walk_shift"
+        ],
+        [
+          2284,
+          "walk_prepare"
+        ],
+        [
+          2464,
+          "walk_shift"
+        ],
+        [
+          2584,
+          "walk_swing"
+        ],
+        [
+          2704,
+          "walk_land"
+        ],
+        [
+          2784,
+          "walk_shift"
+        ],
+        [
+          2904,
+          "walk_swing"
+        ],
+        [
+          3024,
+          "walk_land"
+        ],
+        [
+          3104,
+          "walk_shift"
+        ],
+        [
+          3224,
+          "walk_swing"
+        ],
+        [
+          3344,
+          "walk_land"
+        ],
+        [
+          3424,
+          "walk_shift"
+        ],
+        [
+          3544,
+          "walk_swing"
+        ],
+        [
+          3664,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.318371476058132,
+      "hip_height_px": 185.03194225046917,
+      "chest_height_px": 238.1478036566322,
+      "head_height_px": 268.1445980789988,
+      "tail_max_speed_px_frame": 3.0020224201183616,
+      "max_recovery_speed_px_frame": 7.449699679034486,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 5,
+      "frames": 3700,
+      "walk_start_frame": 2284,
+      "steps": [
+        {
+          "frame": 2784,
+          "side": "r",
+          "clearance_px": 46.563207778596336,
+          "stance_travel_px": 0.0036927853541470768,
+          "advance_px": 106.07378541364628
+        },
+        {
+          "frame": 3104,
+          "side": "l",
+          "clearance_px": 21.039339949226644,
+          "stance_travel_px": 0.16497946003104857,
+          "advance_px": 89.03388085130564
+        },
+        {
+          "frame": 3424,
+          "side": "r",
+          "clearance_px": 49.55589669881397,
+          "stance_travel_px": 0.17029262109548426,
+          "advance_px": 89.26090836182101
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 161.93328680973303,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721688,
+      "max_hip_delta_px": 1.3986663927707546,
+      "max_vertical_hip_delta_px": 1.3985479281554092,
+      "max_stance_travel_px": 0.17029262109548426,
+      "min_step_clearance_px": 21.039339949226644,
+      "max_abs_torso_tilt_deg": 1.6730818779589893,
+      "max_walk_force_ratio": 0.8436521472244831,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 228,
+      "state": "walk_land",
+      "start_frame": 317,
+      "support_frame": 943,
+      "events": [
+        [
+          317,
+          "repositioning"
+        ],
+        [
+          557,
+          "repositioning"
+        ],
+        [
+          797,
+          "rising"
+        ],
+        [
+          943,
+          "supported"
+        ],
+        [
+          1003,
+          "foot_placing"
+        ],
+        [
+          1272,
+          "transferring"
+        ],
+        [
+          1421,
+          "half_kneeling"
+        ],
+        [
+          1481,
+          "torso_raising"
+        ],
+        [
+          1821,
+          "upright_kneeling"
+        ],
+        [
+          1881,
+          "standing_rising"
+        ],
+        [
+          2229,
+          "standing"
+        ],
+        [
+          2289,
+          "walk_shift"
+        ],
+        [
+          2289,
+          "walk_prepare"
+        ],
+        [
+          2469,
+          "walk_shift"
+        ],
+        [
+          2589,
+          "walk_swing"
+        ],
+        [
+          2709,
+          "walk_land"
+        ],
+        [
+          2789,
+          "walk_shift"
+        ],
+        [
+          2909,
+          "walk_swing"
+        ],
+        [
+          3029,
+          "walk_land"
+        ],
+        [
+          3109,
+          "walk_shift"
+        ],
+        [
+          3229,
+          "walk_swing"
+        ],
+        [
+          3349,
+          "walk_land"
+        ],
+        [
+          3429,
+          "walk_shift"
+        ],
+        [
+          3549,
+          "walk_swing"
+        ],
+        [
+          3669,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.373942904528548,
+      "hip_height_px": 185.0544984654526,
+      "chest_height_px": 238.17202783627505,
+      "head_height_px": 268.16893722145284,
+      "tail_max_speed_px_frame": 3.0020224201178043,
+      "max_recovery_speed_px_frame": 7.449681750582749,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 10,
+      "frames": 3700,
+      "walk_start_frame": 2289,
+      "steps": [
+        {
+          "frame": 2789,
+          "side": "r",
+          "clearance_px": 46.56320777859537,
+          "stance_travel_px": 0.0036927853540476008,
+          "advance_px": 106.07378541364596
+        },
+        {
+          "frame": 3109,
+          "side": "l",
+          "clearance_px": 21.0393399492271,
+          "stance_travel_px": 0.16497946003116226,
+          "advance_px": 89.03388085130474
+        },
+        {
+          "frame": 3429,
+          "side": "r",
+          "clearance_px": 49.55589669881351,
+          "stance_travel_px": 0.1702926210955411,
+          "advance_px": 89.26090836181933
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 162.01711363258136,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721637,
+      "max_hip_delta_px": 1.3986663927703569,
+      "max_vertical_hip_delta_px": 1.3985479281550681,
+      "max_stance_travel_px": 0.1702926210955411,
+      "min_step_clearance_px": 21.0393399492271,
+      "max_abs_torso_tilt_deg": 1.6730818779588967,
+      "max_walk_force_ratio": 0.8436521472244988,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 233,
+      "state": "walk_land",
+      "start_frame": 322,
+      "support_frame": 949,
+      "events": [
+        [
+          322,
+          "repositioning"
+        ],
+        [
+          562,
+          "repositioning"
+        ],
+        [
+          802,
+          "rising"
+        ],
+        [
+          949,
+          "supported"
+        ],
+        [
+          1009,
+          "foot_placing"
+        ],
+        [
+          1278,
+          "transferring"
+        ],
+        [
+          1427,
+          "half_kneeling"
+        ],
+        [
+          1487,
+          "torso_raising"
+        ],
+        [
+          1827,
+          "upright_kneeling"
+        ],
+        [
+          1887,
+          "standing_rising"
+        ],
+        [
+          2235,
+          "standing"
+        ],
+        [
+          2295,
+          "walk_shift"
+        ],
+        [
+          2295,
+          "walk_prepare"
+        ],
+        [
+          2475,
+          "walk_shift"
+        ],
+        [
+          2595,
+          "walk_swing"
+        ],
+        [
+          2715,
+          "walk_land"
+        ],
+        [
+          2795,
+          "walk_shift"
+        ],
+        [
+          2915,
+          "walk_swing"
+        ],
+        [
+          3035,
+          "walk_land"
+        ],
+        [
+          3115,
+          "walk_shift"
+        ],
+        [
+          3235,
+          "walk_swing"
+        ],
+        [
+          3355,
+          "walk_land"
+        ],
+        [
+          3435,
+          "walk_shift"
+        ],
+        [
+          3555,
+          "walk_swing"
+        ],
+        [
+          3675,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.355625460056615,
+      "hip_height_px": 185.35664722526377,
+      "chest_height_px": 238.47463687430175,
+      "head_height_px": 268.4718149479203,
+      "tail_max_speed_px_frame": 3.002022420118642,
+      "max_recovery_speed_px_frame": 7.516338167155418,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 15,
+      "frames": 3700,
+      "walk_start_frame": 2295,
+      "steps": [
+        {
+          "frame": 2795,
+          "side": "r",
+          "clearance_px": 46.56320777856922,
+          "stance_travel_px": 0.0036927853543602396,
+          "advance_px": 106.07378541264413
+        },
+        {
+          "frame": 3115,
+          "side": "l",
+          "clearance_px": 21.03933994922636,
+          "stance_travel_px": 0.1649794600312191,
+          "advance_px": 89.03388085130558
+        },
+        {
+          "frame": 3435,
+          "side": "r",
+          "clearance_px": 49.555896698814195,
+          "stance_travel_px": 0.1702926210955127,
+          "advance_px": 89.26090836181919
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 162.11850374886293,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.3002208172299,
+      "max_hip_delta_px": 1.3986663927707363,
+      "max_vertical_hip_delta_px": 1.3985479281554092,
+      "max_stance_travel_px": 0.1702926210955127,
+      "min_step_clearance_px": 21.03933994922636,
+      "max_abs_torso_tilt_deg": 1.6730818779602161,
+      "max_walk_force_ratio": 0.843652147224495,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 238,
+      "state": "walk_swing",
+      "start_frame": 327,
+      "support_frame": 726,
+      "events": [
+        [
+          327,
+          "repositioning"
+        ],
+        [
+          567,
+          "rising"
+        ],
+        [
+          726,
+          "supported"
+        ],
+        [
+          786,
+          "foot_placing"
+        ],
+        [
+          1055,
+          "transferring"
+        ],
+        [
+          1207,
+          "half_kneeling"
+        ],
+        [
+          1267,
+          "torso_raising"
+        ],
+        [
+          1607,
+          "upright_kneeling"
+        ],
+        [
+          1667,
+          "standing_rising"
+        ],
+        [
+          2015,
+          "standing"
+        ],
+        [
+          2075,
+          "walk_shift"
+        ],
+        [
+          2075,
+          "walk_prepare"
+        ],
+        [
+          2255,
+          "walk_shift"
+        ],
+        [
+          2375,
+          "walk_swing"
+        ],
+        [
+          2495,
+          "walk_land"
+        ],
+        [
+          2575,
+          "walk_shift"
+        ],
+        [
+          2695,
+          "walk_swing"
+        ],
+        [
+          2815,
+          "walk_land"
+        ],
+        [
+          2895,
+          "walk_shift"
+        ],
+        [
+          3015,
+          "walk_swing"
+        ],
+        [
+          3135,
+          "walk_land"
+        ],
+        [
+          3215,
+          "walk_shift"
+        ],
+        [
+          3335,
+          "walk_swing"
+        ],
+        [
+          3455,
+          "walk_land"
+        ],
+        [
+          3535,
+          "walk_shift"
+        ],
+        [
+          3655,
+          "walk_swing"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 1,
+      "com_margin_px": -2.5281317823935865,
+      "hip_height_px": 189.96613609384985,
+      "chest_height_px": 243.051886478732,
+      "head_height_px": 273.046288494354,
+      "tail_max_speed_px_frame": 1.0926757212406666,
+      "max_recovery_speed_px_frame": 9.70545516175548,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 20,
+      "frames": 3700,
+      "walk_start_frame": 2075,
+      "steps": [
+        {
+          "frame": 2575,
+          "side": "r",
+          "clearance_px": 46.56320791355694,
+          "stance_travel_px": 0.0036927853689689982,
+          "advance_px": 106.07379041842395
+        },
+        {
+          "frame": 2895,
+          "side": "l",
+          "clearance_px": 21.039339949177133,
+          "stance_travel_px": 0.1649794600297696,
+          "advance_px": 89.03388085047908
+        },
+        {
+          "frame": 3215,
+          "side": "r",
+          "clearance_px": 49.555896698815445,
+          "stance_travel_px": 0.17029262109542742,
+          "advance_px": 89.26090836186444
+        },
+        {
+          "frame": 3535,
+          "side": "l",
+          "clearance_px": 21.050428834772617,
+          "stance_travel_px": 0.16508578245401395,
+          "advance_px": 89.23381147940074
+        }
+      ],
+      "completed_steps": 4,
+      "alternating": true,
+      "distance_px": 204.47767400999243,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022074743414,
+      "max_hip_delta_px": 1.3986663927661729,
+      "max_vertical_hip_delta_px": 1.3985479281513449,
+      "max_stance_travel_px": 0.17029262109542742,
+      "min_step_clearance_px": 21.039339949177133,
+      "max_abs_torso_tilt_deg": 1.6730818739053956,
+      "max_walk_force_ratio": 0.8436521472246591,
+      "tail_all_walking": true,
+      "passed": true
+    },
+    {
+      "collapse_frame": 244,
+      "state": "walk_land",
+      "start_frame": 333,
+      "support_frame": 959,
+      "events": [
+        [
+          333,
+          "repositioning"
+        ],
+        [
+          573,
+          "repositioning"
+        ],
+        [
+          813,
+          "rising"
+        ],
+        [
+          959,
+          "supported"
+        ],
+        [
+          1019,
+          "foot_placing"
+        ],
+        [
+          1288,
+          "transferring"
+        ],
+        [
+          1437,
+          "half_kneeling"
+        ],
+        [
+          1497,
+          "torso_raising"
+        ],
+        [
+          1837,
+          "upright_kneeling"
+        ],
+        [
+          1897,
+          "standing_rising"
+        ],
+        [
+          2245,
+          "standing"
+        ],
+        [
+          2305,
+          "walk_shift"
+        ],
+        [
+          2305,
+          "walk_prepare"
+        ],
+        [
+          2485,
+          "walk_shift"
+        ],
+        [
+          2605,
+          "walk_swing"
+        ],
+        [
+          2725,
+          "walk_land"
+        ],
+        [
+          2805,
+          "walk_shift"
+        ],
+        [
+          2925,
+          "walk_swing"
+        ],
+        [
+          3045,
+          "walk_land"
+        ],
+        [
+          3125,
+          "walk_shift"
+        ],
+        [
+          3245,
+          "walk_swing"
+        ],
+        [
+          3365,
+          "walk_land"
+        ],
+        [
+          3445,
+          "walk_shift"
+        ],
+        [
+          3565,
+          "walk_swing"
+        ],
+        [
+          3685,
+          "walk_land"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 2,
+      "com_margin_px": 7.244502026944929,
+      "hip_height_px": 186.05526320365473,
+      "chest_height_px": 239.17297366924765,
+      "head_height_px": 269.1703977980839,
+      "tail_max_speed_px_frame": 3.0020224201186374,
+      "max_recovery_speed_px_frame": 7.268054725399478,
+      "min_supported_contacts": 1,
+      "tail_all_supported": false,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 1.0,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 25,
+      "frames": 3700,
+      "walk_start_frame": 2305,
+      "steps": [
+        {
+          "frame": 2805,
+          "side": "r",
+          "clearance_px": 46.56320777859571,
+          "stance_travel_px": 0.003692785354118655,
+          "advance_px": 106.07378541362891
+        },
+        {
+          "frame": 3125,
+          "side": "l",
+          "clearance_px": 21.039339949223006,
+          "stance_travel_px": 0.1649794600308212,
+          "advance_px": 89.03388085130784
+        },
+        {
+          "frame": 3445,
+          "side": "r",
+          "clearance_px": 49.555896698814365,
+          "stance_travel_px": 0.1702926210956548,
+          "advance_px": 89.26090836182237
+        }
+      ],
+      "completed_steps": 3,
+      "alternating": true,
+      "distance_px": 162.17742445262925,
+      "min_foot_contacts": 1,
+      "max_other_contacts": 0,
+      "min_hip_height_px": 173.30022081721677,
+      "max_hip_delta_px": 1.3986663927701108,
+      "max_vertical_hip_delta_px": 1.3985479281548407,
+      "max_stance_travel_px": 0.1702926210956548,
+      "min_step_clearance_px": 21.039339949223006,
+      "max_abs_torso_tilt_deg": 1.6730818779589125,
+      "max_walk_force_ratio": 0.8436521472245156,
+      "tail_all_walking": true,
+      "passed": true
+    }
+  ],
+  "summary": {
+    "cases": 36,
+    "passed": 36,
+    "min_completed_steps": 3,
+    "min_distance_px": 161.83331467440166,
+    "max_stance_travel_px": 0.1702997835421911,
+    "max_hip_delta_px": 1.3986663927707546,
+    "max_vertical_hip_delta_px": 1.3985479281554092,
+    "min_step_clearance_px": 21.03933994665033,
+    "all_finite": true,
+    "max_penetration_px": 0.0
+  }
+}

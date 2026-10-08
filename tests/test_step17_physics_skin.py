@@ -51,7 +51,9 @@ class Step14RegressionTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.sim = s14.ActiveBipedSim()
+        # Keep the step-29 numeric canary as a legacy regression. Step 30's
+        # active fall response is checked separately in test_step30_bracing.
+        cls.sim = s14.ActiveBipedSim(gravity_mode="legacy", bracing=False, articulated_spine=False)
         cls.knee_offsets = {"stance": [], "swing": []}
         cls.phases_seen = set()
         for _ in range(s14.N_FRAMES):
@@ -80,7 +82,7 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY[4], places=2)
 
     def test_servo_shock_reproduces_step26(self):
-        sim = s14.ActiveBipedSim(shock_mode="servo", hill=False)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", shock_mode="servo", hill=False)
         for _ in range(s14.N_FRAMES):
             sim.step()
         self.assertFalse(sim.fell)
@@ -89,7 +91,7 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY_26[4], places=2)
 
     def test_pre24_flags_reproduce_step23(self):
-        sim = s14.ActiveBipedSim(**PRE24)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", **PRE24)
         for _ in range(s14.N_FRAMES):
             sim.step()
         self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
@@ -97,7 +99,7 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY_23[4], places=2)
 
     def test_fixed_catch_reproduces_step22(self):
-        sim = s14.ActiveBipedSim(**FIXED_CATCH)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", **FIXED_CATCH)
         for _ in range(s14.N_FRAMES):
             sim.step()
         self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
@@ -105,7 +107,7 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY_22[4], places=2)
 
     def test_legacy_flags_reproduce_step21(self):
-        sim = s14.ActiveBipedSim(**LEGACY_21)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", **LEGACY_21)
         for _ in range(s14.N_FRAMES):
             sim.step()
         self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
@@ -113,7 +115,7 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY_21[4], places=2)
 
     def test_arms_off_reproduces_step19(self):
-        sim = s14.ActiveBipedSim(arms_mode="off", torso_clamp_mode=True, **LEGACY_PHYS)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", arms_mode="off", torso_clamp_mode=True, **LEGACY_PHYS)
         for _ in range(s14.N_FRAMES):
             sim.step()
         self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
@@ -133,7 +135,7 @@ class FazBTest(unittest.TestCase):
 
     @staticmethod
     def run_sim(n, **kw):
-        sim = s14.ActiveBipedSim(**kw)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", **kw)
         double_swing, pts = 0, []
         for _ in range(n):
             sim.step()
@@ -221,7 +223,7 @@ class PhysicalArmsTest(unittest.TestCase):
 
     def test_cancel_mode_is_contralateral(self):
         """Adim 22: yaw momentum iptali capraz salinimi KENDILIGINDEN uretir."""
-        sim = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0)
         al, ar, ll, lr = [], [], [], []
         for f in range(900):
             sim.step()
@@ -237,7 +239,7 @@ class PhysicalArmsTest(unittest.TestCase):
         self.assertLess(np.corrcoef(al, ar)[0, 1], -0.4)      # kollar birbirine ters
 
     def test_contralateral_swing_and_integrity(self):
-        sim = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, **LEGACY_21)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0, **LEGACY_21)
         arm_a, leg_a, stick_err, elbow = [], [], 0.0, []
         sh = sim.idx["shoulder"]
         for f in range(900):
@@ -260,7 +262,7 @@ class PhysicalArmsTest(unittest.TestCase):
 
     def test_pushes_with_arms(self):
         for push in (150.0, -150.0, 500.0, -500.0):
-            sim = s14.ActiveBipedSim(big_push_kick_px=push, **FIXED_CATCH)
+            sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push, **FIXED_CATCH)
             double = 0
             for _ in range(420):
                 sim.step()
@@ -272,7 +274,7 @@ class PhysicalArmsTest(unittest.TestCase):
 class SkinOnPhysicsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.frames, cls.sim = simulate(n_frames=120)
+        cls.frames, cls.sim = simulate(n_frames=120, gravity_mode="legacy")
 
     def test_phase_sequences_are_monotonic(self):
         report = phase_report(self.frames)
