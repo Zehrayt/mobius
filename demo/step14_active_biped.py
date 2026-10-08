@@ -400,6 +400,18 @@ BRACE_SETTLE_FRAMES = 15
 BRACE_RELAX_RATE = 0.9              # indirme bitince refleks agirligi kare basina
 BRACE_LOWER_RATE = 0.6              # px/kare: durulduktan sonra kolon boyunun kisalma hizi
 BRACE_NECK_RELAX_DEG = 0.7          # der/kare: indirmede boyun siniri 18 -> 60 der
+# Birlesim (tek yercekimi): cokus cogu zaman bacak servosu hic devreye girmeden,
+# kalca destek yuksekliginin altina inince algilaniyor (support_height); servo
+# "yield" sinyali olusmadigi icin refleks cokus karesinde aciliyor, bas 4 kare
+# sonra yere vuruyordu (-200 px itki, olculdu). Kalcanin dusus hizi destegin
+# BRACE_PREDICT_FRAMES icinde bitecegini gosterirse refleks onceden acilabilir.
+# VARSAYILAN KAPALI: 36 kosuluk taramada (tek yercekimi + omurga) gogus/omuz
+# darbesi medyani 7.7 -> 4.4 px/kare iner, -200 px sahnesinde bas 23.8 -> 4.8;
+# ama bas medyani 5.2 -> 6.8'e cikiyor (iyilesen 26 -> 21, kotulesen 9 -> 13).
+# Bas/gogus takasi ayarlanmadan varsayilan yapilmadi (README "Adim 30-39 birlesimi").
+BRACE_PREDICT_ENABLED = False
+BRACE_PREDICT_FRAMES = 10.0
+BRACE_PREDICT_MIN_VY = 8.0          # px/kare: yalniz serbest-dusus benzeri cokme (yuruyus salinimi <~2.5)
 # Kol kolonu: eli yere degmis ve refleksi aktif kol, omuz-el dogrultusunda yalniz
 # itebilen bir destek; dirsek ekstansor kapasitesini (TAU_ELBOW_MAX_NM, eksantrikte
 # Hill 1.5x) asan carpma hizi kolu bukerek (dinlenme boyunu kisaltarak) yutulur.
@@ -637,6 +649,9 @@ class ActiveBipedSim:
             mode = "impulse"
         else:
             raise ValueError("bracing must be True, False or 'impulse'")
+        if ground_recovery and mode == "reflex":
+            raise ValueError("Ground recovery is validated with bracing='impulse' (or False); "
+                             "the arm-column reflex leaves poses the recovery chain does not handle yet")
         self.bracing_mode = mode
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
@@ -690,10 +705,11 @@ class ActiveBipedSim:
         self.fall_bracing = FallBracing() if self.bracing_mode == "impulse" else None
         # Yigilma cozucusu: "column" Adim 30'un (24 tur, yuke bagli statik surtunme,
         # son kilit, giris duzeltmesi, dongu ici boyun); "gn" Gul Nihal'in dalindakini
-        # birebir korur. Varsayilan: impuls refleksiyle "gn", digerlerinde "column".
+        # birebir korur. Varsayilan: impuls refleksi ya da yerden kalkma ile "gn", digerlerinde "column".
         if fall_solver not in (None, "column", "gn"):
             raise ValueError("fall_solver must be None, 'column' or 'gn'")
-        self.gn_fall = (fall_solver == "gn") or (fall_solver is None and self.fall_bracing is not None)
+        self.gn_fall = (fall_solver == "gn") or (fall_solver is None and
+                                                 (self.fall_bracing is not None or ground_recovery))
         self.articulated_spine = articulated_spine
         self.spine = None
         self.ground_contacts = []
@@ -829,7 +845,7 @@ class ActiveBipedSim:
             th = np.radians(FALLEN_NECK_LIMIT_DEG)
         else:
             return None
-        # omurga varsa boyun siniri bel-bas arasinda (omuzun ust segmenti)
+        # omurga varsa boyun siniri bel-bas arasinda (bel-omuz segmenti; bkz. neck_root)
         root_len = self.spine.segment_length if self.spine is not None else TORSO_LEN
         return float(np.sqrt(root_len ** 2 + HEAD_STICK_LEN ** 2 + 2 * root_len * HEAD_STICK_LEN * np.cos(th)))
 
@@ -844,19 +860,38 @@ class ActiveBipedSim:
         v_rel = (p[sh][0] - q[sh][0]) - (p[hp][0] - q[hp][0])
         return 1.0 if rel + BRACE_LOOKAHEAD * v_rel >= 0.0 else -1.0
 
+    def _support_loss_imminent(self) -> bool:
+        """Tek yercekiminde: kalca bu hizla BRACE_PREDICT_FRAMES icinde bacak
+        destek yuksekliginin (GROUND_Y - KNEE_FLEX_MIN_DIST) altina inecek mi.
+        Iki yercekimli eski kosulda kapali (Adim 30 kanaryalari aynen kalir)."""
+        if not BRACE_PREDICT_ENABLED or self.gravity_policy.mode != "unified" or self.collapsed:
+            return False
+        hip = self.idx["hip"]
+        y = float(self.body.points[hip, 1])
+        v = float(self.body.points[hip, 1] - self.body.prev_points[hip, 1])
+        if v < BRACE_PREDICT_MIN_VY:
+            return False
+        g = float(self.body.gravity[1])
+        gap = (GROUND_Y - KNEE_FLEX_MIN_DIST) - y
+        if gap <= 0.0:
+            return True
+        t = (-v + float(np.sqrt(v * v + 2.0 * g * gap))) / g
+        return t <= BRACE_PREDICT_FRAMES
+
     def _update_brace(self, f: int) -> None:
         """Adim 30 -- koruyucu refleksin acilmasi/sonmesi."""
         if not self.brace or self.arms is None:
             return
         idx, p, q = self.idx, self.body.points, self.body.prev_points
-        if not self.bracing and (self.collapsed or self.yield_frames >= BRACE_YIELD_FRAMES):
+        imminent = self._support_loss_imminent()
+        if not self.bracing and (self.collapsed or self.yield_frames >= BRACE_YIELD_FRAMES or imminent):
             self.brace_dir = self._brace_side()
             self.bracing = True
             self.brace_level = 1.0
             self.brace_start = f
         if not self.bracing:
             return
-        if not self.collapsed and self.yield_frames == 0 and self.shock_rest is None:
+        if not self.collapsed and self.yield_frames == 0 and self.shock_rest is None and not imminent:
             # bacak toparlandi (cokus olmadi) -- refleks soner
             self.brace_level *= BRACE_RELAX_RATE
         elif self.collapsed:
@@ -1073,13 +1108,16 @@ class ActiveBipedSim:
             self.brace_lowered = sh_down or at_min
 
         neck_min = self._neck_min_dist()
+        # boyun koku: tek parca govdede kalca, omurgada bel (bas omuzun ust parcasina gore sinirlanir)
+        neck_root = self.spine.waist if self.spine is not None else hip
         if neck_min is not None:
-            columns.append((idx["head"], hip, neck_min))
+            columns.append((idx["head"], neck_root, neck_min))
+        neck_col = len(columns) - 1 if neck_min is not None else None
 
         def arm_columns():
-            for a_i, b_i, r in columns:
-                if b_i == hip:
-                    # boyun tonusu: kalca-bas en kisa mesafe, kutle agirlikli (zemine dayanmiyor)
+            for c_i, (a_i, b_i, r) in enumerate(columns):
+                if c_i == neck_col:
+                    # boyun tonusu: kok-bas en kisa mesafe, kutle agirlikli (zemine dayanmiyor)
                     dvec = p[a_i] - p[b_i]
                     dist = float(np.linalg.norm(dvec))
                     if 1e-6 < dist < r:

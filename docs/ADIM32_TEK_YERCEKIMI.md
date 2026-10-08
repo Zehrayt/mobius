@@ -44,6 +44,11 @@ etiket değişikliği yerine zemin, koruyucu kollar ve omurga birlikte devreye g
 
 ## Uyumluluk ve çalışma hızı
 
+> **Birleşim notu:** Bu satırlar bu belgenin yazıldığı daldaki API'dir. main'de varsayılan
+> koruyucu refleks Zehra'nın kol kolonu refleksidir; aynı sonuçları üretmek için
+> `bracing="impulse"` (pasif koşu için `bracing=False, fall_solver="gn"`) ekleyin.
+> Ayrıntı: README "Adım 30–39 birleşimi".
+
 ```python
 ActiveBipedSim()  # tek yerçekimi, koruyucu kollar, esnek omurga
 ActiveBipedSim(gravity_mode="legacy")  # Adım 31'i tekrar üretir

@@ -4,7 +4,9 @@ Ayağa kalkmanın ilk alt aşaması: karakter yerde sakinleşir, uygun yatış
 pozundan gövdesini kaldırıp elleri ve dizleri üzerinde bekler. Tam ayağa
 kalkma, ayağı gövdenin altına yerleştirme ve yürüyüşe dönüş henüz yoktur.
 
-Bu aşama `ActiveBipedSim(ground_recovery=True)` ile açılır. Varsayılanın
+Bu aşama `ActiveBipedSim(ground_recovery=True)` ile açılır (birleşimden sonra bu seçenek
+impuls refleksini ve onun yığılma çözücüsünü otomatik seçer; kol kolonu refleksiyle
+`ValueError` verir — README "Adım 30–39 birleşimi"). Varsayılanın
 kapalı olması önceki düşüş karşılaştırmalarını ve ölçümlerini korur.
 Yeni demo bu özelliği açar. Tek yerçekimi, kollar, esnek omurga ve Adım 33
 bacak denge düzeltmeleri gerekir. Başın görsel bağlantısındaki kullanıcı

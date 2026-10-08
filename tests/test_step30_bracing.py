@@ -123,5 +123,65 @@ class ArmCapacityTest(unittest.TestCase):
         self.assertGreater(sim.arm_column_capacity(40.0, 3.0), 1.3 * bent)   # Hill eksantrik
 
 
+class UnifiedDefaultBracingTest(unittest.TestCase):
+    """Birlesim sonrasi varsayilan: tek yercekimi + dususte omurga + kol kolonu refleksi."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.runs = {}
+        for push, t in SCENES:
+            for b in (False, True):
+                sim = s14.ActiveBipedSim(big_push_kick_px=push, big_push_t=t, bracing=b)
+                pts = []
+                for _ in range(560):
+                    sim.step()
+                    pts.append(sim.body.points.copy())
+                cls.runs[(push, b)] = (sim, pts)
+
+    def test_default_is_the_column_reflex_with_spine(self):
+        sim = self.runs[(SCENES[0][0], True)][0]
+        self.assertEqual(sim.bracing_mode, "reflex")
+        self.assertIsNone(sim.fall_bracing)
+        self.assertIsNotNone(sim.spine)
+        self.assertEqual(sim.gravity_policy.mode, "unified")
+
+    def test_head_impact_reduced_and_bodies_settle(self):
+        pas, br = [], []
+        for push, _t in SCENES:
+            for b, out in ((False, pas), (True, br)):
+                sim, pts = self.runs[(push, b)]
+                self.assertTrue(sim.collapsed and not sim.nan, (push, b))
+                out.append(head_near_ground_speed(sim, np.array([P[:8] for P in pts])))
+                anchor = sim.idx["anchor"]
+                for P in pts[sim.collapse_frame + 1:]:
+                    self.assertLessEqual(float(np.delete(P[:, 1], anchor).max()), s14.GROUND_Y + 1e-6, (push, b))
+                tail = np.array(pts[-60:])
+                self.assertLess(float(np.linalg.norm(np.diff(tail, axis=0), axis=2).max()), 0.2, (push, b))
+            self.assertTrue(self.runs[(push, True)][0].brace_lowered, push)
+        # olculen ortalama 14.5 -> 10.4 px/kare. Bilinen zayiflik: -200 px sahnesinde cokus
+        # destek yuksekliginde (servo yield'i olmadan) algilaniyor, refleks gec acilip bas
+        # 20.5 -> 23.8 ile daha sert carpiyor (bkz. BRACE_PREDICT_ENABLED).
+        self.assertLess(np.mean(br), 0.8 * np.mean(pas), (pas, br))
+
+    def test_neck_limit_uses_waist_with_spine(self):
+        sim = self.runs[(SCENES[0][0], True)][0]
+        p, idx = sim.body.points, sim.idx
+        root, sh, head = p[idx["waist"]], p[idx["shoulder"]], p[idx["head"]]
+        a, b = sh - root, head - sh
+        bend = abs(np.degrees(np.arctan2(a[0] * b[1] - a[1] * b[0], a @ b)))
+        self.assertLessEqual(bend, s14.FALLEN_NECK_LIMIT_DEG + 1.0)
+
+
+class RecoveryBracingModeTest(unittest.TestCase):
+    def test_recovery_defaults_to_impulse_and_rejects_column_reflex(self):
+        sim = s14.ActiveBipedSim(ground_recovery=True)
+        self.assertEqual(sim.bracing_mode, "impulse")
+        self.assertTrue(sim.gn_fall)
+        self.assertTrue(s14.ActiveBipedSim(ground_recovery=True, bracing=False).gn_fall)
+        for kw in (dict(bracing=True), dict(brace=True)):
+            with self.assertRaises(ValueError):
+                s14.ActiveBipedSim(ground_recovery=True, **kw)
+
+
 if __name__ == "__main__":
     unittest.main()

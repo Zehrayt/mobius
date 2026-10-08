@@ -50,8 +50,12 @@ def measure(frames, sim):
     collapsed_points = [points(snap) for snap in frames if snap['collapsed']]
     return dict(collapse_frame=start, head=impact('head'), chest=impact('shoulder'),
                 first_hand_contact_frame=hand_events[0][0] if hand_events else None,
-                brace_start_frame=sim.fall_bracing.start_frame if sim.fall_bracing else None,
-                brace_final_state=sim.fall_bracing.state if sim.fall_bracing else 'off',
+                brace_mode=sim.bracing_mode,
+                brace_start_frame=(sim.fall_bracing.start_frame if sim.fall_bracing else
+                                   sim.brace_start if sim.bracing_mode == 'reflex' else None),
+                brace_final_state=(sim.fall_bracing.state if sim.fall_bracing else
+                                   ('lowered' if sim.brace_lowered else 'active' if sim.bracing else
+                                    'idle') if sim.bracing_mode == 'reflex' else 'off'),
                 hand_ground_projection_share_pct=100.0 * hand_total / total if total else None,
                 shoulder_actuator_upward_impulse=sim.fall_bracing.support_impulse if sim.fall_bracing else 0.0,
                 tail_max_speed_px_frame=float(np.linalg.norm(np.diff(tail_points, axis=0), axis=2).max()),

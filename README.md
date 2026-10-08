@@ -4821,7 +4821,7 @@ yığılma çözücüsünü değiştiriyordu. Birleşimde:
   | Koşul | Pasif | Adım 30 (kol kolonu) | Adım 30b (impuls) |
   |---|---:|---:|---:|
   | İki yerçekimi, tek parça gövde (medyan) | 8.3 / 12.3 | **1.05** (18/18 iyileşme) | 9.7 (13 iyi / 6 kötü) |
-  | Tek yerçekimi + omurga (varsayılan, medyan) | 9.9 / 10.4 | **4.5** (17 iyi / 10 kötü) | 9.4 (17 iyi / 19 kötü) |
+  | Tek yerçekimi + omurga (varsayılan, medyan) | 9.2 / 10.4 | **5.2** (26 iyi / 9 kötü) | 9.4 (17 iyi / 19 kötü) |
 
   Pasif sütunda iki değer: sırasıyla kol kolonu ve impuls sürümlerinin kendi
   yığılma çözücüleri.
@@ -4845,10 +4845,27 @@ yığılma çözücüsünü değiştiriyordu. Birleşimde:
   durumudur, `sim.fall_reflex_active` ikisini birlikte sorar.
 - Adım 31–33 bölümlerindeki sayılar impuls refleksiyle ölçüldü; varsayılan
   refleks değiştiği için o demoların yeni çıktıları farklı olabilir (testleri geçiyor).
+- **İnceleme düzeltmeleri (birleşimden sonra):**
+  - Omurga açıkken boyun sınırı bel–baş arasına uygulanır (önce uzunluk bel–omuz
+    parçasıyla hesaplanıp kısıt kalça–baş arasına konuyordu; sınır fiilen gevşekti).
+  - `ground_recovery=True` ile `bracing=True`/`brace=True` artık `ValueError` verir
+    (önce zincir sessizce `needs_roll`da kalıyordu); `bracing=False` ile kalkma da
+    Gül Nihal'in çözücüsünü kullanır.
+  - `demo/step30_bracing.measure()` kol kolonu refleksini de raporlar (`brace_mode`;
+    önce varsayılan refleks çalışırken `off` yazıyordu).
+  - `tests/test_step30_bracing.py`: varsayılan yapılandırma (tek yerçekimi + omurga +
+    kol kolonu) ve kalkma–refleks uyumu için testler.
+- **Açık iş — tek yerçekiminde geç tetik:** Bu yolda çöküş çoğu zaman bacak servosu
+  devreye girmeden, kalça destek yüksekliğinin altına inince algılanıyor; refleksin
+  "yield" tetiği oluşmuyor. −200 px itkide refleks çöküş karesinde açılıyor, baş 4
+  kare sonra yere değiyor (pasif 20.5, refleks 23.8 px/kare). Kalça hızından
+  öngörülü tetik (`BRACE_PREDICT_ENABLED`) yazıldı ama **kapalı**: açıkken bu sahne
+  4.8'e, göğüs medyanı 7.7 → 4.4'e iniyor; baş medyanı ise 5.2 → 6.8'e çıkıyor
+  (iyileşen 26 → 21). Baş/göğüs takası ayarlanmadan varsayılan yapılmadı.
 - Bilinen sınır (birleşimden önce de vardı): tek yerçekiminde 1 m/s geri itki
   bile çöküşle bitiyor; iki yerçekimli eski ayarda bitmiyordu.
 
-Testler: 171/171 (tam paket). `tests/test_step30_impulse_bracing.py`
+Testler: 175/175 (tam paket). `tests/test_step30_impulse_bracing.py`
 Gül Nihal'in Adım 30 testleridir.
 
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
