@@ -69,7 +69,12 @@ class WalkRecovery(StandRecovery):
         weight = sum(m[i] for i in range(len(m)) if i not in b.pinned)*b.gravity[1]
         force = (1/(1/m[hip]+1/m[foot]))*(.5*(desired-delta)-1.2*velocity)
         force[1] -= weight*share
+        demand = force.copy()
         force = np.clip(force, FORCE_MIN, FORCE_MAX)
+        # 2B cift: eksen disi bilesen kalca-ayak cizgisine dik bir kuvvet ciftidir
+        self.force_log.append((self.telemetry_frame, self.state, foot, hip,
+                               float(np.linalg.norm(force)), float(np.linalg.norm(demand)),
+                               float(np.max(np.maximum(-FORCE_MIN, FORCE_MAX))), force.copy(), delta.copy()))
         q[hip] -= force/m[hip]
         q[foot] += force/m[foot]
         ratio = float(np.max(np.abs(force)/np.where(force < 0, -FORCE_MIN, FORCE_MAX)))

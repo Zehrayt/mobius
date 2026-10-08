@@ -50,7 +50,7 @@ from physics.environment import Terrain
 from physics.balance import support_interval, outside_interval_error, FallRiskMonitor, upper_body_com_x
 from physics.arms import PhysicalArms, ArmGains
 from physics.bracing import FallBracing, constrain_fallen_elbows
-from physics.spine import FallenSpine, WAIST_RADIUS
+from physics.spine import FallenSpine, WAIST_RADIUS, hinge_drive
 from physics.gravity import GravityPolicy, REAL_GRAVITY, LEGACY_WALK_GRAVITY
 from physics.ground_recovery import GroundRecovery
 import math
@@ -400,18 +400,27 @@ BRACE_SETTLE_FRAMES = 15
 BRACE_RELAX_RATE = 0.9              # indirme bitince refleks agirligi kare basina
 BRACE_LOWER_RATE = 0.6              # px/kare: durulduktan sonra kolon boyunun kisalma hizi
 BRACE_NECK_RELAX_DEG = 0.7          # der/kare: indirmede boyun siniri 18 -> 60 der
-# Birlesim (tek yercekimi): cokus cogu zaman bacak servosu hic devreye girmeden,
-# kalca destek yuksekliginin altina inince algilaniyor (support_height); servo
-# "yield" sinyali olusmadigi icin refleks cokus karesinde aciliyor, bas 4 kare
-# sonra yere vuruyordu (-200 px itki, olculdu). Kalcanin dusus hizi destegin
-# BRACE_PREDICT_FRAMES icinde bitecegini gosterirse refleks onceden acilabilir.
-# VARSAYILAN KAPALI: 36 kosuluk taramada (tek yercekimi + omurga) gogus/omuz
-# darbesi medyani 7.7 -> 4.4 px/kare iner, -200 px sahnesinde bas 23.8 -> 4.8;
-# ama bas medyani 5.2 -> 6.8'e cikiyor (iyilesen 26 -> 21, kotulesen 9 -> 13).
-# Bas/gogus takasi ayarlanmadan varsayilan yapilmadi (README "Adim 30-39 birlesimi").
-BRACE_PREDICT_ENABLED = False
-BRACE_PREDICT_FRAMES = 10.0
-BRACE_PREDICT_MIN_VY = 8.0          # px/kare: yalniz serbest-dusus benzeri cokme (yuruyus salinimi <~2.5)
+# Koruyucu refleks tetigi -- carpma ani (TTC). Tek yercekiminde cokus cogu zaman
+# bacak servosu hic devreye girmeden, kalca destek yuksekliginin altina inince
+# algilaniyor (support_height); servo "yield" sinyali olusmuyor ve refleks cokus
+# karesinde aciliyordu (-200 px itki: bas 4 kare sonra yere vurdu, olculdu).
+# Kollar bacak yukunu degil, BAS ve GOGSUN (omuz noktasi) zemine kalan suresini
+# dinler: balistik TTC = mevcut yukseklik, dusey hiz ve yercekiminden. Ayakta
+# duran govdede basin TTC'si ~16 kare (serbest dusus suresi) oldugu icin esik
+# yuruyuste kendiliginden tetiklenmez. Adim 24/25'teki ayak TTC kapisinin govde karsiligi.
+BRACE_TTC_FRAMES = 10.0             # kare (~330 ms): 4/6/8/10/12/14 taramasinda en dengeli (README)
+BRACE_TTC_IN_LEGACY = False         # iki yercekimli eski kosul Adim 30 kanaryalarini korur
+NECK_FALL_K = 0.0                   # dususte boyun acisal sertligi (tarama: README)
+NECK_FALL_C = 0.0                   # dususte boyun acisal sonumu
+BRACE_DIR_MIN_PX = 8.0              # omuz-kalca yatay farki (3 kare ileri) bundan kucukse yon belirsiz
+# Kalkma override'i: XCoM destek araliginin OVERRIDE_XCOM_MARGIN disinda ya da
+# bas/gogus OVERRIDE_MIN_VY ustunde inerken TTC <= BRACE_TTC_FRAMES, OVERRIDE_FRAMES ust uste.
+OVERRIDE_XCOM_MARGIN = 30.0         # px (normal kalkis/yuruyuste en fazla 15.5, olculdu)
+OVERRIDE_MIN_COM_HEIGHT = 60.0      # px: XCoM olcutu diz ustunden itibaren (KM 106+), yerde degil
+OVERRIDE_MIN_VY = 2.0               # px/kare
+OVERRIDE_MIN_GAP = 80.0             # px: bas/gogus zeminden bu kadar yuksekte (yerdeki fazlarda TTC hep kisa)
+OVERRIDE_FRAMES = 4
+RECOVERY_IDLE_STATES = ("waiting", "needs_roll", "failed")
 # Kol kolonu: eli yere degmis ve refleksi aktif kol, omuz-el dogrultusunda yalniz
 # itebilen bir destek; dirsek ekstansor kapasitesini (TAU_ELBOW_MAX_NM, eksantrikte
 # Hill 1.5x) asan carpma hizi kolu bukerek (dinlenme boyunu kisaltarak) yutulur.
@@ -616,19 +625,29 @@ class ActiveBipedSim:
             raise ValueError('Walking recovery requires recovery_stand=True')
         if recovery_walk:
             from physics.walk_recovery import WalkRecovery
-            self.recovery = WalkRecovery()
+            self._recovery_factory = WalkRecovery
         elif recovery_stand:
             from physics.stand_recovery import StandRecovery
-            self.recovery = StandRecovery()
+            self._recovery_factory = StandRecovery
         elif recovery_rise:
             from physics.kneel_rise import KneelRise
-            self.recovery = KneelRise()
+            self._recovery_factory = KneelRise
         elif recovery_transfer:
             from physics.foot_transfer import FootTransfer
-            self.recovery = FootTransfer()
+            self._recovery_factory = FootTransfer
+        elif ground_recovery:
+            self._recovery_factory = lambda: GroundRecovery(reposition=recovery_reposition)
         else:
-            self.recovery = GroundRecovery(reposition=recovery_reposition) if ground_recovery else None
+            self._recovery_factory = None
+        self.recovery = self._recovery_factory() if self._recovery_factory is not None else None
+        # Override: kalkma sirasinda dusus algilanirsa (XCoM destek disinda ya da
+        # bas/gogus hizla zemine yaklasiyor) kalkma kesilir, koruyucu refleks yeniden
+        # kurulur; durulunca kalkma bastan baslar (bkz. _check_recovery_override).
+        self.recovery_aborts = []    # (kare, kesilen durum, neden)
+        self._override_frames = 0
         self.balance_recovery = balance_recovery and gravity_mode == "unified"
+        # yon kapisi (BRACE_DIR_MIN_PX) TTC tetigiyle birlikte: eski kosulda kapali
+        self.brace_dir_gate = gravity_mode == "unified" or BRACE_TTC_IN_LEGACY
         self.upright_head = upright_head and gravity_mode == "unified"
         if gravity_mode == "unified" and fps != FPS:
             raise ValueError("Unified biped is calibrated at 30 Hz; render resampling is separate")
@@ -637,10 +656,6 @@ class ActiveBipedSim:
         # FallBracing'i bracing="impulse" ile secilir; False ikisini de kapatir.
         if brace is not None:
             mode = "reflex" if brace else "off"
-        elif bracing is None and ground_recovery:
-            # Yerden kalkma zinciri (Adim 34-39) impuls refleksinin biraktigi
-            # yatis pozlariyla dogrulandi; kol kolonu refleksine henuz uyarlanmadi.
-            mode = "impulse"
         elif bracing is None or bracing is True:
             mode = "reflex" if BRACE_ENABLED else "off"
         elif bracing is False:
@@ -649,9 +664,6 @@ class ActiveBipedSim:
             mode = "impulse"
         else:
             raise ValueError("bracing must be True, False or 'impulse'")
-        if ground_recovery and mode == "reflex":
-            raise ValueError("Ground recovery is validated with bracing='impulse' (or False); "
-                             "the arm-column reflex leaves poses the recovery chain does not handle yet")
         self.bracing_mode = mode
         self.stumble_t = STUMBLE_T if stumble_t is None else stumble_t
         self.stumble_kick_px = STUMBLE_KICK_PX if stumble_kick_px is None else stumble_kick_px
@@ -698,6 +710,8 @@ class ActiveBipedSim:
         self.impact_log = []        # Adim 30: (kare, nokta, dikey carpma hizi px/kare)
         self._contact_prev = None
         self.arm_column = {}        # Adim 30: kol -> dinlenme boyu (yalniz itme), el yerdeyken
+        self.last_contact_ttc = None
+        self.brace_trigger = None   # 'ttc' | 'yield' | 'collapse' | 'override'
         self.arm_yield_log = []     # (kare, kol, cozulemeyen hiz px/kare)
         self.hill = HILL_ENABLED if hill is None else hill
         self.collapse_frame = None
@@ -710,6 +724,10 @@ class ActiveBipedSim:
             raise ValueError("fall_solver must be None, 'column' or 'gn'")
         self.gn_fall = (fall_solver == "gn") or (fall_solver is None and
                                                  (self.fall_bracing is not None or ground_recovery))
+        # Yerde kollar: Gul Nihal'in kutle agirlikli dirsek cozucusu (dongu icinde) impuls
+        # refleksiyle ve yerden kalkma zinciriyle; zincir hangi refleksle olursa olsun bu
+        # kol cozumuyle dogrulandi (yuruyus kol kisiti yerde kalkmayi bozuyordu, olculdu).
+        self.gn_fallen_arms = self.gn_fall and (self.fall_bracing is not None or ground_recovery)
         self.articulated_spine = articulated_spine
         self.spine = None
         self.ground_contacts = []
@@ -856,35 +874,120 @@ class ActiveBipedSim:
         arkasina uzatip omuz cizgisinden kaciriyordu (olculdu)."""
         idx, p, q = self.idx, self.body.points, self.body.prev_points
         sh, hp = idx["shoulder"], idx["hip"]
+        return 1.0 if self._brace_lean() >= 0.0 else -1.0
+
+    def _brace_lean(self) -> float:
+        """Omzun kalcaya gore (BRACE_LOOKAHEAD kare ilerisi) yatay konumu, px."""
+        idx, p, q = self.idx, self.body.points, self.body.prev_points
+        sh, hp = idx["shoulder"], idx["hip"]
         rel = p[sh][0] - p[hp][0]
         v_rel = (p[sh][0] - q[sh][0]) - (p[hp][0] - q[hp][0])
-        return 1.0 if rel + BRACE_LOOKAHEAD * v_rel >= 0.0 else -1.0
+        return float(rel + BRACE_LOOKAHEAD * v_rel)
 
-    def _support_loss_imminent(self) -> bool:
-        """Tek yercekiminde: kalca bu hizla BRACE_PREDICT_FRAMES icinde bacak
-        destek yuksekliginin (GROUND_Y - KNEE_FLEX_MIN_DIST) altina inecek mi.
-        Iki yercekimli eski kosulda kapali (Adim 30 kanaryalari aynen kalir)."""
-        if not BRACE_PREDICT_ENABLED or self.gravity_policy.mode != "unified" or self.collapsed:
+    def contact_ttc(self) -> float | None:
+        """Bas ve gogsun (omuz) zemine balistik carpma suresi, kare; en kucugu.
+        t: y + v t + g t^2 / 2 = zemin - yaricap (g > 0 oldugundan her zaman
+        tanimli; yukari giden nokta icin daha uzun). Yerdeki nokta 0 dondurur."""
+        idx, p, q = self.idx, self.body.points, self.body.prev_points
+        g = float(self.gravity_policy.falling)
+        best = None
+        for name in ("head", "shoulder"):
+            i = idx[name]
+            gap = (GROUND_Y - FALLEN_RADIUS[name]) - float(p[i, 1])
+            v = float(p[i, 1] - q[i, 1])
+            if gap <= 0.0:
+                t = 0.0
+            else:
+                disc = v * v + 2.0 * g * gap
+                t = (-v + float(np.sqrt(disc))) / g
+            best = t if best is None else min(best, t)
+        return best
+
+    def _impact_imminent(self) -> bool:
+        if self.collapsed and self.bracing:
             return False
-        hip = self.idx["hip"]
-        y = float(self.body.points[hip, 1])
-        v = float(self.body.points[hip, 1] - self.body.prev_points[hip, 1])
-        if v < BRACE_PREDICT_MIN_VY:
+        if self.gravity_policy.mode != "unified" and not BRACE_TTC_IN_LEGACY:
             return False
-        g = float(self.body.gravity[1])
-        gap = (GROUND_Y - KNEE_FLEX_MIN_DIST) - y
-        if gap <= 0.0:
-            return True
-        t = (-v + float(np.sqrt(v * v + 2.0 * g * gap))) / g
-        return t <= BRACE_PREDICT_FRAMES
+        ttc = self.contact_ttc()
+        self.last_contact_ttc = ttc
+        return ttc is not None and ttc <= BRACE_TTC_FRAMES
+
+    def push(self, kick_px: float, point: str = "hip") -> None:
+        """Dis darbe: noktaya yatay hiz (px/kare) ekler -- buyuk itkiyle ayni olcek
+        (taban kalca kutlesine gore momentum)."""
+        i = self.idx[point]
+        self.body.prev_points[i][0] -= kick_px * self.hip_base_mass / float(self.body.masses[i])
+
+    def _support_xcom_margin(self) -> float | None:
+        """XCoM'un (KM + v / omega0) bu karedeki temas noktalarinin x araligina
+        gore disarida kalan mesafesi (px; <= 0 icerde). Temas yoksa None."""
+        body = self.body
+        p, q, m = body.points, body.prev_points, body.masses
+        contacts = getattr(self, "contact_ids", [])
+        if not contacts:
+            return None
+        free = [i for i in range(len(p)) if i not in body.pinned]
+        com = np.average(p[free], axis=0, weights=m[free])
+        v = np.average((p - q)[free], axis=0, weights=m[free])
+        h = max(GROUND_Y - float(com[1]), 1.0)
+        omega = float(np.sqrt(float(body.gravity[1]) / h))
+        xcom = float(com[0] + v[0] / omega)
+        if h < OVERRIDE_MIN_COM_HEIGHT:
+            return None      # yatarken/el-diz ustunde destek araligi anlamli degil
+        lo, hi = float(p[contacts, 0].min()), float(p[contacts, 0].max())
+        return max(lo - xcom, xcom - hi)
+
+    def _check_recovery_override(self) -> None:
+        rec = self.recovery
+        if rec is None or rec.state in RECOVERY_IDLE_STATES:
+            self._override_frames = 0
+            return
+        reason = None
+        margin = self._support_xcom_margin()
+        if margin is not None and margin > OVERRIDE_XCOM_MARGIN:
+            reason = "xcom"
+        else:
+            idx, p, q = self.idx, self.body.points, self.body.prev_points
+            falling = max(float(p[idx[n], 1] - q[idx[n], 1]) for n in ("head", "shoulder"))
+            gap = min(GROUND_Y - FALLEN_RADIUS[n] - float(p[idx[n], 1]) for n in ("head", "shoulder"))
+            ttc = self.contact_ttc()
+            if (falling > OVERRIDE_MIN_VY and gap > OVERRIDE_MIN_GAP and ttc is not None
+                    and ttc <= BRACE_TTC_FRAMES):
+                reason = "ttc"
+        self._override_frames = self._override_frames + 1 if reason else 0
+        if self._override_frames < OVERRIDE_FRAMES:
+            return
+        self.recovery_aborts.append((self.frame, rec.state, reason))
+        self._override_frames = 0
+        self.recovery = self._recovery_factory()
+        self._rearm_fall_reflex()
+
+    def _rearm_fall_reflex(self) -> None:
+        """Kalkma kesildi: etkin koruyucu refleks yeniden kurulur ve hemen acilir."""
+        if self.fall_bracing is not None:
+            self.fall_bracing = FallBracing()      # bosta; gogus TTC'si kisalinca kendisi uzanir
+        if self.brace and self.arms is not None:
+            self.bracing = True
+            self.brace_trigger = "override"
+            self.brace_level = 1.0
+            self.brace_start = self.frame
+            self.brace_dir = self._brace_side()
+            self.brace_plant_x = None
+            self.brace_lowering = False
+            self.brace_lowered = False
+            self.brace_neck_deg = None
+            self.settle_count = 0
+            self.arm_column = {}
 
     def _update_brace(self, f: int) -> None:
         """Adim 30 -- koruyucu refleksin acilmasi/sonmesi."""
         if not self.brace or self.arms is None:
             return
         idx, p, q = self.idx, self.body.points, self.body.prev_points
-        imminent = self._support_loss_imminent()
+        imminent = self._impact_imminent()
         if not self.bracing and (self.collapsed or self.yield_frames >= BRACE_YIELD_FRAMES or imminent):
+            self.brace_trigger = ("ttc" if imminent else "yield" if self.yield_frames >= BRACE_YIELD_FRAMES
+                                  else "collapse")
             self.brace_dir = self._brace_side()
             self.bracing = True
             self.brace_level = 1.0
@@ -1159,7 +1262,7 @@ class ActiveBipedSim:
         # Coupled waist, arm and ground contacts need 64 iterations to keep
         # torso lengths and settling stable; step-30 and legacy counts stay unchanged.
         if self.gn_fall:
-            iterations = GN_RELAX_ITERS_FALLEN * (8 if self.spine is not None else 2 if self.fall_bracing is not None else 1)
+            iterations = GN_RELAX_ITERS_FALLEN * (8 if self.spine is not None else 2 if self.gn_fallen_arms else 1)
         else:
             # kol kolonu refleksi: Adim 30'un 24 turu; omurgada en az 64 tur
             iterations = max(RELAX_ITERS_FALLEN, GN_RELAX_ITERS_FALLEN * (8 if self.spine is not None else 1))
@@ -1186,7 +1289,7 @@ class ActiveBipedSim:
                 knee_branch_limit()
             if self.spine is not None:
                 self.spine.constrain()
-            if self.arms is not None and self.fall_bracing is not None:
+            if self.arms is not None and self.gn_fallen_arms:
                 constrain_fallen_elbows(self.arms)
         for k_i, f_i in self.fallen_legs.values():
             if self.balance_recovery:
@@ -1245,6 +1348,7 @@ class ActiveBipedSim:
         self._contact_prev = contact.copy()
         # Contact solver input speed, before its inelastic velocity reset.
         # This is a point-mass diagnostic, not a measured physical impulse.
+        self.contact_ids = [int(i) for i in np.flatnonzero(contact)]
         for point in np.flatnonzero(contact):
             self.ground_contacts.append((self.frame, int(point), max(0.0, float(incoming_vy[point]))))
             self.ground_projection_impulses.append(
@@ -1630,10 +1734,18 @@ class ActiveBipedSim:
                 # yeniden planlama: hicbir el yuk tasimiyorken govde ters tarafa devriliyorsa
                 # (ornegin ellere sekip geriye oturma) kollar yeni dusus tarafina uzanir
                 replan = not self.arm_column and side != self.brace_dir
-                if self.brace_plant_x is None or hands_y < GROUND_Y - BRACE_FREEZE_PX or replan:
+                # Yon belirsizken (dik cokme: omuz kalcanin ustunde) dunyaya sabit hedef
+                # KILITLENMEZ; kollar omzun altina "hazir" uzanir. TTC ile erken acilan
+                # refleks hedefi bu anda kilitleyip elleri kalcanin altina koyuyor, govde
+                # sonra devrilince kolon omzu tutamiyordu (olculdu, README birlesim bolumu).
+                ambiguous = (self.brace_dir_gate and not self.arm_column and
+                             abs(self._brace_lean()) < BRACE_DIR_MIN_PX)
+                if ambiguous:
+                    self.brace_plant_x = None
+                elif self.brace_plant_x is None or hands_y < GROUND_Y - BRACE_FREEZE_PX or replan:
                     self.brace_dir = side
                     self.brace_plant_x = float(body.points[idx["hip"]][0]) + self.brace_dir * BRACE_PLANT_FROM_HIP
-                target = np.array([self.brace_plant_x, GROUND_Y])
+                target = np.array([sh[0] if ambiguous else self.brace_plant_x, GROUND_Y])
                 ang = float(np.degrees(np.arctan2(target[0] - sh[0], max(target[1] - sh[1], 1.0))))
                 self.brace_log.append((f, round(self.brace_level, 3), round(ang, 1)))
                 self.arms.drive(leg_angles, enabled=True, reflex_target_deg=ang,
@@ -1670,7 +1782,14 @@ class ActiveBipedSim:
             self._fallen_x0 = body.points[:, 0].copy()   # Adim 29: statik surtunme icin kare basi konum
         if self.spine is not None:
             self.spine.drive()
+        if (self.collapsed and not self.gn_fall and self.gravity_policy.mode == "unified"
+                and (NECK_FALL_K > 0.0 or NECK_FALL_C > 0.0)):
+            # Boyun kaslari dususte: bas ust govdeye (bel-omuz) gore yay/sonumle tutulur.
+            # Omurgali govdede gogus yere degince bas eylemsizlikle kamci gibi savruluyordu.
+            root = idx["waist"] if self.spine is not None else hip
+            hinge_drive(body, [root, idx["shoulder"], idx["head"]], NECK_FALL_K, NECK_FALL_C)
         if self.recovery is not None:
+            self.recovery.telemetry_frame = self.frame
             self.recovery.drive(self)
         if self.upright_head and not self.collapsed:
             # A damped neck controller, released completely in the ragdoll.
@@ -1693,7 +1812,7 @@ class ActiveBipedSim:
                             FALLEN_NECK_LIMIT_DEG if self.collapsed else NECK_MAX_TILT_DEG,
                             preserve_momentum=self.torso_clamp_mode)
         if self.arms is not None and self.gn_fall:
-            if not (self.collapsed and self.fall_bracing is not None):
+            if not (self.collapsed and self.gn_fallen_arms):
                 self.arms.constrain()
         elif self.arms is not None:
             lvl = self.brace_level if self.bracing else 0.0
@@ -1704,6 +1823,7 @@ class ActiveBipedSim:
             self._fallen_constraints()
         if self.recovery is not None:
             self.recovery.observe(self, GROUND_Y)
+            self._check_recovery_override()
 
         hip_pos = body.points[hip]
         # NOT: bu dongu bilerek SIRALI (once sol, sonra sag) calisir -- bkz.

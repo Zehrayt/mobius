@@ -40,6 +40,12 @@ class GroundRecovery:
         self.failure_reason=None
         self.phase_frame=None
         self.ground_y=None
+        # Telemetri (README "Kalkma telemetrisi"): her motor cagrisi
+        # (kare, durum, a, b, uygulanan, istenen, tavan) -- motor birimi:
+        # kutle*px^2/kare^2 (x0.291 = Nm); itme: kutle*px/kare^2 (x59.5 = N).
+        self.telemetry_frame=None
+        self.motor_log=[]
+        self.force_log=[]
 
     def _motor(self,body,a,b,target,cap,gain):
         p,q,m=body.points,body.prev_points,body.masses
@@ -48,7 +54,9 @@ class GroundRecovery:
         angle=np.arctan2(d[0],-d[1])
         omega=float(np.dot((p[b]-q[b])-(p[a]-q[a]),tangent))/length
         inertia=length**2/(1/m[a]+1/m[b])
-        torque=float(np.clip(inertia*(-.5*wrap(angle-target)-.9*omega),-cap,cap))*gain
+        demand=inertia*(-.5*wrap(angle-target)-.9*omega)
+        torque=float(np.clip(demand,-cap,cap))*gain
+        self.motor_log.append((self.telemetry_frame,self.state,a,b,torque,float(demand)*gain,cap*gain))
         impulse=tangent*torque/length
         q[b]-=impulse/m[b];q[a]+=impulse/m[a]
         self.max_torque_ratio=max(self.max_torque_ratio,abs(torque)/cap)
@@ -58,7 +66,9 @@ class GroundRecovery:
         d=p[b]-p[a];length=max(float(np.linalg.norm(d)),1e-6);axis=d/length
         rate=float(np.dot((p[b]-q[b])-(p[a]-q[a]),axis))
         reduced=1/(1/m[a]+1/m[b])
-        force=float(np.clip(reduced*(.4*(target-length)-.8*rate),-cap,cap))*gain
+        demand=reduced*(.4*(target-length)-.8*rate)
+        force=float(np.clip(demand,-cap,cap))*gain
+        self.force_log.append((self.telemetry_frame,self.state,a,b,force,float(demand)*gain,cap*gain))
         impulse=axis*force
         q[b]-=impulse/m[b];q[a]+=impulse/m[a]
         self.max_force_ratio=max(self.max_force_ratio,abs(force)/cap)

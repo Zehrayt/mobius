@@ -173,14 +173,14 @@ class UnifiedDefaultBracingTest(unittest.TestCase):
 
 
 class RecoveryBracingModeTest(unittest.TestCase):
-    def test_recovery_defaults_to_impulse_and_rejects_column_reflex(self):
+    def test_every_reflex_mode_composes_with_recovery(self):
+        # hata yok: kalkma zinciri her refleks moduyla kurulur (override: test_recovery_override)
         sim = s14.ActiveBipedSim(ground_recovery=True)
-        self.assertEqual(sim.bracing_mode, "impulse")
-        self.assertTrue(sim.gn_fall)
-        self.assertTrue(s14.ActiveBipedSim(ground_recovery=True, bracing=False).gn_fall)
-        for kw in (dict(bracing=True), dict(brace=True)):
-            with self.assertRaises(ValueError):
-                s14.ActiveBipedSim(ground_recovery=True, **kw)
+        self.assertEqual(sim.bracing_mode, "reflex")
+        self.assertTrue(sim.gn_fall and sim.gn_fallen_arms)
+        for kw, mode in ((dict(bracing=True), "reflex"), (dict(brace=True), "reflex"),
+                         (dict(bracing="impulse"), "impulse"), (dict(bracing=False), "off")):
+            self.assertEqual(s14.ActiveBipedSim(ground_recovery=True, **kw).bracing_mode, mode)
 
 
 if __name__ == "__main__":

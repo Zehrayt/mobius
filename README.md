@@ -4814,58 +4814,124 @@ Gül Nihal'in `feature/steps-30-39` dalı Adım 29'dan ayrılıp Adım 30'u
 yeniden yazmış, 31–39'u onun üstüne kurmuştu; main'deki Adım 30 ile aynı
 yığılma çözücüsünü değiştiriyordu. Birleşimde:
 
-- **Varsayılan koruyucu refleks Adım 30'dur** (kol kolonu). Aynı 36 koşuluk
-  taramada (±2, ±2.5 m/s, ±150 px × 6 faz; baş zemine 4 px yakınken en büyük
-  düşüş hızı, px/kare):
+- **Tek koruyucu refleks: Adım 30 (kol kolonu)** — düşüşte de, yerden kalkma
+  zincirinde de varsayılan. Aynı 36 koşuluk taramada (±2, ±2.5 m/s, ±150 px × 6
+  faz; baş/omuz zemine 4 px yakınken en büyük düşüş hızı, px/kare):
 
   | Koşul | Pasif | Adım 30 (kol kolonu) | Adım 30b (impuls) |
   |---|---:|---:|---:|
-  | İki yerçekimi, tek parça gövde (medyan) | 8.3 / 12.3 | **1.05** (18/18 iyileşme) | 9.7 (13 iyi / 6 kötü) |
-  | Tek yerçekimi + omurga (varsayılan, medyan) | 9.2 / 10.4 | **5.2** (26 iyi / 9 kötü) | 9.4 (17 iyi / 19 kötü) |
+  | İki yerçekimi, tek parça gövde — baş medyanı | 8.3 / 12.3 | **1.05** (18/18 iyileşme) | 9.7 (13 iyi / 6 kötü) |
+  | Tek yerçekimi + omurga — baş medyan / ort. / maks. | 9.2 / 10.4 / 26.7 | **4.3 / 5.8 / 19.5** (25 iyi / 10 kötü) | 9.4 (17 iyi / 19 kötü) |
+  | Tek yerçekimi + omurga — omuz medyan / ort. / maks. | 7.7 / 8.7 / 20.8 | **5.6 / 5.3 / 8.9** | — |
 
   Pasif sütunda iki değer: sırasıyla kol kolonu ve impuls sürümlerinin kendi
-  yığılma çözücüleri.
-- **31–39 Gül Nihal'in dalından olduğu gibi** gelir: düşüşte omurga, tek
-  yerçekimi (`GravityPolicy`), denge/baş, el–diz desteği, ayağa kalkma ve
-  yürümeye dönüş.
-- **Yerden kalkma zinciri (`ground_recovery=True`) şimdilik impuls refleksiyle
-  çalışır**: 34–39 o refleksin bıraktığı yatış pozlarıyla doğrulandı; kol
-  kolonu refleksi karakteri düz yatırdığı için zincir `needs_roll`da duruyordu.
-  `bracing` verilmezse ve `ground_recovery=True` ise refleks otomatik olarak
-  `"impulse"` olur. Zinciri kol kolonu refleksine uyarlamak açık iş.
-- **Yığılma çözücüsü refleksle eşleşir** (`fall_solver`): `"column"` Adım 30'un
-  çözücüsü (24 tur, omurgada en az 64; yüke bağlı statik sürtünme, son kilit,
-  giriş düzeltmesi, döngü içi boyun), `"gn"` Gül Nihal'in dalındaki çözücünün
-  birebir kopyası. Böylece eski koşullar (`gravity_mode="legacy",
-  articulated_spine=False`) main'deki Adım 30 kanaryalarını, impuls modu da
-  Gül Nihal'in rapor sayılarını aynen üretir.
-- `bracing`: `True` (varsayılan, kol kolonu) · `"impulse"` · `False` (pasif).
-  `brace=` eski adıyla çalışmaya devam eder. Gül Nihal'in nesnesi artık
-  `sim.fall_bracing`; `sim.bracing` kol kolonu refleksinin açık/kapalı
-  durumudur, `sim.fall_reflex_active` ikisini birlikte sorar.
+  yığılma çözücüleri. Tekil sahneler kaotik: örneğin ±150 px faz 0'da refleks
+  pasiften kötü; iyileşme taramanın genelinde.
+- **31–39 Gül Nihal'in dalından** gelir: düşüşte omurga, tek yerçekimi
+  (`GravityPolicy`), denge/baş, el–diz desteği, ayağa kalkma, yürümeye dönüş.
+- `bracing`: `True` (varsayılan, kol kolonu) · `"impulse"` (Adım 30b) · `False`
+  (pasif). `brace=` eski adıyla çalışır. Gül Nihal'in nesnesi `sim.fall_bracing`;
+  `sim.bracing` kol kolonu refleksinin durumu, `sim.fall_reflex_active` ikisini sorar.
+- **Yığılma çözücüsü** (`fall_solver`): `"column"` Adım 30'un çözücüsü (24 tur,
+  omurgada en az 64; yüke bağlı statik sürtünme, son kilit, giriş düzeltmesi,
+  döngü içi boyun), `"gn"` Gül Nihal'in dalındakinin birebiri. Varsayılan: impuls
+  refleksiyle ya da yerden kalkma açıkken `"gn"` (zincir bu çözücüyle ve onun
+  yerde-kol çözümüyle — `gn_fallen_arms` — doğrulandı), diğerlerinde `"column"`.
+  Eski koşullar (`gravity_mode="legacy", articulated_spine=False`) main'deki
+  Adım 30 kanaryalarını, impuls modu Gül Nihal'in rapor sayılarını aynen üretir.
 - Adım 31–33 bölümlerindeki sayılar impuls refleksiyle ölçüldü; varsayılan
-  refleks değiştiği için o demoların yeni çıktıları farklı olabilir (testleri geçiyor).
-- **İnceleme düzeltmeleri (birleşimden sonra):**
-  - Omurga açıkken boyun sınırı bel–baş arasına uygulanır (önce uzunluk bel–omuz
-    parçasıyla hesaplanıp kısıt kalça–baş arasına konuyordu; sınır fiilen gevşekti).
-  - `ground_recovery=True` ile `bracing=True`/`brace=True` artık `ValueError` verir
-    (önce zincir sessizce `needs_roll`da kalıyordu); `bracing=False` ile kalkma da
-    Gül Nihal'in çözücüsünü kullanır.
-  - `demo/step30_bracing.measure()` kol kolonu refleksini de raporlar (`brace_mode`;
-    önce varsayılan refleks çalışırken `off` yazıyordu).
-  - `tests/test_step30_bracing.py`: varsayılan yapılandırma (tek yerçekimi + omurga +
-    kol kolonu) ve kalkma–refleks uyumu için testler.
-- **Açık iş — tek yerçekiminde geç tetik:** Bu yolda çöküş çoğu zaman bacak servosu
-  devreye girmeden, kalça destek yüksekliğinin altına inince algılanıyor; refleksin
-  "yield" tetiği oluşmuyor. −200 px itkide refleks çöküş karesinde açılıyor, baş 4
-  kare sonra yere değiyor (pasif 20.5, refleks 23.8 px/kare). Kalça hızından
-  öngörülü tetik (`BRACE_PREDICT_ENABLED`) yazıldı ama **kapalı**: açıkken bu sahne
-  4.8'e, göğüs medyanı 7.7 → 4.4'e iniyor; baş medyanı ise 5.2 → 6.8'e çıkıyor
-  (iyileşen 26 → 21). Baş/göğüs takası ayarlanmadan varsayılan yapılmadı.
+  refleks değiştiği için o demoların yeni çıktıları farklıdır (testleri geçiyor).
+
+### Refleks tetiği: baş/göğüs TTC'si
+
+Tek yerçekiminde çöküş çoğu zaman bacak servosu devreye girmeden, kalça destek
+yüksekliğinin altına inince algılanıyor; refleksin bacak "yield" tetiği oluşmuyor
+ve refleks çöküş karesinde açılıyordu (−200 px: baş 4 kare sonra yerde, pasif 20.5
+→ refleks 23.8 px/kare). Kollar artık **baş ve göğsün (omuz) zemine balistik
+çarpma süresini** dinler (`contact_ttc`; Adım 24/25 ayak TTC kapısının gövde
+karşılığı): TTC ≤ `BRACE_TTC_FRAMES` = 10 kare olunca refleks açılır. Ayakta
+duran başın TTC'si ~15.4 kare (serbest düşüş), yürüyüşte tetiklenmez (ölçüldü).
+
+| Tetik (36 koşu) | Baş medyan / ort. / maks. | Omuz medyan / ort. / maks. |
+|---|---|---|
+| Yalnız çöküş/yield (TTC yok) | 5.2 / 7.0 / 21.0 | 7.7 / 6.7 / 9.5 |
+| Kalça hızı öngörüsü (önceki deneme, kaldırıldı) | 6.8 / 7.9 / 21.5 | 4.4 / 5.3 / 10.9 |
+| TTC ≤ 4 | 5.2 / 7.0 / 21.0 (hiç etkisi yok — çöküş daha önce algılanıyor) | 7.7 / 6.7 / 9.5 |
+| TTC ≤ 10, yön kapısız | 6.8 / 7.9 / 21.5 | 3.6 / 5.0 / 10.9 |
+| **TTC ≤ 10 + yön kapısı** | **4.3 / 5.8 / 19.5** | **5.6 / 5.3 / 8.9** |
+| TTC ≤ 12 / 14 + yön kapısı | 3.5 / 6.7 / 20.2 · 3.5 / 7.8 / 25.1 | 6.7 / 5.8 / 8.7 · 4.1 / 4.9 / 9.3 |
+
+Baş/göğüs takasının nedeni sensör değil **yön kararıydı**: erken açılan refleks
+dik çökmede (omuz kalçanın üstünde, yön belirsiz) dünyaya sabit el hedefini
+kilitliyor, eller kalçanın altına iniyor, gövde sonra devrilince kolon omzu
+tutamıyordu. Yön kapısı (`BRACE_DIR_MIN_PX` = 8 px): omuz–kalça farkı (3 kare
+ileri) bundan küçükken hedef kilitlenmez, kollar omzun altına "hazır" uzanır.
+TTC tetiği ve yön kapısı yalnız tek yerçekiminde (eski koşul kanaryaları aynen).
+
+### Boyun sönümü (denendi, kapalı)
+
+Düşüşte bel–omuz–baş menteşesine açısal yay/sönüm (`physics/spine.hinge_drive`,
+`NECK_FALL_K/C`). Refleksli sonuçları kötüleştirdi (TTC 10 + kapı üstüne):
+
+| Boyun | Baş medyan / ort. | Omuz medyan |
+|---|---|---:|
+| yok (varsayılan) | **4.3 / 5.8** | **5.6** |
+| C = 0.3 | 5.4 / 6.2 | 6.7 |
+| K = 0.01, C = 0.3 | 6.0 / 7.1 | 7.1 |
+| K = 0.02, C = 0.6 | 5.5 / 7.0 | 7.2 |
+
+Pasif düşüşte baş medyanı 9.2 → 8.8 hafif iniyor; başı gövdeye sıkı bağlamak
+onu gövdeyle birlikte daha sert indiriyor. Bu motorda baskın etki kamçı değil.
+
+### Kalkma override'ı (exception yok)
+
+Refleks ile yerden kalkma her modda birlikte kurulur. Kalkma sürerken
+(`waiting`/`needs_roll`/`failed` dışında) 4 kare üst üste:
+- XCoM (KM + v/ω₀) bu karedeki temas noktalarının x aralığının 30 px dışında
+  (yalnız KM ≥ 60 px iken — diz üstünden itibaren; normal kalkış/yürüyüşte en
+  fazla 15.5 px, ölçüldü), ya da
+- baş/göğüs zeminden > 80 px yukarıda, > 2 px/kare iniyor ve TTC ≤ 10
+
+ise kalkma kesilir (`sim.recovery_aborts`), durum makinesi baştan kurulur, etkin
+refleks yeniden açılır (`brace_trigger == "override"` ya da yeni `FallBracing`);
+karakter durulunca zincir kendiliğinden yeniden başlar. `sim.push(px)` dış darbe.
+Ölçülen (`tests/test_recovery_override.py`): ayaktayken −120 px → 4 karede kesme,
+düşüş, ±150 px itkilerin ikisinde de ~2100 kare sonra yeniden ayakta; normal
+kalkışta hiç kesme yok. Kalan `ValueError`'lar yalnızca kurulum ön koşullarıdır
+(ör. `recovery_stand` için `recovery_rise`), çalışma sırasında durum engellemez.
+
+### Kalkma telemetrisi (`demo/recovery_telemetry.py`)
+
+Birim: 1 motor birimi = 0.291 Nm (480 = 140 Nm), 1 kuvvet birimi = 59.5 N.
+Rapor: `docs/validation/recovery_telemetry_report.json` (±150 px, tam zincir).
+- **140 Nm hiç aşılmaz — kodda sert kesilir; istenen aşar.** Uyluk motoru
+  (diz→kalça) ileri düşüşten kalkışta 172.6 Nm ister, karelerin %12.9'unda
+  tavanda; geri düşüşte bacak yerleştirmede 366 Nm ister. Baldır motoru
+  (diz→ayak, tavan 35 Nm) ayak yerleştirmede karelerin %87'sinde tavanda
+  (istenen 167 Nm). Ayağa kalkarken kalça motorları en fazla 116 Nm; bacak
+  itme kuvveti bacak başına en fazla 388 N (ağırlık 687 N).
+- **Asıl biyomekanik hile: net dış tork.** Motorlar eklemde iki parça arasında
+  değil, tek parçaya dünyaya karşı uygulanan kuvvet çiftleri; gerçek vücutta iç
+  torkların toplamı sıfırdır. Toplamları yerdeki/el–diz/tek diz fazlarında
+  ortalama 96–174 Nm, tepede 464 Nm; hareketsiz el–diz tutuşunda bile sabit
+  143.5 Nm. Gövdeyi doğrultmada 81–85 Nm; diz üstünde ve ayakta 12–22 Nm,
+  yürürken 16–44 Nm.
+- **Çoklu temas:** yerdeyken FABRIK çözülmez (bacaklar Verlet zinciri, IK yalnız
+  çizim için fizikten okunur); yük paylaşımı PBD zemin temaslarından çıkar.
+  Temas kayması 0 (statik sürtünme kilidi), çubuk boyu hatası ≤ 0.39 px, KM
+  ivmesi kalkışta ≤ 9.3 m/s² (yürüyüş inişinde 3.7). Çekişme göstergesi motor
+  iptali: torkların yerde %20–60'ı, ayakta %87'si birbirini götürüyor.
+- Açık iş: motorları eklem torku çiftlerine (eşit/zıt, iki komşu parça) çevirip
+  net dış torku sıfırlamak; destek momentini zemin temaslarına bırakmak.
+
+### Diğer düzeltmeler (birleşim incelemesi)
+- Omurga açıkken boyun sınırı bel–baş arasına uygulanır (önce uzunluk bel–omuz
+  parçasıyla hesaplanıp kısıt kalça–baş arasına konuyordu).
+- `demo/step30_bracing.measure()` kol kolonu refleksini de raporlar (`brace_mode`).
 - Bilinen sınır (birleşimden önce de vardı): tek yerçekiminde 1 m/s geri itki
   bile çöküşle bitiyor; iki yerçekimli eski ayarda bitmiyordu.
 
-Testler: 175/175 (tam paket). `tests/test_step30_impulse_bracing.py`
+Testler: 178/178 (tam paket). `tests/test_step30_impulse_bracing.py`
 Gül Nihal'in Adım 30 testleridir.
 
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar

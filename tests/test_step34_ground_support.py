@@ -7,6 +7,13 @@ import numpy as np
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 from demo.step14_active_biped import ActiveBipedSim,GROUND_Y
+
+
+def without_recovery(**options):
+    """Ayni kurulum (cozucu, kollar, refleks), yalniz kalkma motorlari yok."""
+    sim=ActiveBipedSim(ground_recovery=True,**options)
+    sim.recovery=None
+    return sim
 from demo.step34_ground_support import run_case
 from physics.ground_recovery import GroundRecovery,ATTEMPT_TIMEOUT
 from physics.gravity import REAL_GRAVITY
@@ -39,7 +46,7 @@ class RecoveryIntegrationTest(unittest.TestCase):
         cls.report,cls.frames,cls.sim=run_case(count=700)
 
     def test_no_physics_change_before_rest_gate_opens(self):
-        old=ActiveBipedSim(bracing="impulse")
+        old=without_recovery()
         end=self.report['start_frame']
         self.assertIsNotNone(end)
         self.assertGreaterEqual(end-self.report['collapse_frame'],60)
@@ -78,7 +85,7 @@ class RecoveryIntegrationTest(unittest.TestCase):
 
     def test_unsupported_leg_orientation_does_not_drive_or_claim_success(self):
         active=ActiveBipedSim(ground_recovery=True,big_push_kick_px=-150.)
-        passive=ActiveBipedSim(big_push_kick_px=-150.,bracing="impulse")
+        passive=without_recovery(big_push_kick_px=-150.)
         for _ in range(450):
             active.step();passive.step()
             np.testing.assert_array_equal(active.body.points,passive.body.points)

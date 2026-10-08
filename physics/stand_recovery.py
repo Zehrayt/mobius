@@ -83,6 +83,7 @@ class StandRecovery(KneelRise):
         impulse = axis*force
         q[hip] -= impulse/m[hip]
         q[foot] += impulse/m[foot]
+        self.force_log.append((self.telemetry_frame, self.state, foot, hip, force, force, LEG_FORCE_CAP))
         self.stand_force_peak = max(self.stand_force_peak, force)
         self.max_stand_force_ratio = max(self.max_stand_force_ratio, force/LEG_FORCE_CAP)
         self.max_force_ratio = max(self.max_force_ratio, force/LEG_FORCE_CAP)

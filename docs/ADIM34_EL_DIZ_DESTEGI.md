@@ -5,8 +5,9 @@ pozundan gövdesini kaldırıp elleri ve dizleri üzerinde bekler. Tam ayağa
 kalkma, ayağı gövdenin altına yerleştirme ve yürüyüşe dönüş henüz yoktur.
 
 Bu aşama `ActiveBipedSim(ground_recovery=True)` ile açılır (birleşimden sonra bu seçenek
-impuls refleksini ve onun yığılma çözücüsünü otomatik seçer; kol kolonu refleksiyle
-`ValueError` verir — README "Adım 30–39 birleşimi"). Varsayılanın
+Gül Nihal'in yığılma çözücüsünü ve yerde-kol çözümünü seçer; koruyucu refleks her
+modda olabilir, varsayılan kol kolonu. Kalkma sırasında düşüşte zincir kesilir ve
+yeniden başlar — README "Adım 30–39 birleşimi", "Kalkma override'ı"). Varsayılanın
 kapalı olması önceki düşüş karşılaştırmalarını ve ölçümlerini korur.
 Yeni demo bu özelliği açar. Tek yerçekimi, kollar, esnek omurga ve Adım 33
 bacak denge düzeltmeleri gerekir. Başın görsel bağlantısındaki kullanıcı

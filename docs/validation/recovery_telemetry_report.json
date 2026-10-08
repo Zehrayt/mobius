@@ -1,0 +1,1527 @@
+{
+  "units": {
+    "torque_nm_per_unit": 0.29097800541562363,
+    "newton_per_unit": 59.48883666274971
+  },
+  "runs": [
+    {
+      "push_px": 150.0,
+      "final_state": "walk_shift",
+      "failure_reason": null,
+      "hip_trunk_peak_nm": 133.9,
+      "thigh_peak_nm": 139.7,
+      "hip_limit_nm": 140.0,
+      "hip_motor_saturation_by_state": [
+        [
+          "rising",
+          12.9
+        ]
+      ],
+      "stand_leg_force_peak_n": 387.5,
+      "body_weight_n": 686.7,
+      "states": {
+        "waiting": {
+          "frames": 152,
+          "net_external_couple_nm": {
+            "mean": 0.0,
+            "max": 0.0
+          },
+          "motor_cancellation_pct": null,
+          "com_accel_peak_ms2": 23.8,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.038,
+          "motors": {}
+        },
+        "rising": {
+          "frames": 147,
+          "net_external_couple_nm": {
+            "mean": 173.9,
+            "max": 463.7
+          },
+          "motor_cancellation_pct": 41.0,
+          "com_accel_peak_ms2": 2.52,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.037,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 133.9,
+              "peak_demand_nm": 133.9,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 73.0,
+              "cap_nm": 29.1,
+              "saturated_pct": 11.6
+            },
+            "diz_l->kalca": {
+              "peak_nm": 139.7,
+              "peak_demand_nm": 172.6,
+              "cap_nm": 139.7,
+              "saturated_pct": 12.9
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 47.1,
+              "cap_nm": 34.9,
+              "saturated_pct": 17.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 127.7,
+              "peak_demand_nm": 127.7,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 29.9,
+              "peak_demand_nm": 29.9,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 6.0,
+              "peak_demand_nm": 6.0,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 6.0,
+              "peak_demand_nm": 6.0,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "supported": {
+          "frames": 60,
+          "net_external_couple_nm": {
+            "mean": 143.5,
+            "max": 143.6
+          },
+          "motor_cancellation_pct": 39.1,
+          "com_accel_peak_ms2": 0.0,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.0,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 57.6,
+              "peak_demand_nm": 57.6,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 17.7,
+              "peak_demand_nm": 17.7,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 67.2,
+              "peak_demand_nm": 67.2,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 15.1,
+              "peak_demand_nm": 15.1,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 47.0,
+              "peak_demand_nm": 47.0,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 20.8,
+              "peak_demand_nm": 20.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 5.1,
+              "peak_demand_nm": 5.1,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 4.9,
+              "peak_demand_nm": 4.9,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "foot_placing": {
+          "frames": 269,
+          "net_external_couple_nm": {
+            "mean": 155.7,
+            "max": 210.5
+          },
+          "motor_cancellation_pct": 30.2,
+          "com_accel_peak_ms2": 4.91,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.015,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 62.6,
+              "peak_demand_nm": 62.6,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 40.9,
+              "cap_nm": 29.1,
+              "saturated_pct": 34.9
+            },
+            "diz_l->kalca": {
+              "peak_nm": 135.6,
+              "peak_demand_nm": 135.6,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 166.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 87.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 109.3,
+              "peak_demand_nm": 109.3,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 28.8,
+              "peak_demand_nm": 28.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 10.2,
+              "peak_demand_nm": 10.2,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 9.7,
+              "peak_demand_nm": 9.7,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "transferring": {
+          "frames": 149,
+          "net_external_couple_nm": {
+            "mean": 123.7,
+            "max": 142.4
+          },
+          "motor_cancellation_pct": 33.9,
+          "com_accel_peak_ms2": 5.3,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.006,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 51.0,
+              "peak_demand_nm": 51.0,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 35.2,
+              "cap_nm": 29.1,
+              "saturated_pct": 36.2
+            },
+            "diz_l->kalca": {
+              "peak_nm": 27.3,
+              "peak_demand_nm": 27.3,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 69.3,
+              "cap_nm": 34.9,
+              "saturated_pct": 73.2
+            },
+            "diz_r->kalca": {
+              "peak_nm": 80.5,
+              "peak_demand_nm": 80.5,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 18.2,
+              "peak_demand_nm": 18.2,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 10.5,
+              "peak_demand_nm": 10.5,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 9.8,
+              "peak_demand_nm": 9.8,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "half_kneeling": {
+          "frames": 60,
+          "net_external_couple_nm": {
+            "mean": 123.8,
+            "max": 123.9
+          },
+          "motor_cancellation_pct": 48.7,
+          "com_accel_peak_ms2": 0.01,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.0,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 50.2,
+              "peak_demand_nm": 50.2,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 31.4,
+              "cap_nm": 29.1,
+              "saturated_pct": 100.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 26.8,
+              "peak_demand_nm": 26.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 64.3,
+              "cap_nm": 34.9,
+              "saturated_pct": 100.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 68.3,
+              "peak_demand_nm": 68.3,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 17.8,
+              "peak_demand_nm": 17.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 7.7,
+              "peak_demand_nm": 7.7,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 6.5,
+              "peak_demand_nm": 6.5,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "torso_raising": {
+          "frames": 352,
+          "net_external_couple_nm": {
+            "mean": 81.1,
+            "max": 172.9
+          },
+          "motor_cancellation_pct": 60.1,
+          "com_accel_peak_ms2": 1.33,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.008,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 102.8,
+              "peak_demand_nm": 102.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 38.3,
+              "cap_nm": 29.1,
+              "saturated_pct": 40.9
+            },
+            "diz_l->kalca": {
+              "peak_nm": 41.8,
+              "peak_demand_nm": 41.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 64.3,
+              "cap_nm": 34.9,
+              "saturated_pct": 24.1
+            },
+            "diz_r->kalca": {
+              "peak_nm": 71.4,
+              "peak_demand_nm": 71.4,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 25.3,
+              "peak_demand_nm": 25.3,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 8.3,
+              "peak_demand_nm": 8.3,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 7.8,
+              "peak_demand_nm": 7.8,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "upright_kneeling": {
+          "frames": 60,
+          "net_external_couple_nm": {
+            "mean": 12.5,
+            "max": 12.5
+          },
+          "motor_cancellation_pct": 79.6,
+          "com_accel_peak_ms2": 0.0,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.007,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 1.8,
+              "peak_demand_nm": 1.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.2,
+              "peak_demand_nm": 0.2,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 3.7,
+              "peak_demand_nm": 3.7,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 13.5,
+              "peak_demand_nm": 13.5,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 17.8,
+              "peak_demand_nm": 17.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 23.9,
+              "peak_demand_nm": 23.9,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.1,
+              "peak_demand_nm": 0.1,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.1,
+              "peak_demand_nm": 0.1,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "standing_rising": {
+          "frames": 348,
+          "net_external_couple_nm": {
+            "mean": 19.5,
+            "max": 68.5
+          },
+          "motor_cancellation_pct": 87.5,
+          "com_accel_peak_ms2": 0.39,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.007,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 7.9,
+              "peak_demand_nm": 7.9,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.8,
+              "peak_demand_nm": 0.8,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 114.9,
+              "peak_demand_nm": 114.9,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 71.3,
+              "cap_nm": 34.9,
+              "saturated_pct": 12.9
+            },
+            "diz_r->kalca": {
+              "peak_nm": 50.4,
+              "peak_demand_nm": 50.4,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 67.9,
+              "cap_nm": 34.9,
+              "saturated_pct": 53.2
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.5,
+              "peak_demand_nm": 0.5,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.5,
+              "peak_demand_nm": 0.5,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "standing": {
+          "frames": 60,
+          "net_external_couple_nm": {
+            "mean": 22.4,
+            "max": 72.8
+          },
+          "motor_cancellation_pct": 87.6,
+          "com_accel_peak_ms2": 0.0,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.003,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 1.9,
+              "peak_demand_nm": 1.9,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.3,
+              "peak_demand_nm": 0.3,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 71.7,
+              "peak_demand_nm": 71.7,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 25.7,
+              "peak_demand_nm": 25.7,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 23.1,
+              "peak_demand_nm": 23.1,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 52.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 17.9
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.1,
+              "peak_demand_nm": 0.1,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.1,
+              "peak_demand_nm": 0.1,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "walk_prepare": {
+          "frames": 180,
+          "net_external_couple_nm": {
+            "mean": 0.0,
+            "max": 0.0
+          },
+          "motor_cancellation_pct": null,
+          "com_accel_peak_ms2": 0.02,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.004,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 1.8,
+              "peak_demand_nm": 1.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.3,
+              "peak_demand_nm": 0.3,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.0,
+              "peak_demand_nm": 0.0,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.0,
+              "peak_demand_nm": 0.0,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "walk_shift": {
+          "frames": 645,
+          "net_external_couple_nm": {
+            "mean": 44.3,
+            "max": 82.2
+          },
+          "motor_cancellation_pct": 22.6,
+          "com_accel_peak_ms2": 0.24,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.033,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 3.8,
+              "peak_demand_nm": 3.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.5,
+              "peak_demand_nm": 0.5,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.2,
+              "peak_demand_nm": 0.2,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.2,
+              "peak_demand_nm": 0.2,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "walk_swing": {
+          "frames": 600,
+          "net_external_couple_nm": {
+            "mean": 15.6,
+            "max": 38.7
+          },
+          "motor_cancellation_pct": 27.1,
+          "com_accel_peak_ms2": 0.49,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.033,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 4.0,
+              "peak_demand_nm": 4.0,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.9,
+              "peak_demand_nm": 0.9,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.3,
+              "peak_demand_nm": 0.3,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.3,
+              "peak_demand_nm": 0.3,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "walk_land": {
+          "frames": 400,
+          "net_external_couple_nm": {
+            "mean": 29.3,
+            "max": 69.9
+          },
+          "motor_cancellation_pct": 18.1,
+          "com_accel_peak_ms2": 3.71,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.032,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 5.6,
+              "peak_demand_nm": 5.6,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 1.8,
+              "peak_demand_nm": 1.8,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.5,
+              "peak_demand_nm": 0.5,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.4,
+              "peak_demand_nm": 0.4,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "push_px": -150.0,
+      "final_state": "walk_swing",
+      "failure_reason": null,
+      "hip_trunk_peak_nm": 102.4,
+      "thigh_peak_nm": 139.7,
+      "hip_limit_nm": 140.0,
+      "hip_motor_saturation_by_state": [
+        [
+          "repositioning",
+          12.7
+        ],
+        [
+          "repositioning",
+          11.7
+        ]
+      ],
+      "stand_leg_force_peak_n": 387.5,
+      "body_weight_n": 686.7,
+      "states": {
+        "waiting": {
+          "frames": 155,
+          "net_external_couple_nm": {
+            "mean": 0.0,
+            "max": 0.0
+          },
+          "motor_cancellation_pct": null,
+          "com_accel_peak_ms2": 24.55,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.055,
+          "motors": {}
+        },
+        "repositioning": {
+          "frames": 480,
+          "net_external_couple_nm": {
+            "mean": 95.9,
+            "max": 225.9
+          },
+          "motor_cancellation_pct": 36.4,
+          "com_accel_peak_ms2": 6.4,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.11,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 87.0,
+              "peak_demand_nm": 87.0,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 86.1,
+              "cap_nm": 29.1,
+              "saturated_pct": 14.6
+            },
+            "diz_l->kalca": {
+              "peak_nm": 139.7,
+              "peak_demand_nm": 365.9,
+              "cap_nm": 139.7,
+              "saturated_pct": 12.7
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 53.7,
+              "cap_nm": 34.9,
+              "saturated_pct": 6.7
+            },
+            "diz_r->kalca": {
+              "peak_nm": 139.7,
+              "peak_demand_nm": 357.4,
+              "cap_nm": 139.7,
+              "saturated_pct": 11.7
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 53.4,
+              "cap_nm": 34.9,
+              "saturated_pct": 2.7
+            },
+            "el_l->omuz": {
+              "peak_nm": 6.8,
+              "peak_demand_nm": 6.8,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 6.4,
+              "peak_demand_nm": 6.4,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "rising": {
+          "frames": 147,
+          "net_external_couple_nm": {
+            "mean": 143.8,
+            "max": 197.6
+          },
+          "motor_cancellation_pct": 19.5,
+          "com_accel_peak_ms2": 9.26,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.387,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 58.3,
+              "peak_demand_nm": 58.3,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 77.9,
+              "cap_nm": 29.1,
+              "saturated_pct": 17.7
+            },
+            "diz_l->kalca": {
+              "peak_nm": 83.7,
+              "peak_demand_nm": 83.7,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 18.8,
+              "peak_demand_nm": 18.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 58.6,
+              "peak_demand_nm": 58.6,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 21.1,
+              "peak_demand_nm": 21.1,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 9.4,
+              "peak_demand_nm": 9.4,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 9.0,
+              "peak_demand_nm": 9.0,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "supported": {
+          "frames": 60,
+          "net_external_couple_nm": {
+            "mean": 143.4,
+            "max": 143.5
+          },
+          "motor_cancellation_pct": 39.1,
+          "com_accel_peak_ms2": 0.01,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.0,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 57.4,
+              "peak_demand_nm": 57.4,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 17.7,
+              "peak_demand_nm": 17.7,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 67.3,
+              "peak_demand_nm": 67.3,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 15.0,
+              "peak_demand_nm": 15.0,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 47.1,
+              "peak_demand_nm": 47.1,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 20.8,
+              "peak_demand_nm": 20.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 5.6,
+              "peak_demand_nm": 5.6,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 4.7,
+              "peak_demand_nm": 4.7,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "foot_placing": {
+          "frames": 269,
+          "net_external_couple_nm": {
+            "mean": 155.5,
+            "max": 210.4
+          },
+          "motor_cancellation_pct": 30.2,
+          "com_accel_peak_ms2": 4.91,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.015,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 62.7,
+              "peak_demand_nm": 62.7,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 40.9,
+              "cap_nm": 29.1,
+              "saturated_pct": 36.4
+            },
+            "diz_l->kalca": {
+              "peak_nm": 135.7,
+              "peak_demand_nm": 135.7,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 166.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 87.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 109.2,
+              "peak_demand_nm": 109.2,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 28.8,
+              "peak_demand_nm": 28.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 10.3,
+              "peak_demand_nm": 10.3,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 9.9,
+              "peak_demand_nm": 9.9,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "transferring": {
+          "frames": 149,
+          "net_external_couple_nm": {
+            "mean": 123.6,
+            "max": 142.9
+          },
+          "motor_cancellation_pct": 33.8,
+          "com_accel_peak_ms2": 5.31,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.011,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 51.2,
+              "peak_demand_nm": 51.2,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 35.4,
+              "cap_nm": 29.1,
+              "saturated_pct": 36.2
+            },
+            "diz_l->kalca": {
+              "peak_nm": 27.0,
+              "peak_demand_nm": 27.0,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 69.6,
+              "cap_nm": 34.9,
+              "saturated_pct": 73.2
+            },
+            "diz_r->kalca": {
+              "peak_nm": 80.9,
+              "peak_demand_nm": 80.9,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 18.3,
+              "peak_demand_nm": 18.3,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 10.4,
+              "peak_demand_nm": 10.4,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 9.7,
+              "peak_demand_nm": 9.7,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "half_kneeling": {
+          "frames": 60,
+          "net_external_couple_nm": {
+            "mean": 124.1,
+            "max": 124.2
+          },
+          "motor_cancellation_pct": 48.5,
+          "com_accel_peak_ms2": 0.01,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.0,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 50.2,
+              "peak_demand_nm": 50.2,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 31.4,
+              "cap_nm": 29.1,
+              "saturated_pct": 100.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 26.5,
+              "peak_demand_nm": 26.5,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 64.6,
+              "cap_nm": 34.9,
+              "saturated_pct": 100.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 68.3,
+              "peak_demand_nm": 68.3,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 17.8,
+              "peak_demand_nm": 17.8,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 7.5,
+              "peak_demand_nm": 7.5,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 6.7,
+              "peak_demand_nm": 6.7,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "torso_raising": {
+          "frames": 334,
+          "net_external_couple_nm": {
+            "mean": 85.0,
+            "max": 171.9
+          },
+          "motor_cancellation_pct": 59.0,
+          "com_accel_peak_ms2": 1.41,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.008,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 102.4,
+              "peak_demand_nm": 102.4,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 29.1,
+              "peak_demand_nm": 38.2,
+              "cap_nm": 29.1,
+              "saturated_pct": 43.1
+            },
+            "diz_l->kalca": {
+              "peak_nm": 42.4,
+              "peak_demand_nm": 42.4,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 64.5,
+              "cap_nm": 34.9,
+              "saturated_pct": 26.3
+            },
+            "diz_r->kalca": {
+              "peak_nm": 71.3,
+              "peak_demand_nm": 71.3,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 25.5,
+              "peak_demand_nm": 25.5,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 8.2,
+              "peak_demand_nm": 8.2,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 7.8,
+              "peak_demand_nm": 7.8,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "upright_kneeling": {
+          "frames": 60,
+          "net_external_couple_nm": {
+            "mean": 12.1,
+            "max": 12.1
+          },
+          "motor_cancellation_pct": 80.0,
+          "com_accel_peak_ms2": 0.0,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.007,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 1.8,
+              "peak_demand_nm": 1.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.2,
+              "peak_demand_nm": 0.2,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 4.3,
+              "peak_demand_nm": 4.3,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 14.0,
+              "peak_demand_nm": 14.0,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 16.3,
+              "peak_demand_nm": 16.3,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 23.9,
+              "peak_demand_nm": 23.9,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.1,
+              "peak_demand_nm": 0.1,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.1,
+              "peak_demand_nm": 0.1,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "standing_rising": {
+          "frames": 348,
+          "net_external_couple_nm": {
+            "mean": 19.7,
+            "max": 69.7
+          },
+          "motor_cancellation_pct": 87.3,
+          "com_accel_peak_ms2": 0.39,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.012,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 7.9,
+              "peak_demand_nm": 7.9,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.8,
+              "peak_demand_nm": 0.8,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 115.9,
+              "peak_demand_nm": 115.9,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 70.3,
+              "cap_nm": 34.9,
+              "saturated_pct": 12.4
+            },
+            "diz_r->kalca": {
+              "peak_nm": 49.8,
+              "peak_demand_nm": 49.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 68.0,
+              "cap_nm": 34.9,
+              "saturated_pct": 53.2
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.5,
+              "peak_demand_nm": 0.5,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.5,
+              "peak_demand_nm": 0.5,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "standing": {
+          "frames": 60,
+          "net_external_couple_nm": {
+            "mean": 22.4,
+            "max": 72.8
+          },
+          "motor_cancellation_pct": 87.6,
+          "com_accel_peak_ms2": 0.0,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.003,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 1.9,
+              "peak_demand_nm": 1.9,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.3,
+              "peak_demand_nm": 0.3,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "diz_l->kalca": {
+              "peak_nm": 71.7,
+              "peak_demand_nm": 71.7,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_l->ayak_l": {
+              "peak_nm": 25.7,
+              "peak_demand_nm": 25.7,
+              "cap_nm": 34.9,
+              "saturated_pct": 0.0
+            },
+            "diz_r->kalca": {
+              "peak_nm": 23.1,
+              "peak_demand_nm": 23.1,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "diz_r->ayak_r": {
+              "peak_nm": 34.9,
+              "peak_demand_nm": 52.7,
+              "cap_nm": 34.9,
+              "saturated_pct": 17.9
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.1,
+              "peak_demand_nm": 0.1,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.1,
+              "peak_demand_nm": 0.1,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "walk_prepare": {
+          "frames": 180,
+          "net_external_couple_nm": {
+            "mean": 0.0,
+            "max": 0.0
+          },
+          "motor_cancellation_pct": null,
+          "com_accel_peak_ms2": 0.02,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.004,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 1.8,
+              "peak_demand_nm": 1.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.3,
+              "peak_demand_nm": 0.3,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.0,
+              "peak_demand_nm": 0.0,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.0,
+              "peak_demand_nm": 0.0,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "walk_shift": {
+          "frames": 480,
+          "net_external_couple_nm": {
+            "mean": 40.2,
+            "max": 82.2
+          },
+          "motor_cancellation_pct": 26.9,
+          "com_accel_peak_ms2": 0.24,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.033,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 3.8,
+              "peak_demand_nm": 3.8,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.5,
+              "peak_demand_nm": 0.5,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.2,
+              "peak_demand_nm": 0.2,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.2,
+              "peak_demand_nm": 0.2,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "walk_swing": {
+          "frames": 459,
+          "net_external_couple_nm": {
+            "mean": 15.9,
+            "max": 38.7
+          },
+          "motor_cancellation_pct": 26.1,
+          "com_accel_peak_ms2": 0.49,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.033,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 4.0,
+              "peak_demand_nm": 4.0,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 0.9,
+              "peak_demand_nm": 0.9,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.3,
+              "peak_demand_nm": 0.3,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.3,
+              "peak_demand_nm": 0.3,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        },
+        "walk_land": {
+          "frames": 240,
+          "net_external_couple_nm": {
+            "mean": 29.5,
+            "max": 69.9
+          },
+          "motor_cancellation_pct": 19.7,
+          "com_accel_peak_ms2": 3.71,
+          "contact_slip_peak_mm_per_frame": 0.0,
+          "stick_residual_peak_px": 0.032,
+          "motors": {
+            "kalca->omuz": {
+              "peak_nm": 5.6,
+              "peak_demand_nm": 5.6,
+              "cap_nm": 139.7,
+              "saturated_pct": 0.0
+            },
+            "omuz->bas": {
+              "peak_nm": 1.8,
+              "peak_demand_nm": 1.8,
+              "cap_nm": 29.1,
+              "saturated_pct": 0.0
+            },
+            "el_l->omuz": {
+              "peak_nm": 0.5,
+              "peak_demand_nm": 0.5,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            },
+            "el_r->omuz": {
+              "peak_nm": 0.4,
+              "peak_demand_nm": 0.4,
+              "cap_nm": 87.3,
+              "saturated_pct": 0.0
+            }
+          }
+        }
+      }
+    }
+  ]
+}
