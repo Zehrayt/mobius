@@ -40,6 +40,9 @@ açıkça gösteriyor.
 | 28. Hill kas modeli (kuvvet–hız): diz ekstansörü + kalça servosu | `physics/hill.py`, `demo/step14_active_biped.py`, `physics/active_gait.py` | 🔶 README "Adım 28" |
 | 29. Çöküş sonrası yere yığılma: ragdoll bacaklar, zemin + statik/kinetik sürtünme, diz menteşesi, render | `demo/step14_active_biped.py` (`_enter_fallen`, `_fallen_constraints`), `demo/step17_bilge_physics_skin.py` | 🔶 pasif ragdoll; korunma/kalkma yok — README "Adım 29" |
 | 30. Koruyucu kol refleksi: dünyaya sabit el hedefi, kol kolonu (dirsek kapasitesi + sürtünme konisi), kontrollü indirme, boyun tonusu; yüke bağlı statik sürtünme, yığılma girişi düzeltmeleri | `demo/step14_active_biped.py` (`_update_brace`, `_brace_side`, `arm_column_capacity`, `_fallen_leg_init`, `_fallen_constraints`), `physics/arms.py` | 🔶 baş çarpması medyan 9.1 → 1.1 px/kare (24 sahne); kalkma yok, omurga tek çubuk — README "Adım 30" |
+| 30b. Alternatif impuls tabanlı koruyucu kollar (Gül Nihal), `bracing="impulse"` | `physics/bracing.py`, `demo/step30_bracing.py` | 🔶 yerden kalkma zinciri bununla doğrulandı — README "Adım 30b" |
+| 31–33. Düşüşte esnek omurga, tek yerçekimi (`GravityPolicy`), denge toparlama ve baş duruşu | `physics/spine.py`, `physics/gravity.py`, `physics/active_gait.py` | 🔶 tek yerçekiminde itki dayanımı düştü — README "Adım 31–33" |
+| 34–39. Yerden kalkma: el–diz desteği, bacak yerleştirme, ayağa yük aktarma, diz üstü doğrulma, ayakta durma, yürümeye dönüş | `physics/ground_recovery.py`, `foot_transfer.py`, `kneel_rise.py`, `stand_recovery.py`, `walk_recovery.py` | 🔶 opt-in; impuls refleksiyle — README "Adım 34–39" ve "Adım 30–39 birleşimi" |
 | — Bilge kinematik yürüyüş (REFERANS) | `demo/bilge_walk_validation.py`, `demo/bilge_walk_skinned.py` | render referansı: kalça kinematik eğriyle sürülür, ana motor DEĞİL |
 
 `step6` artık `scene/` üretim katmanının ilk sahnesidir. `step11` yok

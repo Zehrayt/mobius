@@ -58,7 +58,8 @@ def measure(frames,sim):
 
 
 def run_case(push=150.,phase=0,enabled=True,count=1000):
-    frames,sim=simulate(count,big_push_kick_px=push,big_push_t=7+phase/30,ground_recovery=enabled)
+    frames,sim=simulate(count,big_push_kick_px=push,big_push_t=7+phase/30,ground_recovery=enabled,
+                        bracing="impulse")
     report=measure(frames,sim)
     report.update(push_px=push,phase=phase)
     return report,frames,sim

@@ -18,7 +18,7 @@ from demo.step30_bracing import measure, write_video
 def compare(push=150., phase=0):
     report,snapshots = {},{}
     for name, enabled in (('rigid',False),('articulated',True)):
-        fs,sim = simulate(420,gravity_mode="legacy",bracing=True,articulated_spine=enabled,
+        fs,sim = simulate(420,gravity_mode="legacy",bracing="impulse",articulated_spine=enabled,
                           big_push_kick_px=push,big_push_t=7+phase/30)
         result = measure(fs,sim)
         bends = [f['spine_bend_deg'] for f in fs if 'waist' in f]

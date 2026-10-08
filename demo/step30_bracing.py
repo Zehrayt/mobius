@@ -50,10 +50,10 @@ def measure(frames, sim):
     collapsed_points = [points(snap) for snap in frames if snap['collapsed']]
     return dict(collapse_frame=start, head=impact('head'), chest=impact('shoulder'),
                 first_hand_contact_frame=hand_events[0][0] if hand_events else None,
-                brace_start_frame=sim.bracing.start_frame if sim.bracing else None,
-                brace_final_state=sim.bracing.state if sim.bracing else 'off',
+                brace_start_frame=sim.fall_bracing.start_frame if sim.fall_bracing else None,
+                brace_final_state=sim.fall_bracing.state if sim.fall_bracing else 'off',
                 hand_ground_projection_share_pct=100.0 * hand_total / total if total else None,
-                shoulder_actuator_upward_impulse=sim.bracing.support_impulse if sim.bracing else 0.0,
+                shoulder_actuator_upward_impulse=sim.fall_bracing.support_impulse if sim.fall_bracing else 0.0,
                 tail_max_speed_px_frame=float(np.linalg.norm(np.diff(tail_points, axis=0), axis=2).max()),
                 tail_hip_drift_px=float(abs(tail[-1]['hip'][0] - tail[0]['hip'][0])),
                 max_ground_penetration_px=max(0.0, max((float(p[:, 1].max()) - s14.GROUND_Y
@@ -64,7 +64,7 @@ def measure(frames, sim):
 def compare(push=150.0, phase=0):
     results, snapshots = {}, {}
     for name, enabled in (('passive', False), ('bracing', True)):
-        frames, sim = simulate(420, gravity_mode="legacy", bracing=enabled, articulated_spine=False, big_push_kick_px=push,
+        frames, sim = simulate(420, gravity_mode="legacy", bracing="impulse" if enabled else False, fall_solver="gn", articulated_spine=False, big_push_kick_px=push,
                                big_push_t=7.0 + phase / 30.0)
         results[name] = measure(frames, sim)
         snapshots[name] = frames

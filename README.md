@@ -4621,59 +4621,12 @@ büyük aşağı hız.
    adım.
 5. Render: yerdeki başın deri açısı 60° boyun sınırıyla ters görünebiliyor.
 
-## Üçüncü Taraf Kod Kullanımı ve Lisanslar
-
-Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
-lisansı uygun iki açık kaynak projeden **uyarlanmıştır**. Her iki proje de
-izin veren (permissive) lisanslara sahiptir ve her iki lisans da orijinal
-telif bildiriminin ve lisans metninin korunmasını şart koşar — bu yüzden
-orijinal lisans dosyaları `third_party_licenses/` altında bulunuyor ve
-her uyarlanan dosyanın başında hangi projeden, hangi lisansla ve hangi
-değişikliklerle alındığı açıkça belirtiliyor.
-
-### `physics/verlet.py`
-- **Kaynak:** [austinweis/python-verlet-integration](https://github.com/austinweis/python-verlet-integration)
-  (`src/rag.py`)
-- **Lisans:** Apache License 2.0 — bkz. [`third_party_licenses/LICENSE-apache-2.0-python-verlet-integration.txt`](third_party_licenses/LICENSE-apache-2.0-python-verlet-integration.txt)
-- **Yapılan değişiklikler:** Python listeleri yerine numpy array'ler,
-  opsiyonel sınır (bounds) çarpışması, tip belirteçleri, `Rag` →
-  `VerletSystem` yeniden adlandırması ve `pin`/`add_point`/`add_stick`
-  yardımcı metodları eklendi.
-
-### `physics/fabrik.py`
-- **Kaynak:** [Yanneeh/Fabrik-Inverse-kinematics](https://github.com/Yanneeh/Fabrik-Inverse-kinematics)
-  (`fabrikSolver.py` — `Segment2D` / `FabrikSolver2D` sınıfları)
-- **Lisans:** MIT License, Copyright (c) 2020 Yannick van Diermeen — bkz.
-  [`third_party_licenses/LICENSE-mit-fabrik-inverse-kinematics.txt`](third_party_licenses/LICENSE-mit-fabrik-inverse-kinematics.txt)
-- **Yapılan değişiklikler:** 3D sınıflar ve matplotlib görselleştirme
-  kaldırıldı, sonsuz döngüyü önlemek için `max_iterations` limiti eklendi,
-  hareketli karakterler için `set_base()` metodu eklendi.
-
-### İncelenip **kullanılmayan** kaynaklar (telif/uygunluk nedeniyle)
-Aşağıdaki iki proje de incelendi ancak koda dahil edilmedi:
-
-- [harshaxnim/ragdoll](https://github.com/harshaxnim/ragdoll) — LICENSE
-  dosyası yok (varsayılan "tüm hakları saklıdır"), ayrıca C/OpenGL dilinde
-  ve depoda derlenmiş bir binary (`runThis`) barındırıyor. Sadece kavramsal
-  referans (Thomas Jakobsen'in "Advanced Character Physics" makalesi) olarak
-  faydalanıldı, kod alınmadı.
-- [nbogie/p5js-ik-tentacles](https://github.com/nbogie/p5js-ik-tentacles) —
-  LICENSE dosyası yok, `package.json` içinde de lisans alanı belirtilmemiş.
-  JavaScript/p5.js dilinde (bizim Python pipeline'ımızla uyumsuz). Sadece
-  "IK ile hedefe uzanma" konseptini görselleştirmek için referans alındı,
-  kod kopyalanmadı.
-
-FABRIK ve Verlet integration algoritmalarının kendileri akademik literatürde
-yayınlanmış genel yöntemlerdir (Aristidou & Lasenby 2011; Jakobsen,
-"Advanced Character Physics") — telif konusu yalnızca belirli kod
-implementasyonları için geçerlidir, yukarıdaki attribution bu yüzden
-mevcuttur.
-
-## Adım 30 — Koruyucu kol refleksi (bracing)
+## Adım 30b — Alternatif koruyucu kollar: impuls tabanlı (Gül Nihal)
 
 Çöküş sırasında kollar yere uzanır; sınırlı yay/sönüm kuvveti dirsek
 bükülürken destek verir. Yürüyüş ve çöküş öncesi hareket aynıdır.
-`ActiveBipedSim(gravity_mode="legacy", bracing=False, articulated_spine=False)` Adım 29 karşılaştırmasını korur.
+Birleşimden sonra bu sürüm `bracing="impulse"` ile seçilir (varsayılan refleks Adım 30'dur);
+`ActiveBipedSim(gravity_mode="legacy", bracing=False, fall_solver="gn", articulated_spine=False)` onun Adım 29 karşılaştırmasını korur.
 
 Referans 150 px itkide baş temas hızı 20.434 → 13.036 px/kare (%36.2),
 göğüs temas hızı 11.328 → 5.081 px/kare (%55.1) azalır. 36 koşuluk taramada
@@ -4854,3 +4807,94 @@ python3 demo/step39_walk_restart.py --sweep
 Önceki recovery seçeneklerine ek olarak `recovery_walk=True` ile açılır.
 Video: `outputs/step39_walk_restart_comparison.mp4`.
 [Geçiş şartları, ölçümler ve sınırlar](docs/ADIM39_YURUYUSE_DONUS.md).
+
+## Adım 30–39 birleşimi (Zehra + Gül Nihal)
+
+Gül Nihal'in `feature/steps-30-39` dalı Adım 29'dan ayrılıp Adım 30'u
+yeniden yazmış, 31–39'u onun üstüne kurmuştu; main'deki Adım 30 ile aynı
+yığılma çözücüsünü değiştiriyordu. Birleşimde:
+
+- **Varsayılan koruyucu refleks Adım 30'dur** (kol kolonu). Aynı 36 koşuluk
+  taramada (±2, ±2.5 m/s, ±150 px × 6 faz; baş zemine 4 px yakınken en büyük
+  düşüş hızı, px/kare):
+
+  | Koşul | Pasif | Adım 30 (kol kolonu) | Adım 30b (impuls) |
+  |---|---:|---:|---:|
+  | İki yerçekimi, tek parça gövde (medyan) | 8.3 / 12.3 | **1.05** (18/18 iyileşme) | 9.7 (13 iyi / 6 kötü) |
+  | Tek yerçekimi + omurga (varsayılan, medyan) | 9.9 / 10.4 | **4.5** (17 iyi / 10 kötü) | 9.4 (17 iyi / 19 kötü) |
+
+  Pasif sütunda iki değer: sırasıyla kol kolonu ve impuls sürümlerinin kendi
+  yığılma çözücüleri.
+- **31–39 Gül Nihal'in dalından olduğu gibi** gelir: düşüşte omurga, tek
+  yerçekimi (`GravityPolicy`), denge/baş, el–diz desteği, ayağa kalkma ve
+  yürümeye dönüş.
+- **Yerden kalkma zinciri (`ground_recovery=True`) şimdilik impuls refleksiyle
+  çalışır**: 34–39 o refleksin bıraktığı yatış pozlarıyla doğrulandı; kol
+  kolonu refleksi karakteri düz yatırdığı için zincir `needs_roll`da duruyordu.
+  `bracing` verilmezse ve `ground_recovery=True` ise refleks otomatik olarak
+  `"impulse"` olur. Zinciri kol kolonu refleksine uyarlamak açık iş.
+- **Yığılma çözücüsü refleksle eşleşir** (`fall_solver`): `"column"` Adım 30'un
+  çözücüsü (24 tur, omurgada en az 64; yüke bağlı statik sürtünme, son kilit,
+  giriş düzeltmesi, döngü içi boyun), `"gn"` Gül Nihal'in dalındaki çözücünün
+  birebir kopyası. Böylece eski koşullar (`gravity_mode="legacy",
+  articulated_spine=False`) main'deki Adım 30 kanaryalarını, impuls modu da
+  Gül Nihal'in rapor sayılarını aynen üretir.
+- `bracing`: `True` (varsayılan, kol kolonu) · `"impulse"` · `False` (pasif).
+  `brace=` eski adıyla çalışmaya devam eder. Gül Nihal'in nesnesi artık
+  `sim.fall_bracing`; `sim.bracing` kol kolonu refleksinin açık/kapalı
+  durumudur, `sim.fall_reflex_active` ikisini birlikte sorar.
+- Adım 31–33 bölümlerindeki sayılar impuls refleksiyle ölçüldü; varsayılan
+  refleks değiştiği için o demoların yeni çıktıları farklı olabilir (testleri geçiyor).
+- Bilinen sınır (birleşimden önce de vardı): tek yerçekiminde 1 m/s geri itki
+  bile çöküşle bitiyor; iki yerçekimli eski ayarda bitmiyordu.
+
+Testler: 171/171 (tam paket). `tests/test_step30_impulse_bracing.py`
+Gül Nihal'in Adım 30 testleridir.
+
+## Üçüncü Taraf Kod Kullanımı ve Lisanslar
+
+Bu projedeki fizik modülleri, sıfırdan yazılmak yerine bilinçli olarak
+lisansı uygun iki açık kaynak projeden **uyarlanmıştır**. Her iki proje de
+izin veren (permissive) lisanslara sahiptir ve her iki lisans da orijinal
+telif bildiriminin ve lisans metninin korunmasını şart koşar — bu yüzden
+orijinal lisans dosyaları `third_party_licenses/` altında bulunuyor ve
+her uyarlanan dosyanın başında hangi projeden, hangi lisansla ve hangi
+değişikliklerle alındığı açıkça belirtiliyor.
+
+### `physics/verlet.py`
+- **Kaynak:** [austinweis/python-verlet-integration](https://github.com/austinweis/python-verlet-integration)
+  (`src/rag.py`)
+- **Lisans:** Apache License 2.0 — bkz. [`third_party_licenses/LICENSE-apache-2.0-python-verlet-integration.txt`](third_party_licenses/LICENSE-apache-2.0-python-verlet-integration.txt)
+- **Yapılan değişiklikler:** Python listeleri yerine numpy array'ler,
+  opsiyonel sınır (bounds) çarpışması, tip belirteçleri, `Rag` →
+  `VerletSystem` yeniden adlandırması ve `pin`/`add_point`/`add_stick`
+  yardımcı metodları eklendi.
+
+### `physics/fabrik.py`
+- **Kaynak:** [Yanneeh/Fabrik-Inverse-kinematics](https://github.com/Yanneeh/Fabrik-Inverse-kinematics)
+  (`fabrikSolver.py` — `Segment2D` / `FabrikSolver2D` sınıfları)
+- **Lisans:** MIT License, Copyright (c) 2020 Yannick van Diermeen — bkz.
+  [`third_party_licenses/LICENSE-mit-fabrik-inverse-kinematics.txt`](third_party_licenses/LICENSE-mit-fabrik-inverse-kinematics.txt)
+- **Yapılan değişiklikler:** 3D sınıflar ve matplotlib görselleştirme
+  kaldırıldı, sonsuz döngüyü önlemek için `max_iterations` limiti eklendi,
+  hareketli karakterler için `set_base()` metodu eklendi.
+
+### İncelenip **kullanılmayan** kaynaklar (telif/uygunluk nedeniyle)
+Aşağıdaki iki proje de incelendi ancak koda dahil edilmedi:
+
+- [harshaxnim/ragdoll](https://github.com/harshaxnim/ragdoll) — LICENSE
+  dosyası yok (varsayılan "tüm hakları saklıdır"), ayrıca C/OpenGL dilinde
+  ve depoda derlenmiş bir binary (`runThis`) barındırıyor. Sadece kavramsal
+  referans (Thomas Jakobsen'in "Advanced Character Physics" makalesi) olarak
+  faydalanıldı, kod alınmadı.
+- [nbogie/p5js-ik-tentacles](https://github.com/nbogie/p5js-ik-tentacles) —
+  LICENSE dosyası yok, `package.json` içinde de lisans alanı belirtilmemiş.
+  JavaScript/p5.js dilinde (bizim Python pipeline'ımızla uyumsuz). Sadece
+  "IK ile hedefe uzanma" konseptini görselleştirmek için referans alındı,
+  kod kopyalanmadı.
+
+FABRIK ve Verlet integration algoritmalarının kendileri akademik literatürde
+yayınlanmış genel yöntemlerdir (Aristidou & Lasenby 2011; Jakobsen,
+"Advanced Character Physics") — telif konusu yalnızca belirli kod
+implementasyonları için geçerlidir, yukarıdaki attribution bu yüzden
+mevcuttur.

@@ -99,7 +99,8 @@ def simulate(n_frames: int | None = None, **sim_kwargs) -> tuple[list[dict], s14
                     in_danger=sim.last_in_danger,
                     hip=pts[idx["hip"]].copy(), shoulder=pts[idx["shoulder"]].copy(),
                     head=pts[idx["head"]].copy(), legs={})
-        snap["bracing_state"] = sim.bracing.state if sim.bracing is not None else "off"
+        snap["bracing_state"] = (sim.fall_bracing.state if sim.fall_bracing is not None
+                                 else "reflex" if sim.bracing else "off")
         snap["gravity_y"] = float(sim.body.gravity[1])
         snap["gravity_mode"] = sim.gravity_policy.mode
         snap["collapse_reason"] = sim.collapse_reason

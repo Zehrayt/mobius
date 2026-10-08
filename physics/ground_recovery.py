@@ -123,7 +123,7 @@ class GroundRecovery:
         self.last_positions=p[ids].copy()
         if self.state=='waiting':
             calm=(self.speed<CALM_SPEED and sim.frame-sim.collapse_frame>=MIN_FALL_AGE and
-                  (sim.bracing is None or not sim.bracing.active))
+                  not sim.fall_reflex_active)
             self.calm_frames=self.calm_frames+1 if calm else 0
             if self.calm_frames>=CALM_FRAMES:
                 if self.reposition:

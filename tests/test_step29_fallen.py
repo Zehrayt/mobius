@@ -14,8 +14,8 @@ from demo.step17_bilge_physics_skin import simulate, PhysicsBilgeRig, SCREEN_GRO
 KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
 
 
-def run_collapse(push_px, n=420):
-    sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push_px, big_push_t=7.0)
+def run_collapse(push_px, n=480):   # Adim 30: kontrollu kol indirmesi yigilmayi ~60 kare uzatiyor (oncesi 420)
+    sim = s14.ActiveBipedSim(gravity_mode="legacy", articulated_spine=False, big_push_kick_px=push_px, big_push_t=7.0)
     pts = []
     for _ in range(n):
         sim.step()

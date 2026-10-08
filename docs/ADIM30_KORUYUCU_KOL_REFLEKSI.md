@@ -1,4 +1,9 @@
-# Adım 30 — Koruyucu kol refleksi
+# Adım 30b — Koruyucu kol refleksi (impuls tabanlı, Gül Nihal)
+
+> **Birleşim notu:** main'deki varsayılan koruyucu refleks README "Adım 30"
+> (kol kolonu) sürümüdür. Bu belge alternatif sürümü anlatır; birleşimden sonra
+> `bracing="impulse"` ile seçilir. Aşağıdaki `bracing=True/False` örnekleri bu
+> belgenin yazıldığı daldaki API'dir. Karşılaştırma: README "Adım 30–39 birleşimi".
 
 Bu aşama, `db45453` üzerindeki pasif düşüşe koruyucu kollar ekler. Kullanıcının
 seçtiği ilerleme biçimi: her aşama sonunda video ve ölçümleri incelemek.

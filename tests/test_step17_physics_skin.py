@@ -52,9 +52,8 @@ class Step14RegressionTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Keep the step-29 numeric canary as a legacy regression. Step 30's
-        # active fall response is checked separately in test_step30_bracing.
-        cls.sim = s14.ActiveBipedSim(gravity_mode="legacy", bracing=False, articulated_spine=False)
+        # Adim 30 sayisal kanaryasi: iki yercekimi + tek parca govde + kol refleksi.
+        cls.sim = s14.ActiveBipedSim(gravity_mode="legacy", articulated_spine=False)
         cls.knee_offsets = {"stance": [], "swing": []}
         cls.phases_seen = set()
         for _ in range(s14.N_FRAMES):
@@ -83,7 +82,7 @@ class Step14RegressionTest(unittest.TestCase):
         self.assertAlmostEqual(sim.hip_y_log[-1], CANARY[4], places=2)
 
     def test_brace_off_reproduces_step29_fall(self):
-        sim = s14.ActiveBipedSim(brace=False)
+        sim = s14.ActiveBipedSim(gravity_mode="legacy", articulated_spine=False, brace=False)
         for _ in range(s14.N_FRAMES):
             sim.step()
         self.assertEqual((len(sim.step_events), len(sim.emergency_step_events), len(sim.slip_events),
