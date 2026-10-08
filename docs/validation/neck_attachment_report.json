@@ -1,0 +1,19 @@
+{
+  "before": {
+    "max_neck_socket_error_px": 19.38453795184809,
+    "max_walking_socket_error_px": 16.009751014592123,
+    "minimum_head_torso_overlap_pixels": 707
+  },
+  "after": {
+    "max_neck_socket_error_px": 1.1368683772161603e-13,
+    "max_walking_socket_error_px": 1.1368683772161603e-13,
+    "minimum_head_torso_overlap_pixels": 355
+  },
+  "frames": 360,
+  "notes": [
+    "Both renderings use identical physical snapshots.",
+    "The head and its existing neck are rigidly attached at the neck root to the collar.",
+    "Articulated falls attach to the actual upper shirt segment; the braid follows the head.",
+    "Source image pixels and physical controllers are unchanged by this visual correction."
+  ]
+}

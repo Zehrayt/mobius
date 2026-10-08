@@ -74,7 +74,7 @@ class LegMassWalkTest(unittest.TestCase):
     def setUpClass(cls):
         cls.runs = {}
         for mode in ("off", "cancel"):
-            sim = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, arms_mode=mode)
+            sim = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0, arms_mode=mode)
             pitch = []
             for _ in range(900):
                 sim.step()
@@ -115,7 +115,7 @@ class LegMassPushTest(unittest.TestCase):
     def test_pushes_recover_single_support(self):
         for push in (150.0, -150.0, 300.0, -300.0, 500.0, -500.0):
             # sayisal stres itkileri (COM 4-14 m/s): Adim 22'nin sabit 3 karelik yakalamasiyla
-            sim = s14.ActiveBipedSim(big_push_kick_px=push, big_push_t=7.0, catch_timing="fixed",
+            sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push, big_push_t=7.0, catch_timing="fixed",
                                      closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch",
                                      preactivation=0, rocker=False, hip_strategy_gain=0.0,
                                      hill=False)

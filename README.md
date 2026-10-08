@@ -4668,3 +4668,189 @@ yayınlanmış genel yöntemlerdir (Aristidou & Lasenby 2011; Jakobsen,
 "Advanced Character Physics") — telif konusu yalnızca belirli kod
 implementasyonları için geçerlidir, yukarıdaki attribution bu yüzden
 mevcuttur.
+
+## Adım 30 — Koruyucu kol refleksi (bracing)
+
+Çöküş sırasında kollar yere uzanır; sınırlı yay/sönüm kuvveti dirsek
+bükülürken destek verir. Yürüyüş ve çöküş öncesi hareket aynıdır.
+`ActiveBipedSim(gravity_mode="legacy", bracing=False, articulated_spine=False)` Adım 29 karşılaştırmasını korur.
+
+Referans 150 px itkide baş temas hızı 20.434 → 13.036 px/kare (%36.2),
+göğüs temas hızı 11.328 → 5.081 px/kare (%55.1) azalır. 36 koşuluk taramada
+19 çöküşün 15'inde baş, 16'sında göğüs hızı azalır; tüm çöken koşular
+hareketsiz duruma yaklaşır. Bazı itki fazlarında temas hızı artar; bu sonuç
+her düşüşte koruma garantisi değildir.
+
+```bash
+python3 demo/step30_bracing.py --sweep
+python3 -m unittest discover -s tests
+```
+
+Karşılaştırma videosu: `outputs/step30_bracing_comparison.mp4`.
+[Uygulama, ölçümler ve sınırlar](docs/ADIM30_KORUYUCU_KOL_REFLEKSI.md).
+Sonraki sıra: yalnızca düşüşte omurga → tek yerçekimi kararı → ayağa kalkma;
+her aşama video ve ölçümlerle ayrı incelenecek.
+
+## Adım 31 — Yalnızca düşüşte esnek omurga
+
+Çöküş anında kalça–omuz çubuğu iki parçaya ayrılır; kütleli bel eklemi,
+yay/sönüm ve açı sınırları devreye girer. Çöküş öncesi topoloji ve hareket
+korunur. Karakterin gömleği de iki gövde parçasına bağlanır.
+
+```bash
+python3 demo/step31_spine.py --sweep
+```
+
+Video: `outputs/step31_spine_comparison.mp4`.
+`ActiveBipedSim(gravity_mode="legacy", articulated_spine=False)` Adım 30'u korur.
+36 koşuda 19 çöküşün tamamı yerleşir; en yüksek son hız 0.00812 px/kare,
+kalça kayması 0.1608 px altındadır. Darbe her koşulda azalmaz. Geçiş toplam
+kütleyi ve iki momentumu korur; kütle dağılımı değiştiği için kinetik enerji
+birebir korunmaz. [Ölçümler, testler ve sınırlar](docs/ADIM31_DUSUSTE_ESNEK_OMURGA.md).
+
+## Adım 32 — Tek yerçekimi
+
+Varsayılan `ActiveBipedSim()` yürüyüşten düşüşe kadar aynı 9.81 m/s²
+(30 Hz ölçekte 2.228444 px/kare²) kullanır. Bacak yükü, yakalama torku,
+kas-ağırlık hesabı ve temas tahmini aynı değere bağlıdır. Adım payları ve
+tutunma hesabı yeniden ayarlandı; 60 saniyelik kuru/buzlu yürüyüş kararlıdır.
+
+**Itki dayanıklılığı geriledi:** önceki güçlü itki taramasında 19/36 olan
+çöküş sayısı 36/36 oldu. Hepsi zemin ihlali olmadan yerleşir. Küçük itkiler
+ve yön bağımlılığı raporda ayrı gösterilir. Bu değişiklik tutarlı yerçekimi
+sağlar; her düşüşte daha iyi koruma iddiası taşımaz.
+
+```bash
+python3 demo/step32_gravity.py --sweep
+```
+
+Video: `outputs/step32_gravity_comparison.mp4`.
+`gravity_mode="legacy"`, Adım 31'in iki yerçekimli davranışını yeniden üretir;
+Adım 30/29 için omurga/kol bayrakları da kapatılır. Yeni mod 30 Hz simülasyon
+ister. [Ayarlar, ölçümler ve sınırlar](docs/ADIM32_TEK_YERCEKIMI.md).
+
+## Adım 33 — Denge toparlama ve baş duruşu
+
+Tek yerçekimi korunarak darbe hızı aynı karede okunur; geri adım kararı
+ve acil adımın iniş hedefi düzeltildi. Orta şiddetteki 36 darbe denemesinde
+çöküş **11'den 1'e** indi. Güçlü 36 denemenin tamamında hâlâ düşme var.
+Düşüşteki diz sınırı zeminle birlikte çözülerek yeni geri düşüş pozlarında
+ortaya çıkan sürünme giderildi.
+
+Başın kaynak resimdeki eğimi göz işaret noktalarıyla düzeltilir; görüntü
+boyna bağlanır. Boyun yürürken dik duruşu korur, düşüşte serbest kalır.
+Darbesiz yürüyüşte görünür baş eğimi en fazla 4.29°; kuru/buzlu zeminde
+60 saniyelik yürüyüşte çöküş yoktur. Yüzün orijinal pikselleri korunur.
+
+```bash
+python3 demo/step33_balance_head.py --sweep
+```
+
+Video: `outputs/step33_balance_head_comparison.mp4`.
+Yakın plan: `outputs/step33_head_comparison.png`.
+Adım 32 fiziği `balance_recovery=False, upright_head=False` ile yeniden
+üretilebilir. [Ölçümler ve sınırlar](docs/ADIM33_DENGE_VE_BAS.md).
+
+Başın boyunla birleşmesi ayrıca düzeltildi: yüz merkezi yerine kaynak
+resimdeki boyun kökü, gömleğin yaka noktasına bağlanır. Yürüyüş/düşüşte
+360 kare boyunca bağlantı farkı sayısal yuvarlama düzeyindedir.
+Yakın plan video: `outputs/neck_attachment_comparison.mp4`;
+yeniden üretmek için `python3 demo/neck_attachment_preview.py`.
+
+## Adım 34 — El–diz desteğine geçiş
+
+Ayağa kalkmanın ilk alt aşaması eklendi: yerde durulma, uygun yatış pozundan
+kalça/göğsü kaldırma ve iki el–iki diz üzerinde kararlı bekleme. Tam doğrulma
+ve yürüyüşe dönüş bu aşamada yapılmaz. Geçiş kuvvet/tork sınırlı motorlarla
+çalışır; eller veya kalça sabitlenmez, yerçekimi değişmez.
+
+```bash
+python3 demo/step34_ground_support.py --sweep
+```
+
+Özellik `ActiveBipedSim(ground_recovery=True)` ile açılır; önceki pasif
+karşılaştırmalar için varsayılan kapalıdır. Bacakların öne uzandığı yatışlar
+`needs_roll` olarak ayrılır: henüz eklenmemiş dönme/yeniden yerleşme geçişi
+gerektirir ve bu pozlarda motorlar çalıştırılmaz.
+
+Video: `outputs/step34_ground_support_comparison.mp4`.
+[Geçiş şartları, ölçümler ve sınırlar](docs/ADIM34_EL_DIZ_DESTEGI.md).
+
+## Adım 35 — Bacak ve diz temasını yerleştirme
+
+Öne uzanmış bacaklar sırayla arkaya alınır; havada kalan dizin hedef yönü
+düzeltilerek gerçek zemin teması sağlanır. Aynı 36 darbe/faz koşulunun
+36'sında kararlı el–diz desteği oluştu; 1500 karelik denemelerin son 60
+karesinde korundu. Tümü ilk 967 kare içinde desteğe ulaştı. Tam doğrulmadan
+önceki bu aşama `ground_recovery=True, recovery_reposition=True` ile açılır.
+
+```bash
+python3 demo/step35_support_placement.py --sweep
+```
+
+Video: `outputs/step35_support_placement_comparison.mp4`.
+[Geçiş şartları, ölçümler ve sınırlar](docs/ADIM35_DESTEK_YERLESTIRME.md).
+
+## Adım 36 — Bir ayağa yük aktarma
+
+Kararlı el–diz desteğinden sol ayak gövdenin altına alınır; sınırlı bacak
+itişiyle yük aktarılır ve eller/diğer diz destek vermeye devam eder.
+Aynı 36 darbe/faz koşulunun 36'sında bu poz oluştu ve son 60 karede
+korundu. Tam doğrulma bir sonraki aşamadır.
+
+```bash
+python3 demo/step36_foot_transfer.py --sweep
+```
+
+`ground_recovery=True, recovery_reposition=True, recovery_transfer=True`
+ile açılır. Video: `outputs/step36_foot_transfer_comparison.mp4`.
+[Başarı şartları, ölçümler ve sınırlar](docs/ADIM36_AYAGA_YUK_AKTARMA.md).
+
+## Adım 37 — Gövdeyi doğrultma ve elleri ayırma
+
+El destekli yarım diz çökmeden kalça ve göğüs yükselir; eller/dirsekler
+yerden ayrılır. Son duruşta denge yalnızca öndeki ayak ve gerideki dizin
+oluşturduğu destek aralığıyla doğrulanır. Tam ayağa kalkma sonraki aşamadır.
+
+```bash
+python3 demo/step37_kneel_rise.py --sweep
+```
+
+Önceki üç recovery seçeneğine ek olarak `recovery_rise=True` ile açılır.
+Video: `outputs/step37_kneel_rise_comparison.mp4`.
+[Geçiş şartları, ölçümler ve sınırlar](docs/ADIM37_GOVDEYI_DOGRULTMA.md).
+
+Son taramada 36/36 koşul eller serbest son duruşu korudu; 149 test geçti.
+Geçişte kısa süreli destek aralığı aşımı bulunur; son duruşun dengesi ile
+hareket boyunca statik denge raporda ayrı değerlendirilir.
+
+## Adım 38 — İki ayak üzerinde doğrulma
+
+Dik yarım diz çökmeden gerideki ayak öne yaklaşır; diz desteği bırakılır ve
+iki ayak üzerinde tam doğrulma sağlanır. Aynı 36 darbe/faz koşulunun 36'sı
+ayakta beklemeyle tamamlandı. Yeni ayağa kalkma geçişi boyunca destek payı
+pozitif kaldı; önceki gövde doğrultma geçişinin sınırı raporda ayrıca belirtilir.
+
+```bash
+python3 demo/step38_standing.py --sweep
+```
+
+Önceki recovery seçeneklerine ek olarak `recovery_stand=True` ile açılır.
+Video: `outputs/step38_standing_comparison.mp4`.
+[Başarı şartları, ölçümler ve sınırlar](docs/ADIM38_IKI_AYAKTA_DURUS.md).
+Sırada ayakta beklemeden yürüyüşe kontrollü dönüş var.
+
+## Adım 39 — Ayağa kalktıktan sonra yeniden adım atma
+
+Bilge ayakta beklemeden ağırlık aktarımına, ilk adıma ve dönüşümlü yavaş
+adımlara geçer. İniş gerçek ayak temasıyla doğrulanmadan yeni adım başlamaz.
+Fiziksel bacaklar korunur; eski yürüyüş ankrajına veya ani poz değişimine
+başvurulmaz. Henüz normal yürüyüş hızı ve kol salınımı hedeflenmez.
+
+```bash
+python3 demo/step39_walk_restart.py --sweep
+```
+
+Önceki recovery seçeneklerine ek olarak `recovery_walk=True` ile açılır.
+Video: `outputs/step39_walk_restart_comparison.mp4`.
+[Geçiş şartları, ölçümler ve sınırlar](docs/ADIM39_YURUYUSE_DONUS.md).

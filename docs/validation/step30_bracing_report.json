@@ -1,0 +1,1645 @@
+{
+  "passive": {
+    "collapse_frame": 222,
+    "head": {
+      "first_frame": 235,
+      "peak_input_speed_px_frame": 20.434178682025674
+    },
+    "chest": {
+      "first_frame": 234,
+      "peak_input_speed_px_frame": 11.327907593832379
+    },
+    "first_hand_contact_frame": 230,
+    "brace_start_frame": null,
+    "brace_final_state": "off",
+    "hand_ground_projection_share_pct": 10.668412121356994,
+    "shoulder_actuator_upward_impulse": 0.0,
+    "tail_max_speed_px_frame": 0.0013146204063332414,
+    "tail_hip_drift_px": 0.07755938247805716,
+    "max_ground_penetration_px": 0.0,
+    "finite": true
+  },
+  "bracing": {
+    "collapse_frame": 222,
+    "head": {
+      "first_frame": 235,
+      "peak_input_speed_px_frame": 13.036015293253286
+    },
+    "chest": {
+      "first_frame": 242,
+      "peak_input_speed_px_frame": 5.081128354826205
+    },
+    "first_hand_contact_frame": 229,
+    "brace_start_frame": 222,
+    "brace_final_state": "released",
+    "hand_ground_projection_share_pct": 7.7532914543246765,
+    "shoulder_actuator_upward_impulse": 3.8723993108834778,
+    "tail_max_speed_px_frame": 0.0008482648213092794,
+    "tail_hip_drift_px": 0.0023692934147447886,
+    "max_ground_penetration_px": 0.0,
+    "finite": true
+  },
+  "push_px": 150.0,
+  "phase_offset_frames": 0,
+  "metric_notes": [
+    "Impact speed is positive vertical solver input speed at a ground-contact frame, px/frame.",
+    "Impact window: collapse frame through collapse+44; no contact is reported separately from zero speed.",
+    "Ground projection share is sum(mass * upward PBD ground correction), dt=1. It is a solver proxy, not a measured shoulder impulse or injury metric.",
+    "Passive restores step-29 arm constraints; bracing includes the mass-weighted fallen elbow solver (16 iterations). This compares complete implementations, not the actuator alone.",
+    "The upper character rendering retains existing ground-clamped skin geometry. The lower view shows actual physical joints."
+  ],
+  "sweep": [
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.459805812472034,
+        "tail_hip_drift_px": 111.99392612631573,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.459805812472034,
+        "tail_hip_drift_px": 111.99392612631573,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 0
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 17.828959867667347,
+        "tail_hip_drift_px": 113.10741742100902,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 17.828959867667347,
+        "tail_hip_drift_px": 113.10741742100902,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 5
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.95920923070276,
+        "tail_hip_drift_px": 112.3055961587554,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.95920923070276,
+        "tail_hip_drift_px": 112.3055961587554,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 10
+    },
+    {
+      "passive": {
+        "collapse_frame": 299,
+        "head": {
+          "first_frame": 316,
+          "peak_input_speed_px_frame": 19.099830820696752
+        },
+        "chest": {
+          "first_frame": 317,
+          "peak_input_speed_px_frame": 6.874853821242709
+        },
+        "first_hand_contact_frame": 313,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 3.0620748340851716,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.003313533109589884,
+        "tail_hip_drift_px": 0.01940315650631419,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 299,
+        "head": {
+          "first_frame": 327,
+          "peak_input_speed_px_frame": 11.640542938434237
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 322,
+        "brace_start_frame": 299,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 3.9478042912872944,
+        "shoulder_actuator_upward_impulse": 10.51602040050135,
+        "tail_max_speed_px_frame": 0.006232378428840795,
+        "tail_hip_drift_px": 0.04199913024626767,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 15
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.427234241203706,
+        "tail_hip_drift_px": 112.72364760104153,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.427234241203706,
+        "tail_hip_drift_px": 112.72364760104153,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 20
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 14.5794419222444,
+        "tail_hip_drift_px": 112.74839335846809,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 14.5794419222444,
+        "tail_hip_drift_px": 112.74839335846809,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 25
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.988263985707512,
+        "tail_hip_drift_px": 112.46988600164002,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.988263985707512,
+        "tail_hip_drift_px": 112.46988600164002,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 0
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.88107773728444,
+        "tail_hip_drift_px": 113.68959482233828,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.88107773728444,
+        "tail_hip_drift_px": 113.68959482233828,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 5
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.38571399088366,
+        "tail_hip_drift_px": 114.75948358339912,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.38571399088366,
+        "tail_hip_drift_px": 114.75948358339912,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 10
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 20.841839894929116,
+        "tail_hip_drift_px": 45.18285988329626,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 20.841839894929116,
+        "tail_hip_drift_px": 45.18285988329626,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 15
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.402154867556323,
+        "tail_hip_drift_px": 114.23532584768901,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.402154867556323,
+        "tail_hip_drift_px": 114.23532584768901,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 20
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.391291288885945,
+        "tail_hip_drift_px": 112.38778533086293,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.391291288885945,
+        "tail_hip_drift_px": 112.38778533086293,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 25
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 14.54644671314186,
+        "tail_hip_drift_px": 112.64899685342289,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 14.54644671314186,
+        "tail_hip_drift_px": 112.64899685342289,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 0
+    },
+    {
+      "passive": {
+        "collapse_frame": 244,
+        "head": {
+          "first_frame": 258,
+          "peak_input_speed_px_frame": 13.726931583456008
+        },
+        "chest": {
+          "first_frame": 264,
+          "peak_input_speed_px_frame": 4.291889500425555
+        },
+        "first_hand_contact_frame": 252,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 12.450609747684883,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.0032264759963610157,
+        "tail_hip_drift_px": 0.16308713214903037,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 244,
+        "head": {
+          "first_frame": 259,
+          "peak_input_speed_px_frame": 15.226739058735745
+        },
+        "chest": {
+          "first_frame": 261,
+          "peak_input_speed_px_frame": 6.409723365935861
+        },
+        "first_hand_contact_frame": 252,
+        "brace_start_frame": 244,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 10.253188094833918,
+        "shoulder_actuator_upward_impulse": 0.5903362285536675,
+        "tail_max_speed_px_frame": 0.00020784183298802174,
+        "tail_hip_drift_px": 0.006587383173723538,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 5
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.908089231970322,
+        "tail_hip_drift_px": 112.95517095533683,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.908089231970322,
+        "tail_hip_drift_px": 112.95517095533683,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 10
+    },
+    {
+      "passive": {
+        "collapse_frame": 240,
+        "head": {
+          "first_frame": 252,
+          "peak_input_speed_px_frame": 20.359326417672094
+        },
+        "chest": {
+          "first_frame": 252,
+          "peak_input_speed_px_frame": 9.37922975786779
+        },
+        "first_hand_contact_frame": 247,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 4.4927432169056996,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.0017838808770134324,
+        "tail_hip_drift_px": 0.10508992184020371,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 240,
+        "head": {
+          "first_frame": 252,
+          "peak_input_speed_px_frame": 17.20635175721003
+        },
+        "chest": {
+          "first_frame": 256,
+          "peak_input_speed_px_frame": 5.006520425632232
+        },
+        "first_hand_contact_frame": 247,
+        "brace_start_frame": 240,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 5.817071101014528,
+        "shoulder_actuator_upward_impulse": 2.230045826684113,
+        "tail_max_speed_px_frame": 0.0014368415998165503,
+        "tail_hip_drift_px": 0.019440027293853746,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 15
+    },
+    {
+      "passive": {
+        "collapse_frame": 253,
+        "head": {
+          "first_frame": 273,
+          "peak_input_speed_px_frame": 19.400964844178873
+        },
+        "chest": {
+          "first_frame": 275,
+          "peak_input_speed_px_frame": 5.719032294065983
+        },
+        "first_hand_contact_frame": 269,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 14.517606125648873,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.002938949896588383,
+        "tail_hip_drift_px": 0.16908500950023608,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 253,
+        "head": {
+          "first_frame": 276,
+          "peak_input_speed_px_frame": 14.093181911115664
+        },
+        "chest": {
+          "first_frame": 279,
+          "peak_input_speed_px_frame": 7.307452266243615
+        },
+        "first_hand_contact_frame": 269,
+        "brace_start_frame": 253,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 10.870429587625875,
+        "shoulder_actuator_upward_impulse": 0.722504547606822,
+        "tail_max_speed_px_frame": 0.0009913678565306454,
+        "tail_hip_drift_px": 0.009926912804075982,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 20
+    },
+    {
+      "passive": {
+        "collapse_frame": 255,
+        "head": {
+          "first_frame": 273,
+          "peak_input_speed_px_frame": 16.38359966574933
+        },
+        "chest": {
+          "first_frame": 274,
+          "peak_input_speed_px_frame": 7.044118149841722
+        },
+        "first_hand_contact_frame": 268,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 9.643419479533563,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.0031532457614566784,
+        "tail_hip_drift_px": 0.1634851906771928,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 255,
+        "head": {
+          "first_frame": 272,
+          "peak_input_speed_px_frame": 13.08411799440745
+        },
+        "chest": {
+          "first_frame": 299,
+          "peak_input_speed_px_frame": 5.82477367145475
+        },
+        "first_hand_contact_frame": 266,
+        "brace_start_frame": 255,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.796253043289619,
+        "shoulder_actuator_upward_impulse": 4.156881600395691,
+        "tail_max_speed_px_frame": 0.00541584658837867,
+        "tail_hip_drift_px": 0.07896717593246194,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 25
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.433614352680916,
+        "tail_hip_drift_px": 112.7306623415812,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.433614352680916,
+        "tail_hip_drift_px": 112.7306623415812,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 0
+    },
+    {
+      "passive": {
+        "collapse_frame": 256,
+        "head": {
+          "first_frame": 272,
+          "peak_input_speed_px_frame": 18.54003887550141
+        },
+        "chest": {
+          "first_frame": 273,
+          "peak_input_speed_px_frame": 6.85689281314734
+        },
+        "first_hand_contact_frame": 268,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 3.03557383322799,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.00020670073242664297,
+        "tail_hip_drift_px": 0.011478328660189163,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 256,
+        "head": {
+          "first_frame": 274,
+          "peak_input_speed_px_frame": 12.06675646472155
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 268,
+        "brace_start_frame": 256,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.028175633309286,
+        "shoulder_actuator_upward_impulse": 14.2861083297263,
+        "tail_max_speed_px_frame": 0.0025653115828012975,
+        "tail_hip_drift_px": 0.0643535666714854,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 5
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 34.89730115264687,
+        "tail_hip_drift_px": 27.813803437146817,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 34.89730115264687,
+        "tail_hip_drift_px": 27.813803437146817,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 10
+    },
+    {
+      "passive": {
+        "collapse_frame": 241,
+        "head": {
+          "first_frame": 254,
+          "peak_input_speed_px_frame": 20.59826178061968
+        },
+        "chest": {
+          "first_frame": 254,
+          "peak_input_speed_px_frame": 9.158319300606138
+        },
+        "first_hand_contact_frame": 249,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 11.36496665787587,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.003876531395838263,
+        "tail_hip_drift_px": 0.2282835314610736,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 241,
+        "head": {
+          "first_frame": 254,
+          "peak_input_speed_px_frame": 20.503226428201856
+        },
+        "chest": {
+          "first_frame": 254,
+          "peak_input_speed_px_frame": 8.776775572227962
+        },
+        "first_hand_contact_frame": 250,
+        "brace_start_frame": 241,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.242532361958568,
+        "shoulder_actuator_upward_impulse": 0.2370595743881063,
+        "tail_max_speed_px_frame": 0.00024594181476514983,
+        "tail_hip_drift_px": 0.0021860014048513676,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 15
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.503164311649854,
+        "tail_hip_drift_px": 105.96064448796756,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.503164311649854,
+        "tail_hip_drift_px": 105.96064448796756,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 20
+    },
+    {
+      "passive": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.773327313235534,
+        "tail_hip_drift_px": 110.97107488572527,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.773327313235534,
+        "tail_hip_drift_px": 110.97107488572527,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 25
+    },
+    {
+      "passive": {
+        "collapse_frame": 222,
+        "head": {
+          "first_frame": 235,
+          "peak_input_speed_px_frame": 20.434178682025674
+        },
+        "chest": {
+          "first_frame": 234,
+          "peak_input_speed_px_frame": 11.327907593832379
+        },
+        "first_hand_contact_frame": 230,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 10.668412121356994,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.0013146204063332414,
+        "tail_hip_drift_px": 0.07755938247805716,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 222,
+        "head": {
+          "first_frame": 235,
+          "peak_input_speed_px_frame": 13.036015293253286
+        },
+        "chest": {
+          "first_frame": 242,
+          "peak_input_speed_px_frame": 5.081128354826205
+        },
+        "first_hand_contact_frame": 229,
+        "brace_start_frame": 222,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.7532914543246765,
+        "shoulder_actuator_upward_impulse": 3.8723993108834778,
+        "tail_max_speed_px_frame": 0.0008482648213092794,
+        "tail_hip_drift_px": 0.0023692934147447886,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 0
+    },
+    {
+      "passive": {
+        "collapse_frame": 227,
+        "head": {
+          "first_frame": 237,
+          "peak_input_speed_px_frame": 19.602292660690125
+        },
+        "chest": {
+          "first_frame": 236,
+          "peak_input_speed_px_frame": 10.55293395621618
+        },
+        "first_hand_contact_frame": 231,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 12.15479196683867,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.004056786142086821,
+        "tail_hip_drift_px": 0.23935038237812023,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 227,
+        "head": {
+          "first_frame": 238,
+          "peak_input_speed_px_frame": 11.33640573039105
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 231,
+        "brace_start_frame": 227,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 9.27137290317834,
+        "shoulder_actuator_upward_impulse": 5.802384912745215,
+        "tail_max_speed_px_frame": 0.06411660911006846,
+        "tail_hip_drift_px": 0.32806876603422097,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 5
+    },
+    {
+      "passive": {
+        "collapse_frame": 232,
+        "head": {
+          "first_frame": 242,
+          "peak_input_speed_px_frame": 21.268615419689468
+        },
+        "chest": {
+          "first_frame": 242,
+          "peak_input_speed_px_frame": 9.426970053724915
+        },
+        "first_hand_contact_frame": 237,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 12.290249302398845,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.0017727595607084368,
+        "tail_hip_drift_px": 0.1045788314299898,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 232,
+        "head": {
+          "first_frame": 246,
+          "peak_input_speed_px_frame": 7.525193849736183
+        },
+        "chest": {
+          "first_frame": 251,
+          "peak_input_speed_px_frame": 6.889436448572781
+        },
+        "first_hand_contact_frame": 237,
+        "brace_start_frame": 232,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 15.535294830857266,
+        "shoulder_actuator_upward_impulse": 1.785780261671148,
+        "tail_max_speed_px_frame": 0.0006356243068232758,
+        "tail_hip_drift_px": 0.005576744631071051,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 10
+    },
+    {
+      "passive": {
+        "collapse_frame": 237,
+        "head": {
+          "first_frame": 244,
+          "peak_input_speed_px_frame": 16.875310378937684
+        },
+        "chest": {
+          "first_frame": 246,
+          "peak_input_speed_px_frame": 8.553955910732157
+        },
+        "first_hand_contact_frame": 239,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 18.938741222535175,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.00411031500448189,
+        "tail_hip_drift_px": 0.24250858511686602,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 237,
+        "head": {
+          "first_frame": 245,
+          "peak_input_speed_px_frame": 13.1068334369823
+        },
+        "chest": {
+          "first_frame": 251,
+          "peak_input_speed_px_frame": 8.092805323254083
+        },
+        "first_hand_contact_frame": 239,
+        "brace_start_frame": 237,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.287496557841062,
+        "shoulder_actuator_upward_impulse": 4.032133591305057,
+        "tail_max_speed_px_frame": 0.0009930170769846232,
+        "tail_hip_drift_px": 0.04792481079562094,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 15
+    },
+    {
+      "passive": {
+        "collapse_frame": 241,
+        "head": {
+          "first_frame": 252,
+          "peak_input_speed_px_frame": 18.212327405565077
+        },
+        "chest": {
+          "first_frame": 253,
+          "peak_input_speed_px_frame": 8.247978040105068
+        },
+        "first_hand_contact_frame": 247,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 11.734522989846118,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.0017744223212321903,
+        "tail_hip_drift_px": 0.1045548477821967,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 241,
+        "head": {
+          "first_frame": 252,
+          "peak_input_speed_px_frame": 16.649190959861926
+        },
+        "chest": {
+          "first_frame": 278,
+          "peak_input_speed_px_frame": 5.651462892667325
+        },
+        "first_hand_contact_frame": 247,
+        "brace_start_frame": 241,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.161291687738991,
+        "shoulder_actuator_upward_impulse": 3.000450022562978,
+        "tail_max_speed_px_frame": 0.004937425156816578,
+        "tail_hip_drift_px": 0.0841609125583318,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 20
+    },
+    {
+      "passive": {
+        "collapse_frame": 246,
+        "head": {
+          "first_frame": 255,
+          "peak_input_speed_px_frame": 20.325501395427068
+        },
+        "chest": {
+          "first_frame": 256,
+          "peak_input_speed_px_frame": 7.900123883493507
+        },
+        "first_hand_contact_frame": 251,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 4.447113299322221,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.0017838412067623978,
+        "tail_hip_drift_px": 0.10509053382281763,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 246,
+        "head": {
+          "first_frame": 256,
+          "peak_input_speed_px_frame": 16.297163556475084
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 251,
+        "brace_start_frame": 246,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 9.419066919243562,
+        "shoulder_actuator_upward_impulse": 4.993049399218009,
+        "tail_max_speed_px_frame": 0.004813296642396381,
+        "tail_hip_drift_px": 0.2527461293268516,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 25
+    },
+    {
+      "passive": {
+        "collapse_frame": 222,
+        "head": {
+          "first_frame": 233,
+          "peak_input_speed_px_frame": 15.919289714067077
+        },
+        "chest": {
+          "first_frame": 236,
+          "peak_input_speed_px_frame": 5.136457127644292
+        },
+        "first_hand_contact_frame": 228,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 18.432190515108022,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.009805254259305231,
+        "tail_hip_drift_px": 0.5785069348146692,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 222,
+        "head": {
+          "first_frame": 234,
+          "peak_input_speed_px_frame": 16.6202463530135
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 229,
+        "brace_start_frame": 222,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 17.570969412482604,
+        "shoulder_actuator_upward_impulse": 9.116965446612916,
+        "tail_max_speed_px_frame": 0.003944110561292291,
+        "tail_hip_drift_px": 0.23270252311124295,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 0
+    },
+    {
+      "passive": {
+        "collapse_frame": 228,
+        "head": {
+          "first_frame": 241,
+          "peak_input_speed_px_frame": 21.175351861972104
+        },
+        "chest": {
+          "first_frame": 241,
+          "peak_input_speed_px_frame": 9.541185311555296
+        },
+        "first_hand_contact_frame": 236,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 11.526664873842666,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.003779592141384133,
+        "tail_hip_drift_px": 0.22290850895890912,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 228,
+        "head": {
+          "first_frame": 241,
+          "peak_input_speed_px_frame": 21.099833752046948
+        },
+        "chest": {
+          "first_frame": 241,
+          "peak_input_speed_px_frame": 9.253033844229492
+        },
+        "first_hand_contact_frame": 238,
+        "brace_start_frame": 228,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.743288804737005,
+        "shoulder_actuator_upward_impulse": 0.10954294622648927,
+        "tail_max_speed_px_frame": 0.00011262408220843815,
+        "tail_hip_drift_px": 0.004221954925071714,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 5
+    },
+    {
+      "passive": {
+        "collapse_frame": 231,
+        "head": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 21.370554601262825
+        },
+        "chest": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 9.424547938121805
+        },
+        "first_hand_contact_frame": 238,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 11.756041839507994,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.003872137813765414,
+        "tail_hip_drift_px": 0.22834614712320445,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 231,
+        "head": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 21.554990562583782
+        },
+        "chest": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 8.895819539852027
+        },
+        "first_hand_contact_frame": 240,
+        "brace_start_frame": 231,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.795011382011069,
+        "shoulder_actuator_upward_impulse": 0.2095513482215096,
+        "tail_max_speed_px_frame": 0.00010467021329209591,
+        "tail_hip_drift_px": 0.004547626149900452,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 10
+    },
+    {
+      "passive": {
+        "collapse_frame": 237,
+        "head": {
+          "first_frame": 249,
+          "peak_input_speed_px_frame": 21.88480787340825
+        },
+        "chest": {
+          "first_frame": 249,
+          "peak_input_speed_px_frame": 10.599454974918615
+        },
+        "first_hand_contact_frame": 245,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 11.843516671844894,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.00387422430007952,
+        "tail_hip_drift_px": 0.2283164063943559,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 237,
+        "head": {
+          "first_frame": 250,
+          "peak_input_speed_px_frame": 21.530884302515858
+        },
+        "chest": {
+          "first_frame": 250,
+          "peak_input_speed_px_frame": 8.51655090591646
+        },
+        "first_hand_contact_frame": 247,
+        "brace_start_frame": 237,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.910926681671739,
+        "shoulder_actuator_upward_impulse": 0.11614189790212459,
+        "tail_max_speed_px_frame": 0.00012747047214871135,
+        "tail_hip_drift_px": 0.004102215240862961,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 15
+    },
+    {
+      "passive": {
+        "collapse_frame": 242,
+        "head": {
+          "first_frame": 252,
+          "peak_input_speed_px_frame": 19.377873804926026
+        },
+        "chest": {
+          "first_frame": 253,
+          "peak_input_speed_px_frame": 7.747731026483166
+        },
+        "first_hand_contact_frame": 248,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 11.813938939855312,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.003873808047471964,
+        "tail_hip_drift_px": 0.22832233893802822,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 242,
+        "head": {
+          "first_frame": 252,
+          "peak_input_speed_px_frame": 21.3061808164108
+        },
+        "chest": {
+          "first_frame": 253,
+          "peak_input_speed_px_frame": 7.619425923062295
+        },
+        "first_hand_contact_frame": 248,
+        "brace_start_frame": 242,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.296702229099921,
+        "shoulder_actuator_upward_impulse": 0.25811606505528023,
+        "tail_max_speed_px_frame": 0.0001322450159868334,
+        "tail_hip_drift_px": 0.004016120341873375,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 20
+    },
+    {
+      "passive": {
+        "collapse_frame": 247,
+        "head": {
+          "first_frame": 275,
+          "peak_input_speed_px_frame": 15.151158617374222
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 271,
+        "brace_start_frame": null,
+        "brace_final_state": "off",
+        "hand_ground_projection_share_pct": 14.851366773630863,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 0.04274317081939216,
+        "tail_hip_drift_px": 1.427467879059634,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "bracing": {
+        "collapse_frame": 247,
+        "head": {
+          "first_frame": 281,
+          "peak_input_speed_px_frame": 13.299405994286303
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 279,
+        "brace_start_frame": 247,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 9.137881811725016,
+        "shoulder_actuator_upward_impulse": 6.5198832063058365,
+        "tail_max_speed_px_frame": 0.0035762213626236144,
+        "tail_hip_drift_px": 0.21094780780643418,
+        "max_ground_penetration_px": 0.0,
+        "finite": true
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 25
+    }
+  ],
+  "sweep_summary": {
+    "cases": 36,
+    "collapsed": 19,
+    "head_improved": 15,
+    "chest_improved": 16,
+    "max_tail_speed": 0.06411660911006846,
+    "max_tail_hip_drift": 0.32806876603422097
+  }
+}

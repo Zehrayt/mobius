@@ -18,7 +18,7 @@ PRE24 = dict(closing_ttc=0.0, shock_mode="rate_cap", shock_trigger="catch", prea
 def run(push_ms, t=7.0, n=420, **kw):
     kw.setdefault("shock_mode", "servo")   # Adim 24 sok servosu (Adim 27: "force")
     kw.setdefault("hill", False)          # Adim 28 oncesi kas modeli
-    sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
+    sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
     for _ in range(n):
         sim.step()
     return sim
@@ -45,8 +45,8 @@ class ContactShockTest(unittest.TestCase):
 
     def test_undisturbed_walk_identical_to_step23(self):
         # Adim 26'nin rocker/kalca stratejisi baslangic sarsintisinda devreye giriyor
-        a = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, rocker=False, hip_strategy_gain=0.0)
-        b = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, **PRE24)
+        a = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0, rocker=False, hip_strategy_gain=0.0)
+        b = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0, **PRE24)
         for _ in range(900):
             a.step()
             b.step()

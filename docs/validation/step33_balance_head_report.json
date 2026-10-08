@@ -1,0 +1,3427 @@
+{
+  "before": {
+    "collapse_frame": 239,
+    "head": {
+      "first_frame": 259,
+      "peak_input_speed_px_frame": 15.400707154109227
+    },
+    "chest": {
+      "first_frame": 261,
+      "peak_input_speed_px_frame": 7.128662615502435
+    },
+    "first_hand_contact_frame": 252,
+    "brace_start_frame": 239,
+    "brace_final_state": "released",
+    "hand_ground_projection_share_pct": 9.870239501104946,
+    "shoulder_actuator_upward_impulse": 0.5304552232420692,
+    "tail_max_speed_px_frame": 2.1147133338460467e-05,
+    "tail_hip_drift_px": 0.00040115602246260096,
+    "max_ground_penetration_px": 0.0,
+    "finite": true,
+    "collapse_reason": "support_height"
+  },
+  "after": {
+    "collapse_frame": null,
+    "head": {
+      "first_frame": null,
+      "peak_input_speed_px_frame": 0.0
+    },
+    "chest": {
+      "first_frame": null,
+      "peak_input_speed_px_frame": 0.0
+    },
+    "first_hand_contact_frame": null,
+    "brace_start_frame": null,
+    "brace_final_state": "idle",
+    "hand_ground_projection_share_pct": null,
+    "shoulder_actuator_upward_impulse": 0.0,
+    "tail_max_speed_px_frame": 10.86527573359889,
+    "tail_hip_drift_px": 118.1333751657362,
+    "max_ground_penetration_px": 0.0,
+    "finite": true,
+    "collapse_reason": null
+  },
+  "push_px": 35.300740740740736,
+  "phase": 0,
+  "walking": {
+    "before": {
+      "dry": {
+        "push_px": 0,
+        "phase": 0,
+        "frames": 1800,
+        "ice": false,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9189313027416877,
+        "steps": 149,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 16.628635327088144,
+        "max_abs_eye_tilt_deg": 20.784074967618658,
+        "tail_point_speed": 5.64579866237669,
+        "tail_hip_drift": 107.78004265619938
+      },
+      "ice": {
+        "push_px": 0,
+        "phase": 0,
+        "frames": 1800,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9253742851076823,
+        "steps": 150,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 16.83233003763857,
+        "max_abs_eye_tilt_deg": 20.784074967618658,
+        "tail_point_speed": 5.645798662374871,
+        "tail_hip_drift": 112.04487998675677
+      }
+    },
+    "after": {
+      "dry": {
+        "push_px": 0,
+        "phase": 0,
+        "frames": 1800,
+        "ice": false,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.014885580517804,
+        "steps": 163,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.6167899911177535,
+        "max_abs_eye_tilt_deg": 4.285813672522701,
+        "tail_point_speed": 6.815950020937425,
+        "tail_hip_drift": 113.79487722674548
+      },
+      "ice": {
+        "push_px": 0,
+        "phase": 0,
+        "frames": 1800,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.014885580517804,
+        "steps": 163,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.6167899911177535,
+        "max_abs_eye_tilt_deg": 4.285813672522701,
+        "tail_point_speed": 6.815950020937425,
+        "tail_hip_drift": 113.79487722674548
+      }
+    }
+  },
+  "notes": [
+    "Both conditions use the same real gravity, leg torque limits and initial impulses.",
+    "Impulse labels in m/s are nominal momentum conversion, not measured COM velocity changes.",
+    "Step 33 senses the current impulse, permits backward capture steps and commits catch foot placement.",
+    "Head source tilt is calibrated with eye landmarks. Upright-reference neck PD is disabled after collapse.",
+    "Knee bend-side constraints are mass-weighted and solved together with ground contacts in step 33.",
+    "Neck/torso PD and IK support remain simplified controllers, not a complete muscle simulation.",
+    "Eye tilt is measured before the large push. Tail drift/speed describe settling only for collapsed cases."
+  ],
+  "mild": [
+    {
+      "before": {
+        "push_px": 8.825185185185184,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8476966210771109,
+        "steps": 71,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.281584132778573,
+        "tail_hip_drift": 105.51149116983811
+      },
+      "after": {
+        "push_px": 8.825185185185184,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.037413033857872,
+        "steps": 80,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020933952,
+        "tail_hip_drift": 118.27458467491965
+      }
+    },
+    {
+      "before": {
+        "push_px": 8.825185185185184,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.92807932382334,
+        "steps": 74,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.645798662376454,
+        "tail_hip_drift": 113.04062941322809
+      },
+      "after": {
+        "push_px": 8.825185185185184,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0224438550504966,
+        "steps": 84,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.288108788216834,
+        "tail_hip_drift": 117.8257615618586
+      }
+    },
+    {
+      "before": {
+        "push_px": 8.825185185185184,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9189437672853145,
+        "steps": 74,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.645798662376437,
+        "tail_hip_drift": 108.37819016995604
+      },
+      "after": {
+        "push_px": 8.825185185185184,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0436263565797255,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020935091,
+        "tail_hip_drift": 119.16633417057665
+      }
+    },
+    {
+      "before": {
+        "push_px": 8.825185185185184,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8632876162322805,
+        "steps": 70,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.539382475930793,
+        "tail_hip_drift": 108.36898945410394
+      },
+      "after": {
+        "push_px": 8.825185185185184,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9987769466196603,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.822569366892288,
+        "tail_hip_drift": 113.85044272724099
+      }
+    },
+    {
+      "before": {
+        "push_px": 8.825185185185184,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8476966210603578,
+        "steps": 71,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.281584132779012,
+        "tail_hip_drift": 107.10794368939969
+      },
+      "after": {
+        "push_px": 8.825185185185184,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0051061407734894,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.822569366892731,
+        "tail_hip_drift": 113.89374615763381
+      }
+    },
+    {
+      "before": {
+        "push_px": 8.825185185185184,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8476966210703412,
+        "steps": 72,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.281584132781047,
+        "tail_hip_drift": 108.20180970498404
+      },
+      "after": {
+        "push_px": 8.825185185185184,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.000707075843662,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.822569366891822,
+        "tail_hip_drift": 115.49228345978963
+      }
+    },
+    {
+      "before": {
+        "push_px": -8.825185185185184,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8636625570149885,
+        "steps": 69,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.539382475929883,
+        "tail_hip_drift": 104.64825684465359
+      },
+      "after": {
+        "push_px": -8.825185185185184,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.01648426178878,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020934183,
+        "tail_hip_drift": 114.61285553747439
+      }
+    },
+    {
+      "before": {
+        "push_px": -8.825185185185184,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8653396243428368,
+        "steps": 71,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.539382475930567,
+        "tail_hip_drift": 107.56981536395301
+      },
+      "after": {
+        "push_px": -8.825185185185184,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0237503004955,
+        "steps": 80,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020934627,
+        "tail_hip_drift": 116.46022206533462
+      }
+    },
+    {
+      "before": {
+        "push_px": -8.825185185185184,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8476966211460544,
+        "steps": 71,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.281584132778328,
+        "tail_hip_drift": 108.06936960508051
+      },
+      "after": {
+        "push_px": -8.825185185185184,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9774448667299604,
+        "steps": 79,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 7.016108756258161,
+        "tail_hip_drift": 111.60784239842656
+      }
+    },
+    {
+      "before": {
+        "push_px": -8.825185185185184,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8476966211819217,
+        "steps": 71,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.281584132779908,
+        "tail_hip_drift": 107.10794368939901
+      },
+      "after": {
+        "push_px": -8.825185185185184,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.995497253568705,
+        "steps": 80,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 7.0161087562599835,
+        "tail_hip_drift": 115.20892705134725
+      }
+    },
+    {
+      "before": {
+        "push_px": -8.825185185185184,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8476966212039276,
+        "steps": 71,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.281584132779465,
+        "tail_hip_drift": 106.61821272825455
+      },
+      "after": {
+        "push_px": -8.825185185185184,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.022443855050529,
+        "steps": 84,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.288108788217282,
+        "tail_hip_drift": 117.82576156185883
+      }
+    },
+    {
+      "before": {
+        "push_px": -8.825185185185184,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8600678371088293,
+        "steps": 70,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.539382475932141,
+        "tail_hip_drift": 106.6382110514237
+      },
+      "after": {
+        "push_px": -8.825185185185184,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9920142582364406,
+        "steps": 80,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 7.016108756257022,
+        "tail_hip_drift": 115.96985613363472
+      }
+    },
+    {
+      "before": {
+        "push_px": 17.650370370370368,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.850458524358759,
+        "steps": 70,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.539382475931001,
+        "tail_hip_drift": 105.54816171806397
+      },
+      "after": {
+        "push_px": 17.650370370370368,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.020702705969555,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.822569366892971,
+        "tail_hip_drift": 116.76749340634501
+      }
+    },
+    {
+      "before": {
+        "push_px": 17.650370370370368,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8476966210783332,
+        "steps": 71,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.281584132779226,
+        "tail_hip_drift": 106.61821272825023
+      },
+      "after": {
+        "push_px": 17.650370370370368,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9987769466196688,
+        "steps": 80,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.82256936689206,
+        "tail_hip_drift": 113.85044272724076
+      }
+    },
+    {
+      "before": {
+        "push_px": 17.650370370370368,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8634997660295622,
+        "steps": 69,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.539382475929641,
+        "tail_hip_drift": 107.02689663561614
+      },
+      "after": {
+        "push_px": 17.650370370370368,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0033061860553154,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.288108788219112,
+        "tail_hip_drift": 114.86876925782599
+      }
+    },
+    {
+      "before": {
+        "push_px": 17.650370370370368,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8476966210631987,
+        "steps": 72,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.281584132779453,
+        "tail_hip_drift": 106.08099279275757
+      },
+      "after": {
+        "push_px": 17.650370370370368,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0091722966860113,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.822569366891827,
+        "tail_hip_drift": 116.75875905025941
+      }
+    },
+    {
+      "before": {
+        "push_px": 17.650370370370368,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9253167604505015,
+        "steps": 73,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.645798662374398,
+        "tail_hip_drift": 111.61279380508972
+      },
+      "after": {
+        "push_px": 17.650370370370368,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0091722966860166,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.822569366892511,
+        "tail_hip_drift": 116.75875905026192
+      }
+    },
+    {
+      "before": {
+        "push_px": 17.650370370370368,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9188737780866238,
+        "steps": 75,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.645798662375756,
+        "tail_hip_drift": 108.21665576021064
+      },
+      "after": {
+        "push_px": 17.650370370370368,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0007070758436436,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.8225693668927265,
+        "tail_hip_drift": 115.4922834597919
+      }
+    },
+    {
+      "before": {
+        "push_px": -17.650370370370368,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.927026431187483,
+        "steps": 71,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.645798662375746,
+        "tail_hip_drift": 113.184037158813
+      },
+      "after": {
+        "push_px": -17.650370370370368,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0307000389428835,
+        "steps": 82,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020935072,
+        "tail_hip_drift": 117.27422440561986
+      }
+    },
+    {
+      "before": {
+        "push_px": -17.650370370370368,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 263,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.7454226773879025e-05,
+        "steps": 18,
+        "min_hip_height": 49.01167385381069,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.723085824593514e-05,
+        "tail_hip_drift": 0.0015990300959458636
+      },
+      "after": {
+        "push_px": -17.650370370370368,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.017814836898483,
+        "steps": 80,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020935567,
+        "tail_hip_drift": 114.93224396361506
+      }
+    },
+    {
+      "before": {
+        "push_px": -17.650370370370368,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 265,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.00029054905221945166,
+        "steps": 18,
+        "min_hip_height": 49.63953899145997,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.001811398589502669,
+        "tail_hip_drift": 0.015519656716179497
+      },
+      "after": {
+        "push_px": -17.650370370370368,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.003688372442932,
+        "steps": 80,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.8225693668924965,
+        "tail_hip_drift": 115.6505324375023
+      }
+    },
+    {
+      "before": {
+        "push_px": -17.650370370370368,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9155423038395563,
+        "steps": 69,
+        "min_hip_height": 119.10931059944784,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.64579866237485,
+        "tail_hip_drift": 109.29862902720333
+      },
+      "after": {
+        "push_px": -17.650370370370368,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0477755393475126,
+        "steps": 80,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020935074,
+        "tail_hip_drift": 119.76587073882615
+      }
+    },
+    {
+      "before": {
+        "push_px": -17.650370370370368,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 302,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.2208346419887068e-05,
+        "steps": 22,
+        "min_hip_height": 51.56230288555179,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 2.4233309180416868e-05,
+        "tail_hip_drift": 0.0007161916552149705
+      },
+      "after": {
+        "push_px": -17.650370370370368,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9900505202208387,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.822569366892053,
+        "tail_hip_drift": 112.66840929377372
+      }
+    },
+    {
+      "before": {
+        "push_px": -17.650370370370368,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 275,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -3.1938860061018204e-05,
+        "steps": 20,
+        "min_hip_height": 52.70514576669859,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.00015821546581602677,
+        "tail_hip_drift": 0.0015170319596506943
+      },
+      "after": {
+        "push_px": -17.650370370370368,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0041994052266237,
+        "steps": 83,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.288108788218655,
+        "tail_hip_drift": 115.07265045479312
+      }
+    },
+    {
+      "before": {
+        "push_px": 35.300740740740736,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 239,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 6.751926378001372e-06,
+        "steps": 19,
+        "min_hip_height": 52.17388342071621,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 2.073844000540104e-05,
+        "tail_hip_drift": 0.0003964347260989598
+      },
+      "after": {
+        "push_px": 35.300740740740736,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.974805094972778,
+        "steps": 78,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 7.016108756257466,
+        "tail_hip_drift": 112.87130928196075
+      }
+    },
+    {
+      "before": {
+        "push_px": 35.300740740740736,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8476966210314179,
+        "steps": 71,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.281584132778337,
+        "tail_hip_drift": 105.51149116983902
+      },
+      "after": {
+        "push_px": 35.300740740740736,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.992196250678196,
+        "steps": 83,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.288108788219338,
+        "tail_hip_drift": 113.56724848821295
+      }
+    },
+    {
+      "before": {
+        "push_px": 35.300740740740736,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9197479186065007,
+        "steps": 74,
+        "min_hip_height": 127.41104150725232,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.645798662375311,
+        "tail_hip_drift": 109.87856532995147
+      },
+      "after": {
+        "push_px": 35.300740740740736,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.970472938667887,
+        "steps": 80,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 7.01610875625771,
+        "tail_hip_drift": 111.25891805166657
+      }
+    },
+    {
+      "before": {
+        "push_px": 35.300740740740736,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9187957666644888,
+        "steps": 74,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.645798662375523,
+        "tail_hip_drift": 108.58052308381161
+      },
+      "after": {
+        "push_px": 35.300740740740736,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0033061860552976,
+        "steps": 83,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.288108788218886,
+        "tail_hip_drift": 114.86876925782394
+      }
+    },
+    {
+      "before": {
+        "push_px": 35.300740740740736,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.917139234597881,
+        "steps": 74,
+        "min_hip_height": 145.77757112684296,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.645798662375301,
+        "tail_hip_drift": 109.6030282381546
+      },
+      "after": {
+        "push_px": 35.300740740740736,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9431310098832166,
+        "steps": 75,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.3269473625519606,
+        "tail_hip_drift": 112.2553023604114
+      }
+    },
+    {
+      "before": {
+        "push_px": 35.300740740740736,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9172216305096164,
+        "steps": 74,
+        "min_hip_height": 165.1073014164294,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 5.64579866237734,
+        "tail_hip_drift": 109.29572757556548
+      },
+      "after": {
+        "push_px": 35.300740740740736,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0167088465348533,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020935556,
+        "tail_hip_drift": 113.8349181300573
+      }
+    },
+    {
+      "before": {
+        "push_px": -35.300740740740736,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 240,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.2983296940660693e-06,
+        "steps": 17,
+        "min_hip_height": 49.84807604267394,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 2.6211254620682522e-06,
+        "tail_hip_drift": 7.65315722617288e-05
+      },
+      "after": {
+        "push_px": -35.300740740740736,
+        "phase": 0,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 235,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -3.271615667394201e-05,
+        "steps": 20,
+        "min_hip_height": 51.25364572416851,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.00032494384200258003,
+        "tail_hip_drift": 0.0018450431819942992
+      }
+    },
+    {
+      "before": {
+        "push_px": -35.300740740740736,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 252,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -1.0909140189572971e-05,
+        "steps": 18,
+        "min_hip_height": 51.03189324269749,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 1.370449164596371e-05,
+        "tail_hip_drift": 0.00039753307529366566
+      },
+      "after": {
+        "push_px": -35.300740740740736,
+        "phase": 5,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.9800397534756038,
+        "steps": 83,
+        "min_hip_height": 128.39074406792255,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 7.016108756257254,
+        "tail_hip_drift": 113.5554148999338
+      }
+    },
+    {
+      "before": {
+        "push_px": -35.300740740740736,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 257,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -2.816684216630468e-05,
+        "steps": 18,
+        "min_hip_height": 52.70586906088437,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.00019648439525695512,
+        "tail_hip_drift": 0.0018367843775308756
+      },
+      "after": {
+        "push_px": -35.300740740740736,
+        "phase": 10,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0237503004955117,
+        "steps": 82,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020933947,
+        "tail_hip_drift": 116.46022206533507
+      }
+    },
+    {
+      "before": {
+        "push_px": -35.300740740740736,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 257,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.768274670027419e-05,
+        "steps": 19,
+        "min_hip_height": 52.69699331659467,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.782107160355211e-05,
+        "tail_hip_drift": 0.00161217248771095
+      },
+      "after": {
+        "push_px": -35.300740740740736,
+        "phase": 15,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.032105297364868,
+        "steps": 82,
+        "min_hip_height": 159.81176700649226,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.815950020935547,
+        "tail_hip_drift": 116.9619769055223
+      }
+    },
+    {
+      "before": {
+        "push_px": -35.300740740740736,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 253,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -8.570945058314313e-05,
+        "steps": 19,
+        "min_hip_height": 52.66679222791771,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0007425892456079949,
+        "tail_hip_drift": 0.0038440294558768073
+      },
+      "after": {
+        "push_px": -35.300740740740736,
+        "phase": 20,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0436263565797055,
+        "steps": 81,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.81595002093576,
+        "tail_hip_drift": 119.16633417057551
+      }
+    },
+    {
+      "before": {
+        "push_px": -35.300740740740736,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 270,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 0.0016287883095240355,
+        "steps": 20,
+        "min_hip_height": 50.88850591323319,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.015458913105263684,
+        "tail_hip_drift": 0.09491715052678273
+      },
+      "after": {
+        "push_px": -35.300740740740736,
+        "phase": 25,
+        "frames": 900,
+        "ice": true,
+        "collapsed": false,
+        "collapse_frame": null,
+        "fell": false,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 2.0044640163079204,
+        "steps": 84,
+        "min_hip_height": 165.1288743955302,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 6.288108788217973,
+        "tail_hip_drift": 115.39540581819438
+      }
+    }
+  ],
+  "strong": [
+    {
+      "before": {
+        "push_px": 70.60148148148147,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 222,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.5322101678313844,
+        "steps": 18,
+        "min_hip_height": 52.548481206665144,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0012753978255440161,
+        "tail_hip_drift": 0.0014363049423309349
+      },
+      "after": {
+        "push_px": 70.60148148148147,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 227,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.6237386410097407,
+        "steps": 20,
+        "min_hip_height": 47.29777435357613,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.012336076097486338,
+        "tail_hip_drift": 0.053473795152285675
+      }
+    },
+    {
+      "before": {
+        "push_px": 70.60148148148147,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 228,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.7109532481183858,
+        "steps": 19,
+        "min_hip_height": 52.343902587864875,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0053798294782647065,
+        "tail_hip_drift": 0.009390402282747345
+      },
+      "after": {
+        "push_px": 70.60148148148147,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 230,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.5846595544927966,
+        "steps": 20,
+        "min_hip_height": 52.66442821954922,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.00516878832603499,
+        "tail_hip_drift": 0.037101230131384
+      }
+    },
+    {
+      "before": {
+        "push_px": 70.60148148148147,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 232,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.6718144974126115,
+        "steps": 19,
+        "min_hip_height": 50.71974209288874,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0009129604409599183,
+        "tail_hip_drift": 0.0038233501584272744
+      },
+      "after": {
+        "push_px": 70.60148148148147,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 235,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.6151746538920442,
+        "steps": 21,
+        "min_hip_height": 52.69853260408837,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.00046618365857424685,
+        "tail_hip_drift": 0.007642276638648582
+      }
+    },
+    {
+      "before": {
+        "push_px": 70.60148148148147,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 239,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.7068916191969605,
+        "steps": 20,
+        "min_hip_height": 52.212184177468544,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0015560722692577339,
+        "tail_hip_drift": 0.0017617775764620092
+      },
+      "after": {
+        "push_px": 70.60148148148147,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 238,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.4737866094367875,
+        "steps": 21,
+        "min_hip_height": 52.470071494610806,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0007293289380734971,
+        "tail_hip_drift": 0.0008605477983110177
+      }
+    },
+    {
+      "before": {
+        "push_px": 70.60148148148147,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 243,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.556624385078672,
+        "steps": 20,
+        "min_hip_height": 20.532291478182344,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.005382488215166745,
+        "tail_hip_drift": 0.021615827662913034
+      },
+      "after": {
+        "push_px": 70.60148148148147,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 242,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.4590960862451505,
+        "steps": 20,
+        "min_hip_height": 52.68735776513364,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0006933127679661393,
+        "tail_hip_drift": 0.00502494583281532
+      }
+    },
+    {
+      "before": {
+        "push_px": 70.60148148148147,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 247,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.6700443300869698,
+        "steps": 20,
+        "min_hip_height": 52.69594958073037,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0009718368580528381,
+        "tail_hip_drift": 0.0016302319494343465
+      },
+      "after": {
+        "push_px": 70.60148148148147,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 259,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8957200431156702,
+        "steps": 23,
+        "min_hip_height": 52.510189616990544,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0022655366479579103,
+        "tail_hip_drift": 0.0029517719505065543
+      }
+    },
+    {
+      "before": {
+        "push_px": -70.60148148148147,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 222,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.28390113302585757,
+        "steps": 17,
+        "min_hip_height": 49.716626037120704,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0039533260602033875,
+        "tail_hip_drift": 0.05307752011927391
+      },
+      "after": {
+        "push_px": -70.60148148148147,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 227,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.691049113699339,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.009339974899338308,
+        "tail_hip_drift": 0.002896245192863134
+      }
+    },
+    {
+      "before": {
+        "push_px": -70.60148148148147,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 229,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.3418767791165225,
+        "steps": 18,
+        "min_hip_height": 52.68102170912181,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.00036565746446628333,
+        "tail_hip_drift": 0.005845025195554854
+      },
+      "after": {
+        "push_px": -70.60148148148147,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 230,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.5055066110937694,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 2.751375350840135e-05,
+        "tail_hip_drift": 8.788124539194087e-06
+      }
+    },
+    {
+      "before": {
+        "push_px": -70.60148148148147,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 233,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.29844875610765625,
+        "steps": 18,
+        "min_hip_height": 52.64449505766328,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.004192239326864911,
+        "tail_hip_drift": 0.05243199510834984
+      },
+      "after": {
+        "push_px": -70.60148148148147,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 238,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.4876332051864523,
+        "steps": 21,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.00021511687259642608,
+        "tail_hip_drift": 0.00016882984992605543
+      }
+    },
+    {
+      "before": {
+        "push_px": -70.60148148148147,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 240,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.29760834077665793,
+        "steps": 19,
+        "min_hip_height": 52.827310703500075,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.008519912993110503,
+        "tail_hip_drift": 0.07797564817587954
+      },
+      "after": {
+        "push_px": -70.60148148148147,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 239,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.09715243746357279,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.011659079012317464,
+        "tail_hip_drift": 0.026184938970089888
+      }
+    },
+    {
+      "before": {
+        "push_px": -70.60148148148147,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 244,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.4035163435086679,
+        "steps": 19,
+        "min_hip_height": 52.63673113499419,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.001062507527372156,
+        "tail_hip_drift": 0.0012517438476180587
+      },
+      "after": {
+        "push_px": -70.60148148148147,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 252,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.587552486322345,
+        "steps": 23,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 3.545960815642957e-05,
+        "tail_hip_drift": 3.166794228093295e-05
+      }
+    },
+    {
+      "before": {
+        "push_px": -70.60148148148147,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 247,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.1823908164054699,
+        "steps": 19,
+        "min_hip_height": 52.66815703485929,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 3.124450551431314e-05,
+        "tail_hip_drift": 0.0007768530914802341
+      },
+      "after": {
+        "push_px": -70.60148148148147,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 276,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -1.0493943752811137,
+        "steps": 26,
+        "min_hip_height": 50.443277236206086,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0006343969689294523,
+        "tail_hip_drift": 0.01079523338550814
+      }
+    },
+    {
+      "before": {
+        "push_px": 88.25185185185184,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 220,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.3544401753491517,
+        "steps": 17,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0005798772577937394,
+        "tail_hip_drift": 0.007707059580525311
+      },
+      "after": {
+        "push_px": 88.25185185185184,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 223,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.7015299472470684,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0027602598491926625,
+        "tail_hip_drift": 0.03671504968724548
+      }
+    },
+    {
+      "before": {
+        "push_px": 88.25185185185184,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 226,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.4464957237393332,
+        "steps": 18,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.003586086361435338,
+        "tail_hip_drift": 0.0363021800765182
+      },
+      "after": {
+        "push_px": 88.25185185185184,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 228,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.7201185227147342,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.002054913101109109,
+        "tail_hip_drift": 0.012403585036167897
+      }
+    },
+    {
+      "before": {
+        "push_px": 88.25185185185184,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 231,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.5454219111774565,
+        "steps": 19,
+        "min_hip_height": 20.102520149483667,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.005044894657578857,
+        "tail_hip_drift": 0.056039517286194496
+      },
+      "after": {
+        "push_px": 88.25185185185184,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 231,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.3183263996441166,
+        "steps": 19,
+        "min_hip_height": 53.16535568007117,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.010086994844427079,
+        "tail_hip_drift": 0.033681413096928736
+      }
+    },
+    {
+      "before": {
+        "push_px": 88.25185185185184,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 237,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.509923188545558,
+        "steps": 19,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0014915643238948733,
+        "tail_hip_drift": 0.017879325776902988
+      },
+      "after": {
+        "push_px": 88.25185185185184,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 236,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.490622664432653,
+        "steps": 20,
+        "min_hip_height": 51.05047632130669,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.01840255384070084,
+        "tail_hip_drift": 0.07510452569465542
+      }
+    },
+    {
+      "before": {
+        "push_px": 88.25185185185184,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 241,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.6392363313574625,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.008432954184391245,
+        "tail_hip_drift": 0.002403431744255613
+      },
+      "after": {
+        "push_px": 88.25185185185184,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 241,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.4101925774545734,
+        "steps": 20,
+        "min_hip_height": 52.504070558660544,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0005576696665271522,
+        "tail_hip_drift": 1.7296409055234108e-05
+      }
+    },
+    {
+      "before": {
+        "push_px": 88.25185185185184,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 245,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.4922509644366415,
+        "steps": 19,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0013663138081714784,
+        "tail_hip_drift": 0.013035395387191784
+      },
+      "after": {
+        "push_px": 88.25185185185184,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 252,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.7140587759454669,
+        "steps": 22,
+        "min_hip_height": 51.49243325419155,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0017245058102222405,
+        "tail_hip_drift": 0.006546093213955828
+      }
+    },
+    {
+      "before": {
+        "push_px": -88.25185185185184,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 221,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.36859781743943715,
+        "steps": 17,
+        "min_hip_height": 52.645607130578924,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0012961043666108664,
+        "tail_hip_drift": 0.026959767669850976
+      },
+      "after": {
+        "push_px": -88.25185185185184,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 223,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.5630708478855757,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.1492203801635346,
+        "tail_hip_drift": 0.014147878798990376
+      }
+    },
+    {
+      "before": {
+        "push_px": -88.25185185185184,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 226,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.37470404876163305,
+        "steps": 18,
+        "min_hip_height": 52.67482150308177,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0009635878083779337,
+        "tail_hip_drift": 0.006473273647273459
+      },
+      "after": {
+        "push_px": -88.25185185185184,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 227,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.4133297072370705,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 7.662711922762355e-06,
+        "tail_hip_drift": 1.3231213245035178e-06
+      }
+    },
+    {
+      "before": {
+        "push_px": -88.25185185185184,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 231,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.29288847428961085,
+        "steps": 18,
+        "min_hip_height": 52.707374565364375,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0021404890921741457,
+        "tail_hip_drift": 0.03285882298519027
+      },
+      "after": {
+        "push_px": -88.25185185185184,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 233,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.5301679335586188,
+        "steps": 21,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 1.204273217372908e-05,
+        "tail_hip_drift": 0.00027356884464069253
+      }
+    },
+    {
+      "before": {
+        "push_px": -88.25185185185184,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 236,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.27854008949875,
+        "steps": 19,
+        "min_hip_height": 49.431189668105276,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.007199966987849884,
+        "tail_hip_drift": 0.07812119284906771
+      },
+      "after": {
+        "push_px": -88.25185185185184,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 237,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.01620731957251716,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.006853759672802499,
+        "tail_hip_drift": 0.03487212200101908
+      }
+    },
+    {
+      "before": {
+        "push_px": -88.25185185185184,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 241,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.2524842074372028,
+        "steps": 19,
+        "min_hip_height": 52.67165105072951,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0006844194842446633,
+        "tail_hip_drift": 0.010731019269769604
+      },
+      "after": {
+        "push_px": -88.25185185185184,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 242,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.15638262441238993,
+        "steps": 20,
+        "min_hip_height": 52.630269412854716,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0003327743388656148,
+        "tail_hip_drift": 0.0051255667820271356
+      }
+    },
+    {
+      "before": {
+        "push_px": -88.25185185185184,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 245,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.13857164143675277,
+        "steps": 19,
+        "min_hip_height": 52.68543820030777,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 3.702839725783206e-05,
+        "tail_hip_drift": 0.0009123591351283267
+      },
+      "after": {
+        "push_px": -88.25185185185184,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 250,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.3472997513860271,
+        "steps": 22,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 7.978340247305482e-05,
+        "tail_hip_drift": 8.292657385311486e-05
+      }
+    },
+    {
+      "before": {
+        "push_px": 150.0,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 218,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.329251222904657,
+        "steps": 17,
+        "min_hip_height": 47.33154607000739,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0007336144256067105,
+        "tail_hip_drift": 0.005613959388824696
+      },
+      "after": {
+        "push_px": 150.0,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 218,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.5996725526627147,
+        "steps": 19,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.00371314735608869,
+        "tail_hip_drift": 0.0255118237272427
+      }
+    },
+    {
+      "before": {
+        "push_px": 150.0,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 223,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.364510481628837,
+        "steps": 18,
+        "min_hip_height": 52.69601407406742,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0019345089121361638,
+        "tail_hip_drift": 0.004997855469355272
+      },
+      "after": {
+        "push_px": 150.0,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 224,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.624237451455455,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0011740635847939096,
+        "tail_hip_drift": 0.004593965100184505
+      }
+    },
+    {
+      "before": {
+        "push_px": 150.0,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 228,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.420901111030552,
+        "steps": 18,
+        "min_hip_height": 47.089197646104594,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0005093691511231969,
+        "tail_hip_drift": 0.004089836592356733
+      },
+      "after": {
+        "push_px": 150.0,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 227,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.5640988789854906,
+        "steps": 19,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.00012026953141424624,
+        "tail_hip_drift": 7.406974145851564e-05
+      }
+    },
+    {
+      "before": {
+        "push_px": 150.0,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 233,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.7746581934421548,
+        "steps": 19,
+        "min_hip_height": 20.013019054246,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 1.5737128251203103e-05,
+        "tail_hip_drift": 0.0004266945475137618
+      },
+      "after": {
+        "push_px": 150.0,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 233,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.509146517703071,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.00609728511798717,
+        "tail_hip_drift": 0.038119400613595644
+      }
+    },
+    {
+      "before": {
+        "push_px": 150.0,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 238,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.4650646070666642,
+        "steps": 19,
+        "min_hip_height": 50.9469303978978,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 6.413648124286902e-05,
+        "tail_hip_drift": 0.0003477262525848346
+      },
+      "after": {
+        "push_px": 150.0,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 238,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.497743920323189,
+        "steps": 20,
+        "min_hip_height": 20.00023843470717,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.005001363950966493,
+        "tail_hip_drift": 0.009332172924700899
+      }
+    },
+    {
+      "before": {
+        "push_px": 150.0,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 242,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.403880919671,
+        "steps": 19,
+        "min_hip_height": 52.700996062485274,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.0035399465338386994,
+        "tail_hip_drift": 0.009562951656448604
+      },
+      "after": {
+        "push_px": 150.0,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 243,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8664236322466665,
+        "steps": 22,
+        "min_hip_height": 20.125415180206176,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 1.1609845574075415,
+        "tail_hip_drift": 0.001162430955673699
+      }
+    },
+    {
+      "before": {
+        "push_px": -150.0,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 218,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.27802002145949606,
+        "steps": 17,
+        "min_hip_height": 52.71359414153778,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.006187903939631333,
+        "tail_hip_drift": 0.042568857523946235
+      },
+      "after": {
+        "push_px": -150.0,
+        "phase": 0,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 219,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.3680190023650791,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0004723965615267048,
+        "tail_hip_drift": 0.004820427077618206
+      }
+    },
+    {
+      "before": {
+        "push_px": -150.0,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 223,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.19504326966384478,
+        "steps": 18,
+        "min_hip_height": 57.532830516678246,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.008642155099555552,
+        "tail_hip_drift": 0.09157618850278482
+      },
+      "after": {
+        "push_px": -150.0,
+        "phase": 5,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 223,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.15171533818248994,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 5.845157518730065e-05,
+        "tail_hip_drift": 0.0006180225507819159
+      }
+    },
+    {
+      "before": {
+        "push_px": -150.0,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 228,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.17986790827196064,
+        "steps": 18,
+        "min_hip_height": 52.70576412672466,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.005170101545992745,
+        "tail_hip_drift": 0.0016230508344676764
+      },
+      "after": {
+        "push_px": -150.0,
+        "phase": 10,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 228,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.1576107159167349,
+        "steps": 21,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 9.14335638563532e-05,
+        "tail_hip_drift": 0.0009531336932582235
+      }
+    },
+    {
+      "before": {
+        "push_px": -150.0,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 233,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.10557527770934551,
+        "steps": 19,
+        "min_hip_height": 52.65717219398033,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.004169732047250289,
+        "tail_hip_drift": 0.013140043670915702
+      },
+      "after": {
+        "push_px": -150.0,
+        "phase": 15,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 233,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.09975549984884462,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.000140892308499222,
+        "tail_hip_drift": 0.001846327714815743
+      }
+    },
+    {
+      "before": {
+        "push_px": -150.0,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 238,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.17367379322158125,
+        "steps": 19,
+        "min_hip_height": 52.71527851338334,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.005581977839645343,
+        "tail_hip_drift": 0.011019652553699189
+      },
+      "after": {
+        "push_px": -150.0,
+        "phase": 20,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 238,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.024811224359783165,
+        "steps": 20,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.0002800670408501833,
+        "tail_hip_drift": 0.00353280984879234
+      }
+    },
+    {
+      "before": {
+        "push_px": -150.0,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 243,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.0610397306332401,
+        "steps": 19,
+        "min_hip_height": 52.68318138841869,
+        "mean_eye_tilt_deg": 19.27963327506647,
+        "max_abs_eye_tilt_deg": 32.89776549883887,
+        "tail_point_speed": 0.006471106279257679,
+        "tail_hip_drift": 0.04104633111572298
+      },
+      "after": {
+        "push_px": -150.0,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 244,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": -0.1808164262302526,
+        "steps": 22,
+        "min_hip_height": 20.0,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 0.004356703792494676,
+        "tail_hip_drift": 0.00713886661583274
+      }
+    }
+  ],
+  "mild_summary": {
+    "before": {
+      "cases": 36,
+      "collapsed": 11,
+      "finite": true,
+      "constant_gravity": true,
+      "max_penetration_px": 0.0,
+      "max_fallen_tail_speed": 0.015458913105263684,
+      "max_fallen_tail_drift": 0.09491715052678273
+    },
+    "after": {
+      "cases": 36,
+      "collapsed": 1,
+      "finite": true,
+      "constant_gravity": true,
+      "max_penetration_px": 0.0,
+      "max_fallen_tail_speed": 0.00032494384200258003,
+      "max_fallen_tail_drift": 0.0018450431819942992
+    }
+  },
+  "strong_summary": {
+    "before": {
+      "cases": 36,
+      "collapsed": 36,
+      "finite": true,
+      "constant_gravity": true,
+      "max_penetration_px": 0.0,
+      "max_fallen_tail_speed": 0.008642155099555552,
+      "max_fallen_tail_drift": 0.09157618850278482
+    },
+    "after": {
+      "cases": 36,
+      "collapsed": 36,
+      "finite": true,
+      "constant_gravity": true,
+      "max_penetration_px": 0.0,
+      "max_fallen_tail_speed": 1.1609845574075415,
+      "max_fallen_tail_drift": 0.07510452569465542
+    }
+  },
+  "extended_settling": [
+    {
+      "condition": "after",
+      "original": {
+        "push_px": 150.0,
+        "phase": 25,
+        "frames": 420,
+        "ice": true,
+        "collapsed": true,
+        "collapse_frame": 243,
+        "fell": true,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "max_penetration_px": 0.0,
+        "mean_tail_speed": 1.8664236322466665,
+        "steps": 22,
+        "min_hip_height": 20.125415180206176,
+        "mean_eye_tilt_deg": -3.319721655493519,
+        "max_abs_eye_tilt_deg": 5.219773656946203,
+        "tail_point_speed": 1.1609845574075415,
+        "tail_hip_drift": 0.001162430955673699
+      },
+      "followups": [
+        {
+          "push_px": 150.0,
+          "phase": 25,
+          "frames": 480,
+          "ice": true,
+          "collapsed": true,
+          "collapse_frame": 243,
+          "fell": true,
+          "finite": true,
+          "gravity_values": [
+            2.2284444444444444
+          ],
+          "max_penetration_px": 0.0,
+          "mean_tail_speed": 1.474119813300023,
+          "steps": 22,
+          "min_hip_height": 20.125415180206176,
+          "mean_eye_tilt_deg": -3.319721655493519,
+          "max_abs_eye_tilt_deg": 5.219773656946203,
+          "tail_point_speed": 0.005433073909671293,
+          "tail_hip_drift": 0.0018837274369616352
+        },
+        {
+          "push_px": 150.0,
+          "phase": 25,
+          "frames": 900,
+          "ice": true,
+          "collapsed": true,
+          "collapse_frame": 243,
+          "fell": true,
+          "finite": true,
+          "gravity_values": [
+            2.2284444444444444
+          ],
+          "max_penetration_px": 0.0,
+          "mean_tail_speed": 0.0,
+          "steps": 22,
+          "min_hip_height": 20.125415180206176,
+          "mean_eye_tilt_deg": -3.319721655493519,
+          "max_abs_eye_tilt_deg": 5.219773656946203,
+          "tail_point_speed": 0.00019758076758519047,
+          "tail_hip_drift": 0.0019986028222547247
+        }
+      ]
+    }
+  ]
+}

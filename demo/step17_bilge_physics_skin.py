@@ -54,7 +54,7 @@ from demo.bilge_walk_skinned import BilgeSkin, ORDER, overlap_pixels
 from physics.active_gait import (CONTACT_DEADBAND_DEG, classify_contact_phase, PHASE_SWING, PHASE_HEEL_STRIKE,
                                  PHASE_FLAT_FOOT, PHASE_TOE_OFF)
 from scene.export import render_video
-from scene.skinning import rigid_matrix, transform_point, composite_cutout
+from scene.skinning import Cutout, bone_matrix, rigid_matrix, transform_point, composite_cutout
 
 WIDTH, HEIGHT, FPS = 1280, 720, s14.FPS
 DURATION_S = s14.DURATION_S
@@ -99,6 +99,47 @@ def simulate(n_frames: int | None = None, **sim_kwargs) -> tuple[list[dict], s14
                     in_danger=sim.last_in_danger,
                     hip=pts[idx["hip"]].copy(), shoulder=pts[idx["shoulder"]].copy(),
                     head=pts[idx["head"]].copy(), legs={})
+        snap["bracing_state"] = sim.bracing.state if sim.bracing is not None else "off"
+        snap["gravity_y"] = float(sim.body.gravity[1])
+        snap["gravity_mode"] = sim.gravity_policy.mode
+        snap["collapse_reason"] = sim.collapse_reason
+        if sim.recovery is not None:
+            snap['recovery_state'] = sim.recovery.state
+            snap['recovery_contacts'] = sim.recovery.support_contacts
+            snap['recovery_margin'] = sim.recovery.com_margin
+            if hasattr(sim.recovery, 'foot_share'):
+                r = sim.recovery
+                snap['transfer_foot_share'] = r.foot_share
+                snap['transfer_contacts'] = r.transfer_contacts
+                snap['transfer_margin'] = r.transfer_margin
+                snap['transfer_com_to_foot'] = r.com_to_foot
+                snap['transfer_knee_clearance'] = r.front_knee_clearance
+                snap['transfer_foot_contact'] = r.foot_contact
+                if hasattr(r, 'lower_contacts'):
+                    snap['rise_lower_contacts'] = r.lower_contacts
+                    snap['rise_margin'] = r.lower_margin
+                    snap['rise_arm_contacts'] = r.arm_contacts
+                    snap['rise_hand_clearance'] = r.min_hand_clearance
+                    snap['rise_torso_tilt'] = r.torso_tilt
+                    if hasattr(r, 'stand_contacts'):
+                        snap['stand_contacts'] = r.stand_contacts
+                        snap['stand_margin'] = r.stand_margin
+                        snap['stand_width'] = r.stand_width
+                        snap['stand_other_contacts'] = r.stand_other_contacts
+                        snap['stand_knee_clearance'] = r.stand_min_knee_clearance
+                        snap['stand_min_foot_share'] = r.stand_min_foot_share
+                        snap['stand_foot_contacts'] = dict(r.stand_foot_contacts)
+                        snap['stand_all_ground_margin'] = r.all_ground_margin
+        if sim.recovery is not None and hasattr(sim.recovery, 'completed_steps'):
+            r = sim.recovery
+            snap['walk_steps'] = len(r.completed_steps)
+            snap['walk_stance'] = r.stance_side
+            snap['walk_swing'] = r.swing_side
+            snap['walk_clearance'] = r.step_clearance
+            snap['walk_distance'] = float(pts[idx['hip'], 0]-r.walk_start_x) if r.walk_start_x is not None else 0.
+        if sim.spine is not None:
+            snap["waist"] = pts[sim.spine.waist].copy()
+            snap["spine_bend_deg"] = float(np.degrees(sim.spine.geometry()[0]))
         for side, attr in SIDES:
             leg = getattr(sim, attr)
             snap["legs"][side] = dict(
@@ -107,6 +148,13 @@ def simulate(n_frames: int | None = None, **sim_kwargs) -> tuple[list[dict], s14
                 swing_t=float(leg.swing_t) if leg.state == "swing" else None,
                 swing_target=leg.swing_target.copy(), foot_target=leg.foot_target.copy(),
                 slipping=bool(leg.is_slipping))
+        if snap.get('recovery_state') in ('walk_prepare', 'walk_shift', 'walk_swing', 'walk_land'):
+            for side, code in (('left', 'l'), ('right', 'r')):
+                loaded = snap['stand_foot_contacts'][code]
+                snap['legs'][side]['state'] = 'stance' if loaded else 'swing'
+                snap['legs'][side]['phase'] = PHASE_FLAT_FOOT if loaded else PHASE_SWING
+                snap['legs'][side]['swing_t'] = (float(np.clip((f-sim.recovery.phase_frame)/120, 0., 1.))
+                                               if not loaded else None)
         if sim.arms is not None:
             snap["arms"] = {k: sim.arms.points_for(k) for k in ("l", "r")}
         frames.append(snap)
@@ -170,8 +218,11 @@ def two_bone_knee(hip, ankle, l1, l2, side_ref):
 class PhysicsBilgeRig:
     """Dunya-uzayi fizik anlik goruntusunu Bilge parca matrislerine cevirir."""
 
-    def __init__(self, skin: BilgeSkin | None = None):
+    def __init__(self, skin: BilgeSkin | None = None, corrected_head: bool = True,
+                 attached_head: bool = True):
         self.skin = skin or BilgeSkin()
+        self.corrected_head = corrected_head
+        self.attached_head = attached_head
         self.cam_x = None
         self.shoe_local = {}
         for side in ("left", "right"):
@@ -217,14 +268,23 @@ class PhysicsBilgeRig:
         S = self.to_screen
         hip = S(snap["hip"])
         chest = hip + _unit(snap["shoulder"] - snap["hip"]) * RENDER_TORSO_LEN
+        waist = None
+        if "waist" in snap:
+            waist = hip + _unit(snap["waist"]-snap["hip"]) * (RENDER_TORSO_LEN/2)
+            waist = _keep_above_ground(hip, waist, RENDER_TORSO_LEN/2, SCREEN_GROUND_Y-12)
+            chest = waist + _unit(snap["shoulder"]-snap["waist"]) * (RENDER_TORSO_LEN/2)
         head = chest + _unit(snap["head"] - snap["shoulder"]) * RENDER_HEAD_OFFSET
         if snap.get("collapsed"):
             # Adim 29: deri parcalari fizik govdesinden uzun (govde 86 / 55 px, bas 43 / 30 px).
             # Yerde yatan govdede ayni YON uzun parcayi zeminin altina sokar; parca,
             # zemine degecek sekilde pelvis (bas icin gogus) etrafinda yataya dogru dondurulur.
-            chest = _keep_above_ground(hip, chest, RENDER_TORSO_LEN, SCREEN_GROUND_Y - FALLEN_CHEST_RADIUS)
+            chest = _keep_above_ground(hip if waist is None else waist, chest,
+                                       RENDER_TORSO_LEN if waist is None else RENDER_TORSO_LEN/2,
+                                       SCREEN_GROUND_Y - FALLEN_CHEST_RADIUS)
             head = _keep_above_ground(chest, head, RENDER_HEAD_OFFSET, SCREEN_GROUND_Y - FALLEN_HEAD_RADIUS)
         p = {"pelvis": hip, "chest": chest, "head": head}
+        if waist is not None:
+            p["waist"] = waist
         shoes, info = {}, {}
         for side, _ in SIDES:
             leg = snap["legs"][side]
@@ -286,6 +346,16 @@ class PhysicsBilgeRig:
                 lift = max(0.0, hull[:, 1].max() - (SCREEN_GROUND_Y - .55))
                 m[1, 2] -= lift
                 ankle = transform_point(m, self.skin.anchor(f"{side}_shoe"))
+                loaded_rise = (side == 'left' and snap.get('transfer_foot_contact') and
+                               snap.get('recovery_state') in ('torso_raising', 'upright_kneeling'))
+                loaded_stand = (snap.get('recovery_state') in ('standing_rising', 'standing', 'walk_prepare', 'walk_shift', 'walk_swing', 'walk_land') and
+                                snap.get('stand_foot_contacts', {}).get('l' if side == 'left' else 'r', False))
+                if loaded_rise or loaded_stand:
+                    # A loaded foot is planted, not a dangling ragdoll ankle.
+                    # Align its visible sole with the floor; physics stays untouched.
+                    pitch = 0.0
+                    m = self._flat_shoe(side, np.array([foot[0], SCREEN_GROUND_Y]))
+                    ankle = transform_point(m, self.skin.anchor(f"{side}_shoe"))
             else:
                 hull = self.skin.parts[f"{side}_shoe"].hull @ m[:, :2].T + m[:, 2]
                 m[1, 2] += foot[1] - .55 - hull[:, 1].max()
@@ -348,13 +418,69 @@ class PhysicsBilgeRig:
         mats["torso"] = sk.bind_bone("torso", p["chest"], p["pelvis"] + [0., 6.])
         mats["pelvis"] = rigid_matrix(sk.anchor("pelvis"), p["pelvis"] + [0., 8.], sk.scale("pelvis"), body_angle)
         mats["head"] = rigid_matrix(sk.anchor("head"), p["head"], sk.scale("head"), body_angle)
+        if "waist" in p:
+            lower, upper = p["waist"]-p["pelvis"], p["chest"]-p["waist"]
+            mats["pelvis"] = rigid_matrix(sk.anchor("pelvis"), p["pelvis"]+[0.,8.],
+                                           sk.scale("pelvis"), np.arctan2(lower[0],-lower[1]))
+            mats["head"] = rigid_matrix(sk.anchor("head"), p["head"], sk.scale("head"),
+                                         np.arctan2(upper[0],-upper[1]))
+        if self.corrected_head:
+            neck = p["head"] - p["chest"]
+            socket = None
+            if self.attached_head:
+                upper_torso = mats['torso']
+                if 'waist' in p:
+                    a, b = sk.anchor('torso'), sk.anchor('torso', 'end')
+                    upper_torso = bone_matrix(a, (a+b)/2, p['chest'], p['waist'], sk.scale('torso'))
+                socket = transform_point(upper_torso, sk.anchor('torso', 'neck_socket'))
+            mats["head"] = sk.head_matrix(p["head"], np.arctan2(neck[0], -neck[1]), socket)
         braid_root = transform_point(mats["head"], sk.parts["head"].local([95 / 435, 341 / 438]))
         mats["braid"] = sk.bind_bone("braid", braid_root, p["pelvis"] + [-19., -12.])
         return mats
 
     def layers(self, pose):
         mats = self.matrices(pose)
-        return {name: self.skin.parts[name].warp(mats[name]) for name in ORDER}
+        order = list(ORDER)
+        if pose['snap'].get('recovery_state') in ('foot_placing', 'transferring', 'half_kneeling', 'torso_raising', 'upright_kneeling', 'standing_rising', 'standing', 'walk_prepare', 'walk_shift', 'walk_swing', 'walk_land'):
+            # The near leg crosses in front of the shirt during foot placement.
+            # Preserve physical joints and head binding; change only occlusion.
+            near_leg = ['left_shoe', 'left_shin', 'left_thigh']
+            order = [name for name in order if name not in near_leg]
+            at = order.index('torso')+1
+            order[at:at] = near_leg
+        layers = {name: self.skin.parts[name].warp(mats[name]) for name in order}
+        if "waist" in pose["points"]:
+            layers["torso"] = self.articulated_torso_layer(pose)
+        return layers
+
+    def articulated_torso_layer(self, pose):
+        """Bind two halves of the existing shirt to the physical spine segments.
+
+        A small overlap covers the bending seam; original asset files stay
+        intact. Return one layer to preserve the established draw ordering.
+        """
+        sk, p = self.skin, pose["points"]
+        a, b = sk.anchor("torso"), sk.anchor("torso", "end")
+        mid = (a+b)/2
+        if not hasattr(self, "_torso_halves"):
+            source = sk.parts["torso"].image
+            yy, xx = np.indices(source.shape[:2])
+            along = ((xx-mid[0])*(b-a)[0]+(yy-mid[1])*(b-a)[1])/np.linalg.norm(b-a)
+            upper, lower = source.copy(), source.copy()
+            upper[along>2,3] = 0
+            lower[along<-2,3] = 0
+            self._torso_halves = Cutout("torso_upper",upper), Cutout("torso_lower",lower)
+        matrices = [bone_matrix(a,mid,p["chest"],p["waist"],sk.scale("torso")),
+                    bone_matrix(mid,b,p["waist"],p["pelvis"]+[0.,6.],sk.scale("torso"))]
+        pieces = [part.warp(mat) for part, mat in zip(self._torso_halves,matrices)]
+        origin = np.min([o for _,o in pieces],axis=0)
+        end = np.max([o+[im.shape[1],im.shape[0]] for im,o in pieces],axis=0)
+        image = np.zeros((end[1]-origin[1],end[0]-origin[0],4),np.float32)
+        for im,o in pieces:
+            x,y = o-origin
+            dst = image[y:y+im.shape[0],x:x+im.shape[1]]
+            dst[:] = im+dst*(1-im[...,3:4])
+        return image,origin
 
 
 def background(rig: PhysicsBilgeRig) -> np.ndarray:
@@ -408,6 +534,21 @@ def render(pose, rig, frames=None, debug=False) -> np.ndarray:
     for name, (warped, origin) in rig.layers(pose).items():
         composite_cutout(image, warped, origin)
     status = "DUSTU" if snap["fell"] else ("DENGE TEHLIKESI" if snap["in_danger"] else "yuruyor")
+    status = {'rising': 'YERDEN DESTEK ALIYOR', 'supported': 'ELLER VE DIZLER UZERINDE',
+              'needs_roll': 'DONME HAZIRLIGI GEREKIYOR',
+              'repositioning': 'BACAK YERLESTIRIYOR',
+              'foot_placing': 'AYAGINI YERLESTIRIYOR',
+              'transferring': 'AGIRLIK AKTARIYOR',
+              'half_kneeling': 'AYAK DESTEGI SABIT',
+              'torso_raising': 'GOVDESINI KALDIRIYOR',
+              'upright_kneeling': 'ELLER SERBEST / DENGEDE',
+              'standing_rising': 'AYAGA KALKIYOR',
+              'standing': 'AYAKTA / DENGEDE',
+              'walk_prepare': 'YURUYUSE HAZIRLANIYOR',
+              'walk_shift': 'AGIRLIK AKTARIYOR',
+              'walk_swing': 'ADIM ATIYOR',
+              'walk_land': 'AYAGA BASIYOR',
+              'failed': 'YERDE DINLENIYOR'}.get(snap.get('recovery_state'), status)
     cv2.putText(image, f"Adim 17: Bilge derisi step14 fizigi uzerinde  t={snap['time']:.2f}s  "
                 f"hip_vx={snap['hip_vx']:+.2f}  {status}",
                 (40, 40), cv2.FONT_HERSHEY_SIMPLEX, .55, (65, 76, 89), 1, cv2.LINE_AA)
@@ -425,7 +566,9 @@ def render(pose, rig, frames=None, debug=False) -> np.ndarray:
             label = f"{side[0].upper()}:{PHASE_SHORT[leg['phase']]} {leg['angle']:+.1f}deg"
             cv2.putText(image, label, (round(p[f'{side}_foot'][0]) - 40, round(SCREEN_GROUND_Y) + 32 + (16 if side == 'right' else 0)),
                         cv2.FONT_HERSHEY_SIMPLEX, .45, color, 1, cv2.LINE_AA)
-        cv2.line(image, xy(p["pelvis"]), xy(p["chest"]), (30, 100, 30), 1)
+        torso = [p["pelvis"],p["waist"],p["chest"]] if "waist" in p else [p["pelvis"],p["chest"]]
+        for a,b in zip(torso,torso[1:]):
+            cv2.line(image, xy(a), xy(b), (30, 100, 30), 1)
         if frames is not None:
             draw_timeline(image, frames, snap["frame"])
     return image
@@ -448,6 +591,9 @@ def inspect(frames, rig_factory=PhysicsBilgeRig) -> dict:
     for snap in frames:
         pose = rig.pose(snap)
         layers = rig.layers(pose)
+        for a, b in (("torso", "head"), ("head", "braid")):
+            key = a + "/" + b
+            min_overlap[key] = min(min_overlap.get(key, 10 ** 9), overlap_pixels(layers[a], layers[b]))
         for side in ("left", "right"):
             for a, b in ((f"{side}_upper_arm", f"{side}_forearm"), (f"{side}_forearm", f"{side}_hand"),
                          (f"{side}_thigh", f"{side}_shin"), (f"{side}_shin", f"{side}_shoe"),

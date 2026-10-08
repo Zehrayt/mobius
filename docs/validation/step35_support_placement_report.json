@@ -1,0 +1,1553 @@
+{
+  "previous": {
+    "collapse_frame": 219,
+    "state": "needs_roll",
+    "start_frame": null,
+    "support_frame": null,
+    "events": [
+      [
+        308,
+        "needs_roll"
+      ]
+    ],
+    "reason": "legs_forward",
+    "support_contacts": 2,
+    "com_margin_px": -57.032114406653506,
+    "hip_height_px": 20.0,
+    "chest_height_px": 26.853766626146523,
+    "head_height_px": 16.308541851327163,
+    "tail_max_speed_px_frame": 0.0003204755491508689,
+    "max_recovery_speed_px_frame": null,
+    "min_supported_contacts": 2,
+    "tail_all_supported": false,
+    "torque_limit_ratio": 0.0,
+    "force_limit_ratio": 0.0,
+    "gravity_values": [
+      2.2284444444444444
+    ],
+    "max_penetration_px": 0.0,
+    "finite": true,
+    "push_px": -150.0,
+    "phase": 0,
+    "frames": 1500,
+    "reposition_count": 0
+  },
+  "recovery": {
+    "collapse_frame": 219,
+    "state": "supported",
+    "start_frame": 308,
+    "support_frame": 934,
+    "events": [
+      [
+        308,
+        "repositioning"
+      ],
+      [
+        548,
+        "repositioning"
+      ],
+      [
+        788,
+        "rising"
+      ],
+      [
+        934,
+        "supported"
+      ]
+    ],
+    "reason": null,
+    "support_contacts": 4,
+    "com_margin_px": 53.667595967719166,
+    "hip_height_px": 82.28744588189252,
+    "chest_height_px": 49.54922901001504,
+    "head_height_px": 62.28470923374425,
+    "tail_max_speed_px_frame": 1.3415227869512893e-08,
+    "max_recovery_speed_px_frame": 7.565078026862413,
+    "min_supported_contacts": 4,
+    "tail_all_supported": true,
+    "torque_limit_ratio": 1.0,
+    "force_limit_ratio": 0.09610892777396626,
+    "gravity_values": [
+      2.2284444444444444
+    ],
+    "max_penetration_px": 0.0,
+    "finite": true,
+    "push_px": -150.0,
+    "phase": 0,
+    "frames": 1500,
+    "reposition_count": 2
+  },
+  "notes": [
+    "Opt-in recovery_reposition=True, requires ground_recovery=True.",
+    "Sequential upper-arc leg motion; next leg waits for rearward shin placement and low speed.",
+    "Hovering knees receive a bounded thigh-angle correction. Support still requires four actual contacts.",
+    "No teleport, extra pins or gravity changes. World-referenced bounded motors are not a full muscle model.",
+    "Each placement and rise attempt has a 600-frame timeout. Stops at hands/knees, not standing.",
+    "Same 36 pushes/phases as step34, extended observation from 1000 to 1500 frames to accommodate leg placement."
+  ],
+  "sweep": [
+    {
+      "collapse_frame": 227,
+      "state": "supported",
+      "start_frame": 316,
+      "support_frame": 456,
+      "events": [
+        [
+          316,
+          "rising"
+        ],
+        [
+          456,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 50.32073082677289,
+      "hip_height_px": 85.66255717848804,
+      "chest_height_px": 51.63989373241009,
+      "head_height_px": 64.48500135855932,
+      "tail_max_speed_px_frame": 1.0958271445604711e-05,
+      "max_recovery_speed_px_frame": 8.117626891634814,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.023398800536248647,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 0,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 230,
+      "state": "supported",
+      "start_frame": 319,
+      "support_frame": 460,
+      "events": [
+        [
+          319,
+          "rising"
+        ],
+        [
+          460,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 51.256716698070136,
+      "hip_height_px": 84.50570195227766,
+      "chest_height_px": 50.691005026463074,
+      "head_height_px": 63.51123074575935,
+      "tail_max_speed_px_frame": 1.2235782582904194e-05,
+      "max_recovery_speed_px_frame": 10.922493577894329,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.02586190280025304,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 5,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 235,
+      "state": "supported",
+      "start_frame": 324,
+      "support_frame": 467,
+      "events": [
+        [
+          324,
+          "rising"
+        ],
+        [
+          467,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 51.09032181421185,
+      "hip_height_px": 85.03758428518549,
+      "chest_height_px": 51.35437908043991,
+      "head_height_px": 64.18036302092702,
+      "tail_max_speed_px_frame": 1.3106263023756837e-05,
+      "max_recovery_speed_px_frame": 10.599699265431468,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.026213406419154393,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 10,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 238,
+      "state": "supported",
+      "start_frame": 327,
+      "support_frame": 471,
+      "events": [
+        [
+          327,
+          "rising"
+        ],
+        [
+          471,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 52.2107368380199,
+      "hip_height_px": 83.69495031251788,
+      "chest_height_px": 50.31957720630675,
+      "head_height_px": 63.11195667039175,
+      "tail_max_speed_px_frame": 1.0554245864164427e-05,
+      "max_recovery_speed_px_frame": 9.344608384917667,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.029878178346880318,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 15,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 242,
+      "state": "supported",
+      "start_frame": 331,
+      "support_frame": 477,
+      "events": [
+        [
+          331,
+          "rising"
+        ],
+        [
+          477,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 52.70521897768617,
+      "hip_height_px": 83.07087953907524,
+      "chest_height_px": 49.819646442595115,
+      "head_height_px": 62.59575997259742,
+      "tail_max_speed_px_frame": 3.695027295280379e-06,
+      "max_recovery_speed_px_frame": 9.498811600039048,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.02957000671451539,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 20,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 259,
+      "state": "supported",
+      "start_frame": 348,
+      "support_frame": 493,
+      "events": [
+        [
+          348,
+          "rising"
+        ],
+        [
+          493,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 52.731218004008724,
+      "hip_height_px": 82.94814510043838,
+      "chest_height_px": 49.65645831428316,
+      "head_height_px": 62.43204268839861,
+      "tail_max_speed_px_frame": 2.6776664938310597e-06,
+      "max_recovery_speed_px_frame": 15.563068806553195,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.03763417507820921,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 70.60148148148147,
+      "phase": 25,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 227,
+      "state": "supported",
+      "start_frame": 316,
+      "support_frame": 942,
+      "events": [
+        [
+          316,
+          "repositioning"
+        ],
+        [
+          556,
+          "repositioning"
+        ],
+        [
+          796,
+          "rising"
+        ],
+        [
+          942,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.666172698898556,
+      "hip_height_px": 82.28813344862283,
+      "chest_height_px": 49.54882191045078,
+      "head_height_px": 62.284385428210385,
+      "tail_max_speed_px_frame": 1.367010760845757e-08,
+      "max_recovery_speed_px_frame": 7.445584186882908,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09607074585021466,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 0,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 230,
+      "state": "supported",
+      "start_frame": 319,
+      "support_frame": 945,
+      "events": [
+        [
+          319,
+          "repositioning"
+        ],
+        [
+          559,
+          "repositioning"
+        ],
+        [
+          799,
+          "rising"
+        ],
+        [
+          945,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.6661467174394,
+      "hip_height_px": 82.28814592838847,
+      "chest_height_px": 49.54881453208577,
+      "head_height_px": 62.284379566125494,
+      "tail_max_speed_px_frame": 1.3672208102738391e-08,
+      "max_recovery_speed_px_frame": 7.606748003266009,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09607231105600005,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 5,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 238,
+      "state": "supported",
+      "start_frame": 327,
+      "support_frame": 714,
+      "events": [
+        [
+          327,
+          "repositioning"
+        ],
+        [
+          567,
+          "rising"
+        ],
+        [
+          714,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.663534000181244,
+      "hip_height_px": 82.28909599924194,
+      "chest_height_px": 49.54856459549353,
+      "head_height_px": 62.28425117452292,
+      "tail_max_speed_px_frame": 1.3714515737461984e-08,
+      "max_recovery_speed_px_frame": 9.695646598889253,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09411022055712577,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 10,
+      "frames": 1500,
+      "reposition_count": 1
+    },
+    {
+      "collapse_frame": 239,
+      "state": "supported",
+      "start_frame": 328,
+      "support_frame": 716,
+      "events": [
+        [
+          328,
+          "repositioning"
+        ],
+        [
+          568,
+          "rising"
+        ],
+        [
+          716,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.60570850268567,
+      "hip_height_px": 82.31801842116874,
+      "chest_height_px": 49.5313207202729,
+      "head_height_px": 62.27039669208972,
+      "tail_max_speed_px_frame": 1.449100668848457e-08,
+      "max_recovery_speed_px_frame": 7.386295530189737,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.0950578950416981,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 15,
+      "frames": 1500,
+      "reposition_count": 1
+    },
+    {
+      "collapse_frame": 252,
+      "state": "supported",
+      "start_frame": 341,
+      "support_frame": 967,
+      "events": [
+        [
+          341,
+          "repositioning"
+        ],
+        [
+          581,
+          "repositioning"
+        ],
+        [
+          821,
+          "rising"
+        ],
+        [
+          967,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.66664334180863,
+      "hip_height_px": 82.28790626209582,
+      "chest_height_px": 49.54895695011339,
+      "head_height_px": 62.2844929191927,
+      "tail_max_speed_px_frame": 1.3636553075756549e-08,
+      "max_recovery_speed_px_frame": 7.410386029636067,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09608732084100993,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 20,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 276,
+      "state": "supported",
+      "start_frame": 365,
+      "support_frame": 762,
+      "events": [
+        [
+          365,
+          "repositioning"
+        ],
+        [
+          605,
+          "rising"
+        ],
+        [
+          762,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 51.00339497663443,
+      "hip_height_px": 84.9267889360284,
+      "chest_height_px": 51.11139929426457,
+      "head_height_px": 63.939318600789306,
+      "tail_max_speed_px_frame": 1.2763979898060873e-05,
+      "max_recovery_speed_px_frame": 11.420854527917779,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.06315660647355134,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -70.60148148148147,
+      "phase": 25,
+      "frames": 1500,
+      "reposition_count": 1
+    },
+    {
+      "collapse_frame": 223,
+      "state": "supported",
+      "start_frame": 312,
+      "support_frame": 459,
+      "events": [
+        [
+          312,
+          "rising"
+        ],
+        [
+          459,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.72445151380123,
+      "hip_height_px": 82.2909137312748,
+      "chest_height_px": 49.61546714939453,
+      "head_height_px": 62.34688028072998,
+      "tail_max_speed_px_frame": 7.81724899695559e-07,
+      "max_recovery_speed_px_frame": 9.601527270677085,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 0.7654696846449647,
+      "force_limit_ratio": 0.0707036776834947,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 0,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 228,
+      "state": "supported",
+      "start_frame": 317,
+      "support_frame": 464,
+      "events": [
+        [
+          317,
+          "rising"
+        ],
+        [
+          464,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.623462424470404,
+      "hip_height_px": 82.31197109763181,
+      "chest_height_px": 49.54637043715553,
+      "head_height_px": 62.28403881264853,
+      "tail_max_speed_px_frame": 1.813002104160709e-07,
+      "max_recovery_speed_px_frame": 9.519738988300858,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 0.8617618542678147,
+      "force_limit_ratio": 0.051722938211831854,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 5,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 231,
+      "state": "supported",
+      "start_frame": 320,
+      "support_frame": 461,
+      "events": [
+        [
+          320,
+          "rising"
+        ],
+        [
+          461,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 50.74703513725717,
+      "hip_height_px": 85.27153461064816,
+      "chest_height_px": 51.40984484801106,
+      "head_height_px": 64.24495782744242,
+      "tail_max_speed_px_frame": 1.306805946914279e-05,
+      "max_recovery_speed_px_frame": 9.678657329362068,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.08341505861228922,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 10,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 236,
+      "state": "supported",
+      "start_frame": 325,
+      "support_frame": 470,
+      "events": [
+        [
+          325,
+          "rising"
+        ],
+        [
+          470,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 51.71111337009279,
+      "hip_height_px": 84.44722619010957,
+      "chest_height_px": 51.01100614418988,
+      "head_height_px": 63.81924236911715,
+      "tail_max_speed_px_frame": 1.2208040704792983e-05,
+      "max_recovery_speed_px_frame": 9.795918002084136,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.025166925132801363,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 15,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 241,
+      "state": "supported",
+      "start_frame": 330,
+      "support_frame": 474,
+      "events": [
+        [
+          330,
+          "rising"
+        ],
+        [
+          474,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 51.094306456088816,
+      "hip_height_px": 85.09214880830353,
+      "chest_height_px": 51.44279657488897,
+      "head_height_px": 64.26955330081091,
+      "tail_max_speed_px_frame": 1.0876740577663544e-05,
+      "max_recovery_speed_px_frame": 9.18806133989915,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.0826179545140711,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 20,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 252,
+      "state": "supported",
+      "start_frame": 341,
+      "support_frame": 489,
+      "events": [
+        [
+          341,
+          "rising"
+        ],
+        [
+          489,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 51.55363450855771,
+      "hip_height_px": 84.34158408764924,
+      "chest_height_px": 50.71675474390224,
+      "head_height_px": 63.52890788677928,
+      "tail_max_speed_px_frame": 1.2409264147893928e-05,
+      "max_recovery_speed_px_frame": 9.144753340685611,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.02533207571470925,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 88.25185185185184,
+      "phase": 25,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 223,
+      "state": "supported",
+      "start_frame": 312,
+      "support_frame": 938,
+      "events": [
+        [
+          312,
+          "repositioning"
+        ],
+        [
+          552,
+          "repositioning"
+        ],
+        [
+          792,
+          "rising"
+        ],
+        [
+          938,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.66657755625043,
+      "hip_height_px": 82.28793791642386,
+      "chest_height_px": 49.54893792765148,
+      "head_height_px": 62.28447774955555,
+      "tail_max_speed_px_frame": 1.3620583222909104e-08,
+      "max_recovery_speed_px_frame": 7.330245479427687,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09623371121699405,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 0,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 227,
+      "state": "supported",
+      "start_frame": 316,
+      "support_frame": 942,
+      "events": [
+        [
+          316,
+          "repositioning"
+        ],
+        [
+          556,
+          "repositioning"
+        ],
+        [
+          796,
+          "rising"
+        ],
+        [
+          942,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.66628134976169,
+      "hip_height_px": 82.28808078697077,
+      "chest_height_px": 49.548852893413596,
+      "head_height_px": 62.2844100517508,
+      "tail_max_speed_px_frame": 1.3627711509130387e-08,
+      "max_recovery_speed_px_frame": 7.441435244304112,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09605627616283573,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 5,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 233,
+      "state": "supported",
+      "start_frame": 322,
+      "support_frame": 948,
+      "events": [
+        [
+          322,
+          "repositioning"
+        ],
+        [
+          562,
+          "repositioning"
+        ],
+        [
+          802,
+          "rising"
+        ],
+        [
+          948,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.66647650566329,
+      "hip_height_px": 82.28798673441179,
+      "chest_height_px": 49.54890900689719,
+      "head_height_px": 62.28445474261963,
+      "tail_max_speed_px_frame": 1.3636893490794615e-08,
+      "max_recovery_speed_px_frame": 7.366027861242314,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09624867449646868,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 10,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 237,
+      "state": "supported",
+      "start_frame": 326,
+      "support_frame": 714,
+      "events": [
+        [
+          326,
+          "repositioning"
+        ],
+        [
+          566,
+          "rising"
+        ],
+        [
+          714,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.60581403014805,
+      "hip_height_px": 82.31794060629201,
+      "chest_height_px": 49.53130518469652,
+      "head_height_px": 62.27037893306988,
+      "tail_max_speed_px_frame": 1.3192738429622566e-08,
+      "max_recovery_speed_px_frame": 7.540122456477256,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.0947798705852426,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 15,
+      "frames": 1500,
+      "reposition_count": 1
+    },
+    {
+      "collapse_frame": 242,
+      "state": "supported",
+      "start_frame": 331,
+      "support_frame": 722,
+      "events": [
+        [
+          331,
+          "repositioning"
+        ],
+        [
+          573,
+          "rising"
+        ],
+        [
+          722,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 51.223237897626575,
+      "hip_height_px": 85.19627059980053,
+      "chest_height_px": 51.72325484020979,
+      "head_height_px": 64.54690994383162,
+      "tail_max_speed_px_frame": 1.1771120671059413e-05,
+      "max_recovery_speed_px_frame": 11.637775860405178,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.08208917780765536,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 20,
+      "frames": 1500,
+      "reposition_count": 1
+    },
+    {
+      "collapse_frame": 250,
+      "state": "supported",
+      "start_frame": 339,
+      "support_frame": 965,
+      "events": [
+        [
+          339,
+          "repositioning"
+        ],
+        [
+          579,
+          "repositioning"
+        ],
+        [
+          819,
+          "rising"
+        ],
+        [
+          965,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.66681065989286,
+      "hip_height_px": 82.28782589934195,
+      "chest_height_px": 49.54900506055151,
+      "head_height_px": 62.284531243569006,
+      "tail_max_speed_px_frame": 1.3668690646711593e-08,
+      "max_recovery_speed_px_frame": 7.260149806874943,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09626625609205146,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -88.25185185185184,
+      "phase": 25,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 218,
+      "state": "supported",
+      "start_frame": 307,
+      "support_frame": 454,
+      "events": [
+        [
+          307,
+          "rising"
+        ],
+        [
+          454,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.72223164137256,
+      "hip_height_px": 82.26036234219475,
+      "chest_height_px": 49.566933956921105,
+      "head_height_px": 62.299060944752,
+      "tail_max_speed_px_frame": 7.877756882934448e-09,
+      "max_recovery_speed_px_frame": 10.710649926422873,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.04521179037688505,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 0,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 224,
+      "state": "supported",
+      "start_frame": 313,
+      "support_frame": 461,
+      "events": [
+        [
+          313,
+          "rising"
+        ],
+        [
+          461,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.67803127112586,
+      "hip_height_px": 82.29880492948172,
+      "chest_height_px": 49.580647584095686,
+      "head_height_px": 62.3141093361653,
+      "tail_max_speed_px_frame": 3.6709238056149617e-07,
+      "max_recovery_speed_px_frame": 10.448291490822967,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 0.7638919647179064,
+      "force_limit_ratio": 0.08471831570225838,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 5,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 227,
+      "state": "supported",
+      "start_frame": 316,
+      "support_frame": 466,
+      "events": [
+        [
+          316,
+          "rising"
+        ],
+        [
+          466,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.87528345131432,
+      "hip_height_px": 82.19348518189025,
+      "chest_height_px": 49.62129526081509,
+      "head_height_px": 62.34313395824387,
+      "tail_max_speed_px_frame": 7.363725293033601e-10,
+      "max_recovery_speed_px_frame": 12.727339461831452,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.057275777569981375,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 10,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 233,
+      "state": "supported",
+      "start_frame": 322,
+      "support_frame": 468,
+      "events": [
+        [
+          322,
+          "rising"
+        ],
+        [
+          468,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.81851010495359,
+      "hip_height_px": 82.21989805001832,
+      "chest_height_px": 49.60277390764469,
+      "head_height_px": 62.32904227651136,
+      "tail_max_speed_px_frame": 2.360545549884178e-07,
+      "max_recovery_speed_px_frame": 1.3149005628038815,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 0.7473640345116938,
+      "force_limit_ratio": 0.08831998297070115,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 15,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 238,
+      "state": "supported",
+      "start_frame": 327,
+      "support_frame": 474,
+      "events": [
+        [
+          327,
+          "rising"
+        ],
+        [
+          474,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.61019523233631,
+      "hip_height_px": 82.31489671345787,
+      "chest_height_px": 49.533167314990806,
+      "head_height_px": 62.271956866480764,
+      "tail_max_speed_px_frame": 7.391685111231105e-10,
+      "max_recovery_speed_px_frame": 10.737038360210079,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.029442955087730212,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 20,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 243,
+      "state": "supported",
+      "start_frame": 332,
+      "support_frame": 482,
+      "events": [
+        [
+          332,
+          "rising"
+        ],
+        [
+          482,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.672012111147524,
+      "hip_height_px": 82.28713826527755,
+      "chest_height_px": 49.55132924944223,
+      "head_height_px": 62.28644163716115,
+      "tail_max_speed_px_frame": 7.1347498965891716e-09,
+      "max_recovery_speed_px_frame": 13.140096839733406,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.06481693338665699,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": 150.0,
+      "phase": 25,
+      "frames": 1500,
+      "reposition_count": 0
+    },
+    {
+      "collapse_frame": 219,
+      "state": "supported",
+      "start_frame": 308,
+      "support_frame": 934,
+      "events": [
+        [
+          308,
+          "repositioning"
+        ],
+        [
+          548,
+          "repositioning"
+        ],
+        [
+          788,
+          "rising"
+        ],
+        [
+          934,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.667595967719166,
+      "hip_height_px": 82.28744588189252,
+      "chest_height_px": 49.54922901001504,
+      "head_height_px": 62.28470923374425,
+      "tail_max_speed_px_frame": 1.3415227869512893e-08,
+      "max_recovery_speed_px_frame": 7.565078026862413,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09610892777396626,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 0,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 223,
+      "state": "supported",
+      "start_frame": 312,
+      "support_frame": 938,
+      "events": [
+        [
+          312,
+          "repositioning"
+        ],
+        [
+          552,
+          "repositioning"
+        ],
+        [
+          792,
+          "rising"
+        ],
+        [
+          938,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.66548091087127,
+      "hip_height_px": 82.28846704457746,
+      "chest_height_px": 49.54862299399258,
+      "head_height_px": 62.2842270024924,
+      "tail_max_speed_px_frame": 1.3651966459642832e-08,
+      "max_recovery_speed_px_frame": 7.449699679034486,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09608422528222668,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 5,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 228,
+      "state": "supported",
+      "start_frame": 317,
+      "support_frame": 943,
+      "events": [
+        [
+          317,
+          "repositioning"
+        ],
+        [
+          557,
+          "repositioning"
+        ],
+        [
+          797,
+          "rising"
+        ],
+        [
+          943,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.665481456561565,
+      "hip_height_px": 82.28846681617355,
+      "chest_height_px": 49.548623208791525,
+      "head_height_px": 62.28422718444824,
+      "tail_max_speed_px_frame": 1.3660038675443096e-08,
+      "max_recovery_speed_px_frame": 7.449681750582749,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.0960841429317787,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 10,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 233,
+      "state": "supported",
+      "start_frame": 322,
+      "support_frame": 949,
+      "events": [
+        [
+          322,
+          "repositioning"
+        ],
+        [
+          562,
+          "repositioning"
+        ],
+        [
+          802,
+          "rising"
+        ],
+        [
+          949,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.6664062725996,
+      "hip_height_px": 82.28872170974526,
+      "chest_height_px": 49.548520948563066,
+      "head_height_px": 62.28408851879669,
+      "tail_max_speed_px_frame": 1.4136254652899643e-08,
+      "max_recovery_speed_px_frame": 7.516338167155418,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09266098959846163,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 15,
+      "frames": 1500,
+      "reposition_count": 2
+    },
+    {
+      "collapse_frame": 238,
+      "state": "supported",
+      "start_frame": 327,
+      "support_frame": 726,
+      "events": [
+        [
+          327,
+          "repositioning"
+        ],
+        [
+          567,
+          "rising"
+        ],
+        [
+          726,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.33827964299206,
+      "hip_height_px": 82.49227228237925,
+      "chest_height_px": 49.538229938541065,
+      "head_height_px": 62.29007717468727,
+      "tail_max_speed_px_frame": 1.0954713375619615e-06,
+      "max_recovery_speed_px_frame": 9.70545516175548,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.07221544939999196,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 20,
+      "frames": 1500,
+      "reposition_count": 1
+    },
+    {
+      "collapse_frame": 244,
+      "state": "supported",
+      "start_frame": 333,
+      "support_frame": 959,
+      "events": [
+        [
+          333,
+          "repositioning"
+        ],
+        [
+          573,
+          "repositioning"
+        ],
+        [
+          813,
+          "rising"
+        ],
+        [
+          959,
+          "supported"
+        ]
+      ],
+      "reason": null,
+      "support_contacts": 4,
+      "com_margin_px": 53.66652725747556,
+      "hip_height_px": 82.28796236618848,
+      "chest_height_px": 49.548923656484305,
+      "head_height_px": 62.28446642237071,
+      "tail_max_speed_px_frame": 1.3652084060340476e-08,
+      "max_recovery_speed_px_frame": 7.268054725399478,
+      "min_supported_contacts": 4,
+      "tail_all_supported": true,
+      "torque_limit_ratio": 1.0,
+      "force_limit_ratio": 0.09624231611535793,
+      "gravity_values": [
+        2.2284444444444444
+      ],
+      "max_penetration_px": 0.0,
+      "finite": true,
+      "push_px": -150.0,
+      "phase": 25,
+      "frames": 1500,
+      "reposition_count": 2
+    }
+  ],
+  "summary": {
+    "cases": 36,
+    "states": {
+      "supported": 36
+    },
+    "all_finite": true,
+    "max_penetration_px": 0.0,
+    "max_torque_ratio": 1.0,
+    "max_force_ratio": 0.09626625609205146,
+    "all_supported_hold": true
+  }
+}

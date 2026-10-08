@@ -18,7 +18,7 @@ KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
 
 def run(push_ms, n=420, **kw):
     kw.setdefault("hill", False)   # Adim 23 olcumu: sabit (hizdan bagimsiz) tork tavani
-    sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=7.0, **kw)
+    sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=7.0, **kw)
     double = 0
     for _ in range(n):
         sim.step()
@@ -68,8 +68,8 @@ class TorqueCatchTest(unittest.TestCase):
             self.assertGreater(s14.GROUND_Y - max(sim.hip_y_log[210:]), 90.0, dv)
 
     def test_undisturbed_walk_unchanged_by_catch_timing(self):
-        a = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0)
-        b = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, catch_timing="fixed")
+        a = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0)
+        b = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0, catch_timing="fixed")
         for _ in range(900):
             a.step()
             b.step()

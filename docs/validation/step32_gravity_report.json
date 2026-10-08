@@ -1,0 +1,2807 @@
+{
+  "legacy": {
+    "collapse_frame": 222,
+    "head": {
+      "first_frame": 236,
+      "peak_input_speed_px_frame": 11.917999205645344
+    },
+    "chest": {
+      "first_frame": 243,
+      "peak_input_speed_px_frame": 5.057343080575038
+    },
+    "first_hand_contact_frame": 229,
+    "brace_start_frame": 222,
+    "brace_final_state": "released",
+    "hand_ground_projection_share_pct": 8.434642310104836,
+    "shoulder_actuator_upward_impulse": 4.130960297552537,
+    "tail_max_speed_px_frame": 0.0012554259290419457,
+    "tail_hip_drift_px": 0.0021685077952042775,
+    "max_ground_penetration_px": 0.0,
+    "finite": true,
+    "gravity_values": [
+      0.065,
+      2.2284444444444444
+    ],
+    "collapse_reason": "leg_force",
+    "step_count": 16,
+    "slip_frames": 92,
+    "mean_pre_push_speed": 1.8834731813138654,
+    "catch_gravity": 0.065,
+    "leg_load_gravity": 0.065,
+    "muscle_gravity": 2.2284444444444444,
+    "capture_frequency": 0.045
+  },
+  "unified": {
+    "collapse_frame": 218,
+    "head": {
+      "first_frame": 222,
+      "peak_input_speed_px_frame": 24.19942954332896
+    },
+    "chest": {
+      "first_frame": 224,
+      "peak_input_speed_px_frame": 8.135310560149037
+    },
+    "first_hand_contact_frame": 219,
+    "brace_start_frame": 218,
+    "brace_final_state": "released",
+    "hand_ground_projection_share_pct": 6.493269953637311,
+    "shoulder_actuator_upward_impulse": 2.240184111934581,
+    "tail_max_speed_px_frame": 0.0007336144256067105,
+    "tail_hip_drift_px": 0.005613959388824696,
+    "max_ground_penetration_px": 0.0,
+    "finite": true,
+    "gravity_values": [
+      2.2284444444444444
+    ],
+    "collapse_reason": "support_height",
+    "step_count": 17,
+    "slip_frames": 72,
+    "mean_pre_push_speed": 1.939932177911349,
+    "catch_gravity": 2.2284444444444444,
+    "leg_load_gravity": 2.2284444444444444,
+    "muscle_gravity": 2.2284444444444444,
+    "capture_frequency": 0.11005049346146119
+  },
+  "push_px": 150.0,
+  "phase_offset_frames": 0,
+  "walking": {
+    "legacy": {
+      "frames": 1800,
+      "seconds": 60.0,
+      "ice": true,
+      "collapsed": false,
+      "fell": false,
+      "finite": true,
+      "mean_speed": 1.902357746374241,
+      "speed_std": 1.1936558741733647,
+      "target_speed": 2.0,
+      "steps": 122,
+      "slip_frames": 104,
+      "min_hip_height": 166.6039359446284,
+      "phases": [
+        "flat_foot",
+        "heel_strike",
+        "swing",
+        "toe_off"
+      ],
+      "gravity_values": [
+        0.065
+      ]
+    },
+    "unified": {
+      "frames": 1800,
+      "seconds": 60.0,
+      "ice": true,
+      "collapsed": false,
+      "fell": false,
+      "finite": true,
+      "mean_speed": 1.9232074494335418,
+      "speed_std": 1.014961858642504,
+      "target_speed": 2.0,
+      "steps": 150,
+      "slip_frames": 82,
+      "min_hip_height": 165.1073014164294,
+      "phases": [
+        "flat_foot",
+        "heel_strike",
+        "swing",
+        "toe_off"
+      ],
+      "gravity_values": [
+        2.2284444444444444
+      ]
+    }
+  },
+  "walking_dry_ground": {
+    "frames": 1800,
+    "seconds": 60.0,
+    "ice": false,
+    "collapsed": false,
+    "fell": false,
+    "finite": true,
+    "mean_speed": 1.9210597886448835,
+    "speed_std": 1.0174266341315044,
+    "target_speed": 2.0,
+    "steps": 149,
+    "slip_frames": 0,
+    "min_hip_height": 165.1073014164294,
+    "phases": [
+      "flat_foot",
+      "heel_strike",
+      "swing",
+      "toe_off"
+    ],
+    "gravity_values": [
+      2.2284444444444444
+    ]
+  },
+  "metric_notes": [
+    "Unified gravity is 9.81 m/s^2 = 2.2284444444444444 px/frame^2 at 184 px/0.9 m and 30 Hz.",
+    "Legacy reproduces step 31: 0.065 walking, real-scale muscle load and falling; it is not the default.",
+    "Both runs use protective arms and articulated spine. Gravity, capture margins and gravity-based traction differ.",
+    "The support-height failure detector is enabled in unified mode to enter ragdoll before ground penetration, even without a catch landing.",
+    "The engine remains a hybrid IK/Verlet model. Normal gait and support-length control are not a full force-driven musculoskeletal model.",
+    "Force/velocity and impact diagnostic limits remain those documented in steps 30 and 31."
+  ],
+  "sweep": [
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.459805812472034,
+        "tail_hip_drift_px": 111.99392612631573,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 29,
+        "slip_frames": 92,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 222,
+        "head": {
+          "first_frame": 233,
+          "peak_input_speed_px_frame": 12.627410500232259
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 227,
+        "brace_start_frame": 222,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 4.77358985369581,
+        "shoulder_actuator_upward_impulse": 10.384274937149893,
+        "tail_max_speed_px_frame": 0.0012753978255440161,
+        "tail_hip_drift_px": 0.0014363049423309349,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 18,
+        "slip_frames": 73,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 0
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 17.828959867667347,
+        "tail_hip_drift_px": 113.10741742100902,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 28,
+        "slip_frames": 96,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 228,
+        "head": {
+          "first_frame": 242,
+          "peak_input_speed_px_frame": 10.32338371182243
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 236,
+        "brace_start_frame": 228,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 4.290780005108801,
+        "shoulder_actuator_upward_impulse": 3.8622565180135244,
+        "tail_max_speed_px_frame": 0.0053798294782647065,
+        "tail_hip_drift_px": 0.009390402282747345,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 19,
+        "slip_frames": 77,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 5
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.95920923070276,
+        "tail_hip_drift_px": 112.3055961587554,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 29,
+        "slip_frames": 100,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 232,
+        "head": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 13.040762556679965
+        },
+        "chest": {
+          "first_frame": 251,
+          "peak_input_speed_px_frame": 4.729266405505655
+        },
+        "first_hand_contact_frame": 237,
+        "brace_start_frame": 232,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.060844587706404,
+        "shoulder_actuator_upward_impulse": 3.5568195041959276,
+        "tail_max_speed_px_frame": 0.0009129604409599183,
+        "tail_hip_drift_px": 0.0038233501584272744,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 19,
+        "slip_frames": 76,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 10
+    },
+    {
+      "legacy": {
+        "collapse_frame": 299,
+        "head": {
+          "first_frame": 323,
+          "peak_input_speed_px_frame": 9.92927290786821
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 316,
+        "brace_start_frame": 299,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 4.525720054137653,
+        "shoulder_actuator_upward_impulse": 10.575964225365976,
+        "tail_max_speed_px_frame": 0.0010972650450374042,
+        "tail_hip_drift_px": 0.006631517991991132,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 20,
+        "slip_frames": 106,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 239,
+        "head": {
+          "first_frame": 250,
+          "peak_input_speed_px_frame": 12.079348692182691
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 244,
+        "brace_start_frame": 239,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 5.756140589891219,
+        "shoulder_actuator_upward_impulse": 11.92044137407323,
+        "tail_max_speed_px_frame": 0.0015560722692577339,
+        "tail_hip_drift_px": 0.0017617775764620092,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 20,
+        "slip_frames": 80,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 15
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.427234241203706,
+        "tail_hip_drift_px": 112.72364760104153,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 29,
+        "slip_frames": 111,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 243,
+        "head": {
+          "first_frame": 248,
+          "peak_input_speed_px_frame": 24.166596845323625
+        },
+        "chest": {
+          "first_frame": 249,
+          "peak_input_speed_px_frame": 10.859171254457408
+        },
+        "first_hand_contact_frame": 245,
+        "brace_start_frame": 243,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.10215021533069,
+        "shoulder_actuator_upward_impulse": 2.0512438811684026,
+        "tail_max_speed_px_frame": 0.005382488215166745,
+        "tail_hip_drift_px": 0.021615827662913034,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 20,
+        "slip_frames": 85,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 20
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 14.5794419222444,
+        "tail_hip_drift_px": 112.74839335846809,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 29,
+        "slip_frames": 113,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 247,
+        "head": {
+          "first_frame": 256,
+          "peak_input_speed_px_frame": 13.156965458746015
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 251,
+        "brace_start_frame": 247,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 4.601078559574853,
+        "shoulder_actuator_upward_impulse": 9.273381706131188,
+        "tail_max_speed_px_frame": 0.0009718368580528381,
+        "tail_hip_drift_px": 0.0016302319494343465,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 20,
+        "slip_frames": 87,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 70.60148148148147,
+      "phase_offset_frames": 25
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.988263985707512,
+        "tail_hip_drift_px": 112.46988600164002,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 30,
+        "slip_frames": 155,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 222,
+        "head": {
+          "first_frame": 240,
+          "peak_input_speed_px_frame": 16.816338098547135
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 235,
+        "brace_start_frame": 222,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 16.34454129383098,
+        "shoulder_actuator_upward_impulse": 10.051462280393537,
+        "tail_max_speed_px_frame": 0.0039533260602033875,
+        "tail_hip_drift_px": 0.05307752011927391,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 17,
+        "slip_frames": 76,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 0
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.88107773728444,
+        "tail_hip_drift_px": 113.68959482233828,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 29,
+        "slip_frames": 194,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 229,
+        "head": {
+          "first_frame": 237,
+          "peak_input_speed_px_frame": 13.884014887596265
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 233,
+        "brace_start_frame": 229,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 14.251231322308957,
+        "shoulder_actuator_upward_impulse": 15.578303598642787,
+        "tail_max_speed_px_frame": 0.00036565746446628333,
+        "tail_hip_drift_px": 0.005845025195554854,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 18,
+        "slip_frames": 77,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 5
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.38571399088366,
+        "tail_hip_drift_px": 114.75948358339912,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 27,
+        "slip_frames": 207,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 233,
+        "head": {
+          "first_frame": 251,
+          "peak_input_speed_px_frame": 14.976652986724957
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 246,
+        "brace_start_frame": 233,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 16.92127017899758,
+        "shoulder_actuator_upward_impulse": 15.134103611817718,
+        "tail_max_speed_px_frame": 0.004192239326864911,
+        "tail_hip_drift_px": 0.05243199510834984,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 18,
+        "slip_frames": 79,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 10
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 20.841839894929116,
+        "tail_hip_drift_px": 45.18285988329626,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 24,
+        "slip_frames": 269,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 240,
+        "head": {
+          "first_frame": 247,
+          "peak_input_speed_px_frame": 13.859784440457304
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 242,
+        "brace_start_frame": 240,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.604464697965504,
+        "shoulder_actuator_upward_impulse": 15.333066201355471,
+        "tail_max_speed_px_frame": 0.008519912993110503,
+        "tail_hip_drift_px": 0.07797564817587954,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 19,
+        "slip_frames": 79,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 15
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.402154867556323,
+        "tail_hip_drift_px": 114.23532584768901,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 27,
+        "slip_frames": 215,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 244,
+        "head": {
+          "first_frame": 251,
+          "peak_input_speed_px_frame": 20.306982147389874
+        },
+        "chest": {
+          "first_frame": 250,
+          "peak_input_speed_px_frame": 11.099991161802564
+        },
+        "first_hand_contact_frame": 247,
+        "brace_start_frame": 244,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 5.661588856049973,
+        "shoulder_actuator_upward_impulse": 0.7213962695127117,
+        "tail_max_speed_px_frame": 0.001062507527372156,
+        "tail_hip_drift_px": 0.0012517438476180587,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 87,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 20
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.391291288885945,
+        "tail_hip_drift_px": 112.38778533086293,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 28,
+        "slip_frames": 167,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 247,
+        "head": {
+          "first_frame": 258,
+          "peak_input_speed_px_frame": 17.298454322920918
+        },
+        "chest": {
+          "first_frame": 258,
+          "peak_input_speed_px_frame": 6.38687460355186
+        },
+        "first_hand_contact_frame": 252,
+        "brace_start_frame": 247,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.323534737337997,
+        "shoulder_actuator_upward_impulse": 0.3350673065584698,
+        "tail_max_speed_px_frame": 3.124450551431314e-05,
+        "tail_hip_drift_px": 0.0007768530914802341,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 90,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -70.60148148148147,
+      "phase_offset_frames": 25
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 14.54644671314186,
+        "tail_hip_drift_px": 112.64899685342289,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 29,
+        "slip_frames": 94,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 220,
+        "head": {
+          "first_frame": 225,
+          "peak_input_speed_px_frame": 22.817997721292045
+        },
+        "chest": {
+          "first_frame": 226,
+          "peak_input_speed_px_frame": 10.959766728326088
+        },
+        "first_hand_contact_frame": 223,
+        "brace_start_frame": 220,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 5.849140009558634,
+        "shoulder_actuator_upward_impulse": 1.1287098811868848,
+        "tail_max_speed_px_frame": 0.0005798772577937394,
+        "tail_hip_drift_px": 0.007707059580525311,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 17,
+        "slip_frames": 74,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 0
+    },
+    {
+      "legacy": {
+        "collapse_frame": 244,
+        "head": {
+          "first_frame": 259,
+          "peak_input_speed_px_frame": 14.907703711632621
+        },
+        "chest": {
+          "first_frame": 262,
+          "peak_input_speed_px_frame": 6.73948106340589
+        },
+        "first_hand_contact_frame": 252,
+        "brace_start_frame": 244,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 10.553808500593073,
+        "shoulder_actuator_upward_impulse": 0.24710369161802792,
+        "tail_max_speed_px_frame": 0.002940954052147201,
+        "tail_hip_drift_px": 0.03391305529487454,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 17,
+        "slip_frames": 96,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 226,
+        "head": {
+          "first_frame": 231,
+          "peak_input_speed_px_frame": 22.401613013261
+        },
+        "chest": {
+          "first_frame": 230,
+          "peak_input_speed_px_frame": 19.982258834636013
+        },
+        "first_hand_contact_frame": 229,
+        "brace_start_frame": 226,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 5.563070058615908,
+        "shoulder_actuator_upward_impulse": 0.30579114867817087,
+        "tail_max_speed_px_frame": 0.003586086361435338,
+        "tail_hip_drift_px": 0.0363021800765182,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 18,
+        "slip_frames": 77,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 5
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.908089231970322,
+        "tail_hip_drift_px": 112.95517095533683,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 28,
+        "slip_frames": 101,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 231,
+        "head": {
+          "first_frame": 240,
+          "peak_input_speed_px_frame": 14.244585848349402
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 235,
+        "brace_start_frame": 231,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 15.872039748808042,
+        "shoulder_actuator_upward_impulse": 22.442641686296955,
+        "tail_max_speed_px_frame": 0.005044894657578857,
+        "tail_hip_drift_px": 0.056039517286194496,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 19,
+        "slip_frames": 75,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 10
+    },
+    {
+      "legacy": {
+        "collapse_frame": 240,
+        "head": {
+          "first_frame": 250,
+          "peak_input_speed_px_frame": 13.843547024177667
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 245,
+        "brace_start_frame": 240,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.67600880969647,
+        "shoulder_actuator_upward_impulse": 3.5350915136341268,
+        "tail_max_speed_px_frame": 0.00042150376219267745,
+        "tail_hip_drift_px": 0.003444594260372469,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 16,
+        "slip_frames": 106,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 237,
+        "head": {
+          "first_frame": 244,
+          "peak_input_speed_px_frame": 17.412825991766567
+        },
+        "chest": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 7.999118486110149
+        },
+        "first_hand_contact_frame": 240,
+        "brace_start_frame": 237,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.175157990648656,
+        "shoulder_actuator_upward_impulse": 0.9384680163366598,
+        "tail_max_speed_px_frame": 0.0014915643238948733,
+        "tail_hip_drift_px": 0.017879325776902988,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 80,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 15
+    },
+    {
+      "legacy": {
+        "collapse_frame": 253,
+        "head": {
+          "first_frame": 271,
+          "peak_input_speed_px_frame": 14.24158898687682
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 266,
+        "brace_start_frame": 253,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 10.405219844499339,
+        "shoulder_actuator_upward_impulse": 4.6517504204521165,
+        "tail_max_speed_px_frame": 0.0004967882928259897,
+        "tail_hip_drift_px": 0.003249159778192734,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 18,
+        "slip_frames": 110,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 241,
+        "head": {
+          "first_frame": 253,
+          "peak_input_speed_px_frame": 11.377449313394095
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 245,
+        "brace_start_frame": 241,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 4.99849323619604,
+        "shoulder_actuator_upward_impulse": 6.425276879004026,
+        "tail_max_speed_px_frame": 0.008432954184391245,
+        "tail_hip_drift_px": 0.002403431744255613,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 20,
+        "slip_frames": 83,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 20
+    },
+    {
+      "legacy": {
+        "collapse_frame": 255,
+        "head": {
+          "first_frame": 269,
+          "peak_input_speed_px_frame": 14.100772121808973
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 264,
+        "brace_start_frame": 255,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.968441735709446,
+        "shoulder_actuator_upward_impulse": 4.566715258230914,
+        "tail_max_speed_px_frame": 0.003678187841134539,
+        "tail_hip_drift_px": 0.05235879477504568,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 18,
+        "slip_frames": 113,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 245,
+        "head": {
+          "first_frame": 251,
+          "peak_input_speed_px_frame": 19.521391123324292
+        },
+        "chest": {
+          "first_frame": 252,
+          "peak_input_speed_px_frame": 9.639202327663213
+        },
+        "first_hand_contact_frame": 248,
+        "brace_start_frame": 245,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.029504629484882,
+        "shoulder_actuator_upward_impulse": 1.0942529202481142,
+        "tail_max_speed_px_frame": 0.0013663138081714784,
+        "tail_hip_drift_px": 0.013035395387191784,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 88,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 88.25185185185184,
+      "phase_offset_frames": 25
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.433614352680916,
+        "tail_hip_drift_px": 112.7306623415812,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 28,
+        "slip_frames": 187,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 221,
+        "head": {
+          "first_frame": 228,
+          "peak_input_speed_px_frame": 16.181599778892235
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 224,
+        "brace_start_frame": 221,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 11.637810207277127,
+        "shoulder_actuator_upward_impulse": 12.978139485649606,
+        "tail_max_speed_px_frame": 0.0012961043666108664,
+        "tail_hip_drift_px": 0.026959767669850976,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 17,
+        "slip_frames": 75,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 0
+    },
+    {
+      "legacy": {
+        "collapse_frame": 256,
+        "head": {
+          "first_frame": 272,
+          "peak_input_speed_px_frame": 15.086365784567533
+        },
+        "chest": {
+          "first_frame": 274,
+          "peak_input_speed_px_frame": 8.639766671316181
+        },
+        "first_hand_contact_frame": 266,
+        "brace_start_frame": 256,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.628307968678717,
+        "shoulder_actuator_upward_impulse": 0.20629022192163038,
+        "tail_max_speed_px_frame": 0.0033527728145486763,
+        "tail_hip_drift_px": 0.09391325248986959,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 17,
+        "slip_frames": 97,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 226,
+        "head": {
+          "first_frame": 234,
+          "peak_input_speed_px_frame": 17.7847181267054
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 231,
+        "brace_start_frame": 226,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 16.95765006282233,
+        "shoulder_actuator_upward_impulse": 6.574001696980433,
+        "tail_max_speed_px_frame": 0.0009635878083779337,
+        "tail_hip_drift_px": 0.006473273647273459,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 18,
+        "slip_frames": 77,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 5
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 34.89730115264687,
+        "tail_hip_drift_px": 27.813803437146817,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 23,
+        "slip_frames": 269,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 231,
+        "head": {
+          "first_frame": 236,
+          "peak_input_speed_px_frame": 20.829301934248292
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 233,
+        "brace_start_frame": 231,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 5.912891631176339,
+        "shoulder_actuator_upward_impulse": 11.63231207832948,
+        "tail_max_speed_px_frame": 0.0021404890921741457,
+        "tail_hip_drift_px": 0.03285882298519027,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 18,
+        "slip_frames": 77,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 10
+    },
+    {
+      "legacy": {
+        "collapse_frame": 241,
+        "head": {
+          "first_frame": 254,
+          "peak_input_speed_px_frame": 16.530538132050935
+        },
+        "chest": {
+          "first_frame": 253,
+          "peak_input_speed_px_frame": 7.180651463411891
+        },
+        "first_hand_contact_frame": 248,
+        "brace_start_frame": 241,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.58355813200368,
+        "shoulder_actuator_upward_impulse": 0.25573185006406995,
+        "tail_max_speed_px_frame": 0.0043538887979640475,
+        "tail_hip_drift_px": 0.06519015902446768,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 15,
+        "slip_frames": 105,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 236,
+        "head": {
+          "first_frame": 244,
+          "peak_input_speed_px_frame": 14.380257680708041
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 240,
+        "brace_start_frame": 236,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.367221183138268,
+        "shoulder_actuator_upward_impulse": 5.4497565751101416,
+        "tail_max_speed_px_frame": 0.007199966987849884,
+        "tail_hip_drift_px": 0.07812119284906771,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 79,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 15
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 18.503164311649854,
+        "tail_hip_drift_px": 105.96064448796756,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 27,
+        "slip_frames": 214,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 241,
+        "head": {
+          "first_frame": 248,
+          "peak_input_speed_px_frame": 16.359905800952276
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 244,
+        "brace_start_frame": 241,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 18.01895998987321,
+        "shoulder_actuator_upward_impulse": 12.297072209981037,
+        "tail_max_speed_px_frame": 0.0006844194842446633,
+        "tail_hip_drift_px": 0.010731019269769604,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 84,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 20
+    },
+    {
+      "legacy": {
+        "collapse_frame": null,
+        "head": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": null,
+        "brace_start_frame": null,
+        "brace_final_state": "idle",
+        "hand_ground_projection_share_pct": null,
+        "shoulder_actuator_upward_impulse": 0.0,
+        "tail_max_speed_px_frame": 19.773327313235534,
+        "tail_hip_drift_px": 110.97107488572527,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065
+        ],
+        "collapse_reason": null,
+        "step_count": 27,
+        "slip_frames": 220,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 245,
+        "head": {
+          "first_frame": 256,
+          "peak_input_speed_px_frame": 18.67501755870603
+        },
+        "chest": {
+          "first_frame": 256,
+          "peak_input_speed_px_frame": 6.381321949705466
+        },
+        "first_hand_contact_frame": 251,
+        "brace_start_frame": 245,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.498254116564355,
+        "shoulder_actuator_upward_impulse": 0.08234464802423261,
+        "tail_max_speed_px_frame": 3.702839725783206e-05,
+        "tail_hip_drift_px": 0.0009123591351283267,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 88,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -88.25185185185184,
+      "phase_offset_frames": 25
+    },
+    {
+      "legacy": {
+        "collapse_frame": 222,
+        "head": {
+          "first_frame": 236,
+          "peak_input_speed_px_frame": 11.917999205645344
+        },
+        "chest": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 5.057343080575038
+        },
+        "first_hand_contact_frame": 229,
+        "brace_start_frame": 222,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.434642310104836,
+        "shoulder_actuator_upward_impulse": 4.130960297552537,
+        "tail_max_speed_px_frame": 0.0012554259290419457,
+        "tail_hip_drift_px": 0.0021685077952042775,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 16,
+        "slip_frames": 92,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 218,
+        "head": {
+          "first_frame": 222,
+          "peak_input_speed_px_frame": 24.19942954332896
+        },
+        "chest": {
+          "first_frame": 224,
+          "peak_input_speed_px_frame": 8.135310560149037
+        },
+        "first_hand_contact_frame": 219,
+        "brace_start_frame": 218,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.493269953637311,
+        "shoulder_actuator_upward_impulse": 2.240184111934581,
+        "tail_max_speed_px_frame": 0.0007336144256067105,
+        "tail_hip_drift_px": 0.005613959388824696,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 17,
+        "slip_frames": 72,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 0
+    },
+    {
+      "legacy": {
+        "collapse_frame": 227,
+        "head": {
+          "first_frame": 238,
+          "peak_input_speed_px_frame": 10.505437729291486
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 231,
+        "brace_start_frame": 227,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.986498221800456,
+        "shoulder_actuator_upward_impulse": 6.402390560769322,
+        "tail_max_speed_px_frame": 0.008114468293256474,
+        "tail_hip_drift_px": 0.16077450147463423,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 16,
+        "slip_frames": 97,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 223,
+        "head": {
+          "first_frame": 227,
+          "peak_input_speed_px_frame": 27.8780421849454
+        },
+        "chest": {
+          "first_frame": 227,
+          "peak_input_speed_px_frame": 11.841489028870171
+        },
+        "first_hand_contact_frame": 225,
+        "brace_start_frame": 223,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 5.862113174842602,
+        "shoulder_actuator_upward_impulse": 0.7121963382093259,
+        "tail_max_speed_px_frame": 0.0019345089121361638,
+        "tail_hip_drift_px": 0.004997855469355272,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 18,
+        "slip_frames": 74,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 5
+    },
+    {
+      "legacy": {
+        "collapse_frame": 232,
+        "head": {
+          "first_frame": 248,
+          "peak_input_speed_px_frame": 7.890467722673748
+        },
+        "chest": {
+          "first_frame": 253,
+          "peak_input_speed_px_frame": 6.305441695711863
+        },
+        "first_hand_contact_frame": 237,
+        "brace_start_frame": 232,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 17.290800987303136,
+        "shoulder_actuator_upward_impulse": 0.5934634378567625,
+        "tail_max_speed_px_frame": 0.0036664947836865026,
+        "tail_hip_drift_px": 0.003573421311330094,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 16,
+        "slip_frames": 101,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 228,
+        "head": {
+          "first_frame": 232,
+          "peak_input_speed_px_frame": 24.39665497720557
+        },
+        "chest": {
+          "first_frame": 233,
+          "peak_input_speed_px_frame": 9.24881690095367
+        },
+        "first_hand_contact_frame": 229,
+        "brace_start_frame": 228,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.703819058326472,
+        "shoulder_actuator_upward_impulse": 2.154491813681662,
+        "tail_max_speed_px_frame": 0.0005093691511231969,
+        "tail_hip_drift_px": 0.004089836592356733,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 18,
+        "slip_frames": 74,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 10
+    },
+    {
+      "legacy": {
+        "collapse_frame": 237,
+        "head": {
+          "first_frame": 244,
+          "peak_input_speed_px_frame": 14.590441492950106
+        },
+        "chest": {
+          "first_frame": 254,
+          "peak_input_speed_px_frame": 8.709759668900006
+        },
+        "first_hand_contact_frame": 239,
+        "brace_start_frame": 237,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.56021187432852,
+        "shoulder_actuator_upward_impulse": 4.688231476444538,
+        "tail_max_speed_px_frame": 3.6332382701247513e-05,
+        "tail_hip_drift_px": 0.00011931362348605035,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 15,
+        "slip_frames": 107,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 233,
+        "head": {
+          "first_frame": 238,
+          "peak_input_speed_px_frame": 11.445300817004409
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 235,
+        "brace_start_frame": 233,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 9.331985702931608,
+        "shoulder_actuator_upward_impulse": 1.3435909450914063,
+        "tail_max_speed_px_frame": 1.5737128251203103e-05,
+        "tail_hip_drift_px": 0.0004266945475137618,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 76,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 15
+    },
+    {
+      "legacy": {
+        "collapse_frame": 241,
+        "head": {
+          "first_frame": 253,
+          "peak_input_speed_px_frame": 12.36316125721271
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 247,
+        "brace_start_frame": 241,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.892892103016576,
+        "shoulder_actuator_upward_impulse": 2.8299263718110352,
+        "tail_max_speed_px_frame": 0.0007967299595152155,
+        "tail_hip_drift_px": 0.0007872717727650524,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 17,
+        "slip_frames": 110,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 238,
+        "head": {
+          "first_frame": 242,
+          "peak_input_speed_px_frame": 24.834706095286265
+        },
+        "chest": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 8.337514334371008
+        },
+        "first_hand_contact_frame": 239,
+        "brace_start_frame": 238,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.324325053947528,
+        "shoulder_actuator_upward_impulse": 2.109685853607077,
+        "tail_max_speed_px_frame": 6.413648124286902e-05,
+        "tail_hip_drift_px": 0.0003477262525848346,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 81,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 20
+    },
+    {
+      "legacy": {
+        "collapse_frame": 246,
+        "head": {
+          "first_frame": 257,
+          "peak_input_speed_px_frame": 14.585253128577222
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 251,
+        "brace_start_frame": 246,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 10.791226547264191,
+        "shoulder_actuator_upward_impulse": 4.205546147488791,
+        "tail_max_speed_px_frame": 0.0005461425012812031,
+        "tail_hip_drift_px": 0.005986644028666888,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 17,
+        "slip_frames": 114,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 242,
+        "head": {
+          "first_frame": 246,
+          "peak_input_speed_px_frame": 27.710530819315977
+        },
+        "chest": {
+          "first_frame": 247,
+          "peak_input_speed_px_frame": 10.581381750212017
+        },
+        "first_hand_contact_frame": 244,
+        "brace_start_frame": 242,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.011448387463194,
+        "shoulder_actuator_upward_impulse": 1.1562811991738606,
+        "tail_max_speed_px_frame": 0.0035399465338386994,
+        "tail_hip_drift_px": 0.009562951656448604,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 85,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": 150.0,
+      "phase_offset_frames": 25
+    },
+    {
+      "legacy": {
+        "collapse_frame": 222,
+        "head": {
+          "first_frame": 232,
+          "peak_input_speed_px_frame": 12.852067543488602
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 227,
+        "brace_start_frame": 222,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 9.156424672523569,
+        "shoulder_actuator_upward_impulse": 2.9148641134413973,
+        "tail_max_speed_px_frame": 0.0011101036795958038,
+        "tail_hip_drift_px": 0.005987684011984129,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 15,
+        "slip_frames": 92,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 218,
+        "head": {
+          "first_frame": 223,
+          "peak_input_speed_px_frame": 18.53954715436413
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 220,
+        "brace_start_frame": 218,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 3.9231935032936898,
+        "shoulder_actuator_upward_impulse": 1.7053015200940633,
+        "tail_max_speed_px_frame": 0.006187903939631333,
+        "tail_hip_drift_px": 0.042568857523946235,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 17,
+        "slip_frames": 72,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 0
+    },
+    {
+      "legacy": {
+        "collapse_frame": 228,
+        "head": {
+          "first_frame": 240,
+          "peak_input_speed_px_frame": 21.20836176325048
+        },
+        "chest": {
+          "first_frame": 240,
+          "peak_input_speed_px_frame": 9.295682403241813
+        },
+        "first_hand_contact_frame": 237,
+        "brace_start_frame": 228,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 6.713039826038471,
+        "shoulder_actuator_upward_impulse": 0.10091716127577509,
+        "tail_max_speed_px_frame": 0.0017097168320357235,
+        "tail_hip_drift_px": 0.04906909100989765,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 15,
+        "slip_frames": 97,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 223,
+        "head": {
+          "first_frame": 227,
+          "peak_input_speed_px_frame": 21.103911728583455
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 225,
+        "brace_start_frame": 223,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 33.88082588242756,
+        "shoulder_actuator_upward_impulse": 2.6776498081256634,
+        "tail_max_speed_px_frame": 0.008642155099555552,
+        "tail_hip_drift_px": 0.09157618850278482,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 18,
+        "slip_frames": 74,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 5
+    },
+    {
+      "legacy": {
+        "collapse_frame": 231,
+        "head": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 18.723075236197587
+        },
+        "chest": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 7.154077764643375
+        },
+        "first_hand_contact_frame": 238,
+        "brace_start_frame": 231,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.586864624996356,
+        "shoulder_actuator_upward_impulse": 0.1991614285236381,
+        "tail_max_speed_px_frame": 0.0021571011231955595,
+        "tail_hip_drift_px": 0.05102007009386966,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 15,
+        "slip_frames": 100,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 228,
+        "head": {
+          "first_frame": 232,
+          "peak_input_speed_px_frame": 20.48971399066238
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 230,
+        "brace_start_frame": 228,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 18.983811836701904,
+        "shoulder_actuator_upward_impulse": 2.4575903284787963,
+        "tail_max_speed_px_frame": 0.005170101545992745,
+        "tail_hip_drift_px": 0.0016230508344676764,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 18,
+        "slip_frames": 74,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 10
+    },
+    {
+      "legacy": {
+        "collapse_frame": 237,
+        "head": {
+          "first_frame": 249,
+          "peak_input_speed_px_frame": 18.94591890161621
+        },
+        "chest": {
+          "first_frame": 249,
+          "peak_input_speed_px_frame": 5.988392490676006
+        },
+        "first_hand_contact_frame": 244,
+        "brace_start_frame": 237,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 8.657528690443481,
+        "shoulder_actuator_upward_impulse": 0.4061288633590415,
+        "tail_max_speed_px_frame": 0.0036011738075125885,
+        "tail_hip_drift_px": 0.0792976271582404,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 15,
+        "slip_frames": 106,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 233,
+        "head": {
+          "first_frame": 238,
+          "peak_input_speed_px_frame": 17.98902894758089
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 235,
+        "brace_start_frame": 233,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 14.689415063159338,
+        "shoulder_actuator_upward_impulse": 3.2295645154593813,
+        "tail_max_speed_px_frame": 0.004169732047250289,
+        "tail_hip_drift_px": 0.013140043670915702,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 76,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 15
+    },
+    {
+      "legacy": {
+        "collapse_frame": 242,
+        "head": {
+          "first_frame": 252,
+          "peak_input_speed_px_frame": 10.324705660711288
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 246,
+        "brace_start_frame": 242,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 19.89396862073582,
+        "shoulder_actuator_upward_impulse": 19.33675176077135,
+        "tail_max_speed_px_frame": 0.00036148540238053084,
+        "tail_hip_drift_px": 0.0026222799615140957,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 16,
+        "slip_frames": 110,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 238,
+        "head": {
+          "first_frame": 243,
+          "peak_input_speed_px_frame": 17.368277781661618
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 240,
+        "brace_start_frame": 238,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 4.134940454929687,
+        "shoulder_actuator_upward_impulse": 1.3998856035742908,
+        "tail_max_speed_px_frame": 0.005581977839645343,
+        "tail_hip_drift_px": 0.011019652553699189,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 81,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 20
+    },
+    {
+      "legacy": {
+        "collapse_frame": 247,
+        "head": {
+          "first_frame": 261,
+          "peak_input_speed_px_frame": 18.5844454814586
+        },
+        "chest": {
+          "first_frame": 261,
+          "peak_input_speed_px_frame": 5.5310443179287745
+        },
+        "first_hand_contact_frame": 257,
+        "brace_start_frame": 247,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 7.020044449473269,
+        "shoulder_actuator_upward_impulse": 0.12597691152650253,
+        "tail_max_speed_px_frame": 0.0028214718629964585,
+        "tail_hip_drift_px": 0.0651048094243265,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          0.065,
+          2.2284444444444444
+        ],
+        "collapse_reason": "leg_force",
+        "step_count": 16,
+        "slip_frames": 116,
+        "mean_pre_push_speed": 1.8834731813138654,
+        "catch_gravity": 0.065,
+        "leg_load_gravity": 0.065,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.045
+      },
+      "unified": {
+        "collapse_frame": 243,
+        "head": {
+          "first_frame": 247,
+          "peak_input_speed_px_frame": 21.86037744013356
+        },
+        "chest": {
+          "first_frame": null,
+          "peak_input_speed_px_frame": 0.0
+        },
+        "first_hand_contact_frame": 245,
+        "brace_start_frame": 243,
+        "brace_final_state": "released",
+        "hand_ground_projection_share_pct": 4.385830556253797,
+        "shoulder_actuator_upward_impulse": 2.4084681247590556,
+        "tail_max_speed_px_frame": 0.006471106279257679,
+        "tail_hip_drift_px": 0.04104633111572298,
+        "max_ground_penetration_px": 0.0,
+        "finite": true,
+        "gravity_values": [
+          2.2284444444444444
+        ],
+        "collapse_reason": "support_height",
+        "step_count": 19,
+        "slip_frames": 86,
+        "mean_pre_push_speed": 1.939932177911349,
+        "catch_gravity": 2.2284444444444444,
+        "leg_load_gravity": 2.2284444444444444,
+        "muscle_gravity": 2.2284444444444444,
+        "capture_frequency": 0.11005049346146119
+      },
+      "push_px": -150.0,
+      "phase_offset_frames": 25
+    }
+  ],
+  "sweep_summary": {
+    "cases": 36,
+    "legacy_collapsed": 19,
+    "unified_collapsed": 36,
+    "all_finite": true,
+    "max_penetration": 0.0,
+    "max_tail_speed": 0.008642155099555552,
+    "max_tail_hip_drift": 0.09157618850278482,
+    "gravity_constant": true
+  },
+  "mild_pushes": [
+    {
+      "push_ms": 0.25,
+      "phase": 0,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.25,
+      "phase": 5,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.25,
+      "phase": 10,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.25,
+      "phase": 15,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.25,
+      "phase": 20,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.25,
+      "phase": 25,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -0.25,
+      "phase": 0,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -0.25,
+      "phase": 5,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -0.25,
+      "phase": 10,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -0.25,
+      "phase": 15,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -0.25,
+      "phase": 20,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -0.25,
+      "phase": 25,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.5,
+      "phase": 0,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.5,
+      "phase": 5,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.5,
+      "phase": 10,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.5,
+      "phase": 15,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.5,
+      "phase": 20,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 0.5,
+      "phase": 25,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -0.5,
+      "phase": 0,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -0.5,
+      "phase": 5,
+      "collapsed": true,
+      "collapse_frame": 263,
+      "finite": true
+    },
+    {
+      "push_ms": -0.5,
+      "phase": 10,
+      "collapsed": true,
+      "collapse_frame": 265,
+      "finite": true
+    },
+    {
+      "push_ms": -0.5,
+      "phase": 15,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -0.5,
+      "phase": 20,
+      "collapsed": true,
+      "collapse_frame": 302,
+      "finite": true
+    },
+    {
+      "push_ms": -0.5,
+      "phase": 25,
+      "collapsed": true,
+      "collapse_frame": 275,
+      "finite": true
+    },
+    {
+      "push_ms": 1.0,
+      "phase": 0,
+      "collapsed": true,
+      "collapse_frame": 239,
+      "finite": true
+    },
+    {
+      "push_ms": 1.0,
+      "phase": 5,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 1.0,
+      "phase": 10,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 1.0,
+      "phase": 15,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 1.0,
+      "phase": 20,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": 1.0,
+      "phase": 25,
+      "collapsed": false,
+      "collapse_frame": null,
+      "finite": true
+    },
+    {
+      "push_ms": -1.0,
+      "phase": 0,
+      "collapsed": true,
+      "collapse_frame": 240,
+      "finite": true
+    },
+    {
+      "push_ms": -1.0,
+      "phase": 5,
+      "collapsed": true,
+      "collapse_frame": 252,
+      "finite": true
+    },
+    {
+      "push_ms": -1.0,
+      "phase": 10,
+      "collapsed": true,
+      "collapse_frame": 257,
+      "finite": true
+    },
+    {
+      "push_ms": -1.0,
+      "phase": 15,
+      "collapsed": true,
+      "collapse_frame": 257,
+      "finite": true
+    },
+    {
+      "push_ms": -1.0,
+      "phase": 20,
+      "collapsed": true,
+      "collapse_frame": 253,
+      "finite": true
+    },
+    {
+      "push_ms": -1.0,
+      "phase": 25,
+      "collapsed": true,
+      "collapse_frame": 270,
+      "finite": true
+    }
+  ]
+}

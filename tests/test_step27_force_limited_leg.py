@@ -14,7 +14,7 @@ KICK_PER_MS = 5.18 * 184.0 / 0.9 / 30.0
 
 
 def run(push_ms, t=7.0, n=420, **kw):
-    sim = s14.ActiveBipedSim(big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
+    sim = s14.ActiveBipedSim(gravity_mode="legacy", big_push_kick_px=push_ms * KICK_PER_MS, big_push_t=t, **kw)
     for _ in range(n):
         sim.step()
     return sim
@@ -22,7 +22,7 @@ def run(push_ms, t=7.0, n=420, **kw):
 
 class ForceCapacityTest(unittest.TestCase):
     def test_capacity_matches_two_bone_formula(self):
-        sim = s14.ActiveBipedSim()
+        sim = s14.ActiveBipedSim(gravity_mode="legacy")
         W = s14.BODY_MASS_TOTAL * s14.G_REAL_PX
         # 200 Nm tek bacak, 70 kg: agirligi tam tasiyabildigi kalca-ayak mesafesi ~140 px
         self.assertAlmostEqual(sim.leg_force_capacity(140.0) / W, 1.0, delta=0.03)
@@ -34,8 +34,8 @@ class ForceCapacityTest(unittest.TestCase):
 
 class ForceLimitedLegTest(unittest.TestCase):
     def test_undisturbed_walk_unchanged(self):
-        a = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0)
-        b = s14.ActiveBipedSim(stumble_kick_px=0.0, big_push_kick_px=0.0, shock_mode="servo")
+        a = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0)
+        b = s14.ActiveBipedSim(gravity_mode="legacy", stumble_kick_px=0.0, big_push_kick_px=0.0, shock_mode="servo")
         for _ in range(900):
             a.step()
             b.step()

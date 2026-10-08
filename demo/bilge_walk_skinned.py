@@ -54,6 +54,17 @@ class BilgeSkin:
     def bind_bone(self, name, a, b):
         return bone_matrix(self.anchor(name), self.anchor(name, 'end'), a, b, self.scale(name))
 
+    def head_matrix(self, position, neck_angle, neck_socket=None):
+        """Calibrate the source eye line without changing the face pixels."""
+        eyes = self.settings['head'].get('eye_line')
+        native_angle = 0.0
+        if eyes is not None:
+            direction = self.parts['head'].local(eyes[1]) - self.parts['head'].local(eyes[0])
+            native_angle = np.arctan2(direction[1], direction[0])
+        source = self.anchor('head') if neck_socket is None else self.anchor('head', 'neck_base')
+        target = position if neck_socket is None else neck_socket
+        return rigid_matrix(source, target, self.scale('head'), neck_angle-native_angle)
+
     def transforms(self, frame):
         p = frame['points']
         matrices, ankles = {}, {}
@@ -84,7 +95,9 @@ class BilgeSkin:
         body_angle = np.arctan2(axis[0], -axis[1])
         matrices['torso'] = self.bind_bone('torso', p['chest'], p['pelvis'] + [0., 6.])
         matrices['pelvis'] = rigid_matrix(self.anchor('pelvis'), p['pelvis'] + [0., 8.], self.scale('pelvis'), body_angle)
-        matrices['head'] = rigid_matrix(self.anchor('head'), p['head'], self.scale('head'), body_angle)
+        neck = p['head'] - p['chest']
+        socket = transform_point(matrices['torso'], self.anchor('torso', 'neck_socket'))
+        matrices['head'] = self.head_matrix(p['head'], np.arctan2(neck[0], -neck[1]), socket)
         # Braid root is an actual local point on the head, not a world offset.
         braid_root = transform_point(matrices['head'], self.parts['head'].local([95/435, 341/438]))
         braid_end = p['pelvis'] + [-19., -12.]
