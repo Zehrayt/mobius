@@ -4868,23 +4868,33 @@ tutamıyordu. Yön kapısı (`BRACE_DIR_MIN_PX` = 8 px): omuz–kalça farkı (3
 ileri) bundan küçükken hedef kilitlenmez, kollar omzun altına "hazır" uzanır.
 TTC tetiği ve yön kapısı yalnız tek yerçekiminde (eski koşul kanaryaları aynen).
 
-### Boyun: kamçı ölçümü ve sönüm (denendi, kapalı)
+### Boyun: kamçı ölçümü ve çözücü içi sönüm (XPBD, bayrakla)
 
-Kamçı ölçüldü (36 koşu, göğüs/omuz zemine ilk değdiği kare; `whip` ölçümü):
+Kamçı ölçüldü (36 koşu, göğüs/omuz zemine ilk değdiği kare). Pasif düşüşte baş–gövde
+göreli hızı temasta 349°/s, sonraki karelerde 854°/s'ye çıkıyor; boyun 60°'lik sert
+sınıra çarpıyor. Adımlar arası sönüm (`spine.hinge_drive`, `NECK_FALL_*`) etkisizdi:
+tepe, göğüs zemin çözücüsünün içinde tek karede durdurulurken oluşuyor.
 
-| | Temasta baş–gövde açısal hızı | Sonraki karelerde tepe | Boyun açısı (medyan) |
-|---|---|---|---|
-| Pasif | 349°/s (gövde 208°/s) | **854°/s** | 60.2° — sınıra çarpıyor |
-| Refleksli | 160°/s (gövde 41°/s) | 259°/s | 41° |
+Çözüm: boyun için **çözücü döngüsünün içinde** XPBD (Macklin 2016) sönümlü açı kısıtı
+(`physics/spine.SoftHinge`; `NECK_XPBD_ENABLED`, `NECK_XPBD_COMPLIANCE` α,
+`NECK_XPBD_BETA` β). Sönüm terimi ∇C·(x − xⁿ) karenin başından beri olan yer
+değişimine bakar; zemin göğsü döngü içinde durdurduğunda boyun da aynı döngüde
+frenlenir. Doğrusal momentum korunur (test).
 
-Pasif düşüşte kamçı gerçek. Bel–omuz–baş menteşesine sönüm (`physics/spine.hinge_drive`;
-`NECK_FALL_K/C`, sınıra yaklaştıkça artan `NECK_FALL_END_C`, kare başı düzeltme sınırı
-`NECK_FALL_ALPHA_MAX`) denendi: hafif (C 0.03/0.1), ilerleyici (0.3/0.6) ve sınırı
-0.6 rad/kareye gevşetilmiş haliyle pasif tepe 842–900°/s'de, boyun 60°'de kaldı;
-refleksli baş medyanı 4.3 → 4.3–5.4 (iyileşmedi). Neden: tepe, zemin çözücüsünün
-içinde göğüs tek karede durdurulurken oluşuyor; adımlar arası (Verlet hızına
-uygulanan) hiçbir sönüm oraya yetişmiyor. Doğru çözüm boynu çözücü döngüsünde
-sönümlü esnek kısıt (XPBD) yapmak — açık iş. Varsayılan kapalı.
+| Ayar (36 koşu) | Pasif baş darbesi (medyan) | Pasif kamçı tepe | Pasif boyun açısı | Refleksli baş darbesi | Refleksli kamçı tepe |
+|---|---:|---:|---:|---:|---:|
+| XPBD yok (varsayılan) | 9.2 | 854°/s | 60.2° (sınırda) | **4.3** | **259°/s** |
+| α 0.5 (β 1/4/16) | 8.5–9.6 | 832–1072°/s | 60.2° | 3.7–6.0 | 271–282°/s |
+| α 0.05 (β 4/16) | 6.2–7.7 | 1049–1146°/s | 60.2–60.4° | 5.1–6.8 | 316–330°/s |
+| **α 0.01, β 16** | **7.0** | 558°/s | 47.5° | 5.1 | 386°/s |
+| α 0.02, β 32 | 7.3 | 884°/s | 57.6° | 4.7 | 293°/s |
+| α 0.005, β 16 | 9.7 | **356°/s** | **36.6°** | 7.3 | 223°/s |
+
+Yumuşak α'da (0.5) kısıt paydaya göre (~0.01) çok esnek, iterasyon başına neredeyse
+düzeltme yapmıyor. α 0.01–0.005 kamçıyı %35–58 kırıyor ve boynu sınırdan uzak tutuyor;
+pasif düşüşte baş darbesini de azaltıyor (α 0.01). Refleks açıkken baş, sertleşen boyunla
+gövdeyle birlikte daha sert iniyor. Tek ayar her durumda kazandırmadığı için varsayılan
+kapalı; açık işler: refleks moduna göre α seçimi.
 
 ### Kalkma override'ı (exception yok)
 
@@ -4963,6 +4973,26 @@ senaryo; dış tork ve yapışkan/sızdıran temas kaldırılınca dengeyi kendi
 Sıradaki iş: temas kuvvetlerini ve KM'yi her karede gözeten bir denge kontrolcüsü
 (README'de ayrı bölüm açılacak).
 
+#### Statik tork analizi, eklem uzayı denetimi, geniş taban (10 Ekim)
+
+- **Statik ihtiyaç:** gövdeyi doğrultmada kalçanın statik torku (üst gövde ağırlığının
+  kalçaya göre momenti, ellerin taşıdığı yük düşülerek) her karede **30–94 Nm**. 140 Nm
+  tavanı yetiyor; "500 Nm" PD'nin büyük açı hatasıyla istediği tork, statik ihtiyaç değil.
+- **Asıl sebep motor mimarisiydi:** parça başına dünya-açısı motorları iç tork modunda
+  aynı kalça eklemine düşüp birbirini götürüyordu (gövde 140 Nm'de, uyluklar ona karşı).
+  Gövdeyi doğrultmadan itibaren **eklem uzayı** (`JOINT_SPACE_STATES`): senaryonun hedef
+  açıları toplanır, her eklemde (kalça, diz, boyun, omuz) tek motor göreli açıyı sürer.
+  Yerdeki fazlarda parça motoru + eklem-komşusu tepkisi kalır (eklem uzayı orada
+  gövdenin dünya yönünü belirleyemiyor, 'rising'de takılıyordu).
+- **Geniş taban:** eski yerleştirme ön ayağı arka dizle aynı x'e koyuyordu (taban 1.4 px).
+  Yeni yarım diz çökme: ön uyluk yatay, ön baldır dik, ön ayak arka dizin ~90 px önünde
+  (`PLACE_KEYFRAMES` C, `WIDE_TRANSFER`); ölçüt "KM arka diz–ön ayak arasında ≥ 5 px".
+- **Şu anki durma noktası:** iki yönde de tek diz üstüne kadar (iç tork, eski kilit) geliniyor;
+  gövde doğrultmada **ön kalça eklemi** 140 Nm'de, istenen 145 → 270 Nm'ye tırmanıyor ve
+  kalça yere iniyor. Nokta ayakta ayak bileği torku olmadığından yarım diz duruşu
+  (arka diz + ön ayak + üç eklem) kapalı bir dört-çubuk; PD'nin yer çekimi ileri beslemesi
+  olmadan sarkması ve arka uyluğun yükü sütun gibi taşıyamaması sıradaki iş.
+
 ### Diğer düzeltmeler (birleşim incelemesi)
 - Omurga açıkken boyun sınırı bel–baş arasına uygulanır (önce uzunluk bel–omuz
   parçasıyla hesaplanıp kısıt kalça–baş arasına konuyordu).
@@ -4970,7 +5000,7 @@ Sıradaki iş: temas kuvvetlerini ve KM'yi her karede gözeten bir denge kontrol
 - Bilinen sınır (birleşimden önce de vardı): tek yerçekiminde 1 m/s geri itki
   bile çöküşle bitiyor; iki yerçekimli eski ayarda bitmiyordu.
 
-Testler: 182/182 (tam paket). `tests/test_step30_impulse_bracing.py`
+Testler: 184/184 (tam paket). `tests/test_step30_impulse_bracing.py`
 Gül Nihal'in Adım 30 testleridir.
 
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar

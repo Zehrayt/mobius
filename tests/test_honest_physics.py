@@ -86,5 +86,47 @@ class CoulombBudgetTest(unittest.TestCase):
         self.assertLessEqual(worst, 1e-9)
 
 
+class NeckXPBDTest(unittest.TestCase):
+    def test_soft_hinge_conserves_linear_momentum(self):
+        from physics.spine import SoftHinge
+        rng = np.random.default_rng(3)
+        p = rng.normal(size=(3, 2)) * 30.0
+        prev = p - rng.normal(size=(3, 2))
+        m = np.array([0.6, 0.4, 0.3])
+        before = (m[:, None] * p).sum(axis=0)
+        hinge = SoftHinge(0.01, 16.0)
+        for _ in range(20):
+            hinge.project(p, prev, m, [0, 1, 2])
+        np.testing.assert_allclose((m[:, None] * p).sum(axis=0), before, atol=1e-9)
+
+    def test_passive_falls_neck_mostly_off_the_end_stop(self):
+        k = 5.18 * 184.0 / 0.9 / 30.0
+        scenes = [(p, ph) for p in (150.0, -150.0, 2.5 * k, -2.5 * k) for ph in (0, 10)]
+
+        def max_neck(enabled, push, phase):
+            sim = s14.ActiveBipedSim(big_push_kick_px=push, big_push_t=7.0 + phase / 30.0, bracing=False)
+            worst = 0.0
+            for _ in range(420):
+                sim.step()
+                if sim.collapsed and "waist" in sim.idx:
+                    i, p = sim.idx, sim.body.points
+                    a, b = p[i["shoulder"]] - p[i["waist"]], p[i["head"]] - p[i["shoulder"]]
+                    worst = max(worst, abs(np.degrees(np.arctan2(a[0] * b[1] - a[1] * b[0], a @ b))))
+            return worst
+
+        saved = s14.NECK_XPBD_ENABLED, s14.NECK_XPBD_COMPLIANCE, s14.NECK_XPBD_BETA
+        try:
+            res = {}
+            for enabled in (False, True):
+                s14.NECK_XPBD_ENABLED, s14.NECK_XPBD_COMPLIANCE, s14.NECK_XPBD_BETA = enabled, 0.01, 16.0
+                res[enabled] = [max_neck(enabled, p, ph) for p, ph in scenes]
+        finally:
+            s14.NECK_XPBD_ENABLED, s14.NECK_XPBD_COMPLIANCE, s14.NECK_XPBD_BETA = saved
+        # olculen: XPBD'siz medyan 60.1 der, 8/8 sahne sinirda; XPBD (0.01, 16) ile 50.1, 3/8
+        self.assertEqual(sum(v > 59.0 for v in res[False]), len(scenes))
+        self.assertLess(np.median(res[True]), np.median(res[False]) - 5.0)
+        self.assertLess(sum(v > 59.0 for v in res[True]), len(scenes) // 2)
+
+
 if __name__ == "__main__":
     unittest.main()

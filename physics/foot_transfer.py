@@ -19,9 +19,20 @@ ACTIVE_STATES = ('foot_placing', 'transferring', 'half_kneeling')
 # icinden gecebilirdi. Alt fazlar: (A) uyluklar dik -> kalca dizlerin ustune cikar,
 # (B) on kalca bukulur, diz bukulur -> diz ve ayak HAVADA one gelir, (C) ayak basilir.
 # (bitis karesi, {parca: derece}); aci: parca vektorunun dusey-yukaridan sapmasi.
+# (C) genis tabanli yarim diz cokme: on uyluk yatay (-90), on baldir dik (180) ->
+# on ayak arka dizin ~92 px onunde; arka uyluk dik (0) -> kalca arka dizin ustunde.
+# Nokta ayakta ayak bilegi torku yok: on bacak ancak KM tabanin icindeyse durur.
+# Eski hedefler (-75/-145) ayagi kalcanin altina, arka dizle ayni x'e koyuyordu
+# (taban 1.4 px; KM destegin 19-41 px disinda, surtunmeyle tutuluyordu -- olculdu).
 PLACE_KEYFRAMES = ((120, {'thigh_f': 0., 'thigh_r': 0.}),
                    (300, {'thigh_f': -75., 'shank_f': -60.}),
-                   (480, {'shank_f': -145.}))
+                   (480, {'thigh_f': -90., 'shank_f': 180., 'thigh_r': 0.}))
+WIDE_TRANSFER = {'thigh_f': -90., 'shank_f': 180., 'thigh_r': 15.}
+WIDE_RISE_REAR_THIGH = 15.          # kalca arka dizin ~24 px onunde: dik govdenin KM'si tabanda kalir
+WIDE_RISE_TRUNK = 0.                # govde dogrultma hedefi (genis taban)
+MIN_FOOT_SHARE_WIDE = .15
+LEG_EXTENSION_WIDE = 130.           # kalca-on ayak: sqrt(92^2 + 92^2)
+MIN_BASE_MARGIN = 5.                # px: KM tabanin (arka diz .. on ayak) icinde
 PLACE_FRAMES_INTERNAL = PLACE_KEYFRAMES[-1][0]
 
 
@@ -43,14 +54,20 @@ class FootTransfer(GroundRecovery):
         self.front_knee_clearance = None
         self.transfer_contacts = 0
         self.transfer_margin = None
+        self.lower_base_margin = None
 
     def transfer_pairs(self, sim):
         hip, sh, head = [sim.idx[k] for k in ('hip', 'shoulder', 'head')]
         pairs = [(hip, sh, 125., 480.), (sh, head, 55., 100.)]
+        wide = self.internal_torques
         for side, (knee, foot) in sim.fallen_legs.items():
             front = side == self.front_side
-            pairs.extend([(knee, hip, -75. if front else 20., 480.),
-                          (knee, foot, -145. if front else -86., 120.)])
+            if wide:
+                thigh = WIDE_TRANSFER['thigh_f'] if front else WIDE_TRANSFER['thigh_r']
+                shank = WIDE_TRANSFER['shank_f'] if front else -86.
+            else:
+                thigh, shank = (-75. if front else 20.), (-145. if front else -86.)
+            pairs.extend([(knee, hip, thigh, 480.), (knee, foot, shank, 120.)])
         pairs.extend((hand, sh, -10., 300.) for _, hand in sim.arms.idx.values())
         return pairs
 
@@ -102,7 +119,8 @@ class FootTransfer(GroundRecovery):
             # Closed-chain leg extension presses the planted foot down and
             # applies the equal opposite impulse to the hip, without pins.
             foot = sim.fallen_legs[self.front_side][1]
-            self._extend(sim.body, sim.idx['hip'], foot, LEG_EXTENSION, LEG_FORCE_CAP, blend)
+            self._extend(sim.body, sim.idx['hip'], foot,
+                         LEG_EXTENSION_WIDE if self.internal_torques else LEG_EXTENSION, LEG_FORCE_CAP, blend)
 
     def observe(self, sim, ground_y):
         super().observe(sim, ground_y)
@@ -121,10 +139,16 @@ class FootTransfer(GroundRecovery):
             geometry = (self.transfer_contacts == 4 and self.transfer_margin >= 0 and
                         self.front_knee_clearance > 25 and ground_y-p[hip, 1] > 65 and
                         ground_y-p[sim.idx['shoulder'], 1] > 30 and
-                        abs(p[foot, 0]-p[hip, 0]) < 50 and abs(self.com_to_foot) < 20)
+                        (self.transfer_margin >= MIN_BASE_MARGIN if self.internal_torques else
+                         abs(p[foot, 0]-p[hip, 0]) < 50 and abs(self.com_to_foot) < 20))
             quiet = geometry and self.speed < QUIET_SPEED
             if self.state == 'foot_placing':
                 quiet = quiet and elapsed >= (PLACE_FRAMES_INTERNAL if self.internal_torques else PLACE_FRAMES)
+            elif self.internal_torques:
+                # genis taban: eller kalkinca KM arka diz .. on ayak arasinda kalmali
+                quiet = (quiet and self.lower_base_margin is not None and
+                         self.lower_base_margin >= MIN_BASE_MARGIN and
+                         self.foot_share >= MIN_FOOT_SHARE_WIDE and elapsed >= TRANSFER_FRAMES)
             else:
                 quiet = (quiet and self.foot_share >= .25 and
                          self.foot_share >= self.placed_share+.08 and elapsed >= TRANSFER_FRAMES)
@@ -172,6 +196,8 @@ class FootTransfer(GroundRecovery):
         self.front_knee_clearance = float(ground_y-p[knee, 1]-12.)
         self.transfer_margin = (float(min(com-min(p[supports, 0]), max(p[supports, 0])-com))
                                 if supports else None)
+        lo, hi = sorted((float(p[rear, 0]), float(p[foot, 0])))
+        self.lower_base_margin = float(min(com-lo, hi-com)) if hi-lo > 1. else None
         if self.state in ACTIVE_STATES:
             self.support_contacts = self.transfer_contacts
             self.com_margin = self.transfer_margin

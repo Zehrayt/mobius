@@ -19,6 +19,17 @@ TORQUE_UNIT_NM = 0.2909
 KNEE_TORQUE_MAX_NM = 200.
 # Bacak agirlik tasimaya ayak yerlestirmeden sonra baslar; yerdeki/el-diz fazlarinda
 # eski tavan (yuksek tavanla el-diz destegine gecis bozuluyordu, olculdu).
+# Eklem uzayi denetimi (ic tork modunda): senaryonun dunya-acisi hedefleri toplanir,
+# her eklemde TEK motor goreli aciyi (cocuk - ebeveyn) surer, +tau cocuga, -tau
+# ebeveyne. Parca basina dunya-acisi motorlari ayni eklemde birbirini goturuyordu:
+# govde dogrultmada statik ihtiyac 51-81 Nm iken govde motoru 140 Nm'de, uyluk
+# motorlari ona karsi; net kalca torku ~0, govde kalkmiyordu (olculdu).
+JOINT_SPACE = True
+# Yerdeki fazlarda (yuzustu -> el-diz -> tek diz) govdenin dunyaya gore yonu
+# hedeflenmeli; orada parca motoru + eklem-komsusu tepkisi (yine ic tork) calisiyor,
+# eklem uzayi 'rising'de takiliyordu (olculdu). Eklem uzayi govde dogrultmadan itibaren.
+JOINT_SPACE_STATES = ('torso_raising', 'upright_kneeling', 'standing_rising', 'standing',
+                      'walk_prepare', 'walk_shift', 'walk_swing', 'walk_land')
 LOW_SUPPORT_STATES = ('waiting', 'repositioning', 'rising', 'supported', 'foot_placing')
 CALM_SPEED = .15
 CALM_FRAMES = 30
@@ -63,12 +74,16 @@ class GroundRecovery:
         self.reaction_log=[]     # (kare, durum, c, d, -T): ic tork tepkileri
         self.sim_ref=None        # step14 her kare drive() oncesi atar (eklem esleme icin)
         self.internal_torques=INTERNAL_TORQUES
+        self._targets={}
 
     def _motor(self,body,a,b,target,cap,gain):
         if (self.internal_torques and self.sim_ref is not None and self.sim_ref.fallen_legs
                 and self.state not in LOW_SUPPORT_STATES):
             if any((a,b)==(k,f) for k,f in self.sim_ref.fallen_legs.values()):
                 cap=max(cap,KNEE_TORQUE_MAX_NM/TORQUE_UNIT_NM)
+        if self.internal_torques and JOINT_SPACE and self.sim_ref is not None and self.state in JOINT_SPACE_STATES:
+            self._targets[a,b]=(target,cap,gain)    # apply_joint_motors() uygular
+            return
         p,q,m=body.points,body.prev_points,body.masses
         d=p[b]-p[a];length=max(float(np.linalg.norm(d)),1e-6)
         direction=d/length; tangent=np.array([-direction[1],direction[0]])
@@ -85,6 +100,48 @@ class GroundRecovery:
             for (c,d),share in self.reaction_segments(self.sim_ref,a,b):
                 self._couple(body,c,d,-torque*share)
                 self.reaction_log.append((self.telemetry_frame,self.state,c,d,-torque*share))
+
+    @staticmethod
+    def _seg(body,a,b):
+        """Parca (a->b) acisi (dusey-yukaridan, + saga), acisal hizi, eylemsizligi."""
+        p,q,m=body.points,body.prev_points,body.masses
+        d=p[b]-p[a];length=max(float(np.linalg.norm(d)),1e-6)
+        tangent=np.array([-d[1],d[0]])/length
+        omega=float(np.dot((p[b]-q[b])-(p[a]-q[a]),tangent))/length
+        return float(np.arctan2(d[0],-d[1])),omega,length**2/(1/m[a]+1/m[b])
+
+    def joints(self,sim):
+        """(cocuk parca, ebeveyn parca) -- kalca, diz, boyun, omuz."""
+        idx=sim.idx;hip,sh,head=idx['hip'],idx['shoulder'],idx['head']
+        trunk=(hip,sh);out=[]
+        for k,f in (sim.fallen_legs or {}).values():
+            out+=[((k,hip),trunk),((k,f),(k,hip))]
+        out.append(((sh,head),trunk))
+        if sim.arms is not None:
+            out+=[((h,sh),trunk) for _,h in sim.arms.idx.values()]
+        return out
+
+    def apply_joint_motors(self,sim):
+        targets,self._targets=self._targets,{}
+        if not targets:
+            return
+        body=sim.body
+        for child,parent in self.joints(sim):
+            if child not in targets or parent not in targets:
+                continue
+            tc,cap_c,g_c=targets[child];tp,cap_p,g_p=targets[parent]
+            ac,wc,Ic=self._seg(body,*child);ap,wp,Ip=self._seg(body,*parent)
+            err=wrap((ac-ap)-wrap(tc-tp))
+            inertia=1/(1/Ic+1/Ip)
+            cap=cap_c if child[1]!=sim.idx['hip'] else min(cap_c,cap_p)
+            gain=min(g_c,g_p)
+            demand=inertia*(-.5*err-.9*(wc-wp))*gain
+            tau=float(np.clip(demand,-cap*gain,cap*gain))
+            self._couple(body,child[0],child[1],tau)
+            self._couple(body,parent[0],parent[1],-tau)
+            self.motor_log.append((self.telemetry_frame,self.state,child[0],child[1],tau,float(demand),cap*gain))
+            self.reaction_log.append((self.telemetry_frame,self.state,parent[0],parent[1],-tau))
+            self.max_torque_ratio=max(self.max_torque_ratio,abs(tau)/max(cap,1e-9))
 
     @staticmethod
     def _couple(body,c,d,torque):

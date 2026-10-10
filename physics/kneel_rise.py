@@ -4,7 +4,8 @@ This extends the bounded world-reference motor approximation of FootTransfer;
 it is not an angular-momentum-conserving muscle model.
 """
 import numpy as np
-from physics.foot_transfer import FootTransfer, LEG_EXTENSION, LEG_FORCE_CAP
+import physics.foot_transfer as ftm
+from physics.foot_transfer import FootTransfer, LEG_EXTENSION, LEG_EXTENSION_WIDE, LEG_FORCE_CAP, WIDE_RISE_REAR_THIGH
 from physics.ground_recovery import wrap, ATTEMPT_TIMEOUT
 
 RAISE_STATES = ('torso_raising', 'upright_kneeling')
@@ -43,8 +44,10 @@ class KneelRise(FootTransfer):
             if (a, b) in ((sim.idx['hip'], sim.idx['shoulder']),
                           (sim.idx['shoulder'], sim.idx['head'])) or a in hands:
                 degrees = 0.
+            if self.internal_torques and (a, b) == (sim.idx['hip'], sim.idx['shoulder']):
+                degrees = ftm.WIDE_RISE_TRUNK
             if a == rear and b == sim.idx['hip']:
-                degrees = 5.
+                degrees = ftm.WIDE_RISE_REAR_THIGH if self.internal_torques else 5.
             yield a, b, degrees, cap
 
     def _begin_raise(self, sim, continuing=False):
@@ -71,7 +74,7 @@ class KneelRise(FootTransfer):
         for hand in hands:
             self._extend(sim.body, hand, sim.idx['shoulder'], 60., 16., 1.)
         self._extend(sim.body, sim.idx['hip'], sim.fallen_legs[self.front_side][1],
-                     LEG_EXTENSION, LEG_FORCE_CAP, 1.)
+                     LEG_EXTENSION_WIDE if self.internal_torques else LEG_EXTENSION, LEG_FORCE_CAP, 1.)
 
     def observe(self, sim, ground_y):
         super().observe(sim, ground_y)

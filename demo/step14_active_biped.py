@@ -50,7 +50,7 @@ from physics.environment import Terrain
 from physics.balance import support_interval, outside_interval_error, FallRiskMonitor, upper_body_com_x
 from physics.arms import PhysicalArms, ArmGains
 from physics.bracing import FallBracing, constrain_fallen_elbows
-from physics.spine import FallenSpine, WAIST_RADIUS, hinge_drive
+from physics.spine import FallenSpine, WAIST_RADIUS, hinge_drive, SoftHinge
 from physics.gravity import GravityPolicy, REAL_GRAVITY, LEGACY_WALK_GRAVITY
 from physics.ground_recovery import GroundRecovery
 import math
@@ -415,6 +415,9 @@ NECK_FALL_K = 0.0                   # dususte boyun acisal sertligi (tarama: REA
 NECK_FALL_C = 0.0                   # dususte boyun acisal sonumu
 NECK_FALL_END_C = 0.0               # ilerleyici sonum: sinira (FALLEN_NECK_LIMIT_DEG) yaklastikca eklenir
 NECK_FALL_END_START_DEG = 30.0      # ilerleyici sonumun basladigi boyun acisi
+NECK_XPBD_ENABLED = False           # dususte boyun: cozucu ici sonumlu esnek aci kisiti (README)
+NECK_XPBD_COMPLIANCE = 0.5          # rad / genellestirilmis kuvvet (dt = 1 kare)
+NECK_XPBD_BETA = 4.0                # sonum (XPBD gamma = compliance * beta)
 NECK_FALL_ALPHA_MAX = 0.08          # kare basina en buyuk acisal hiz duzeltmesi (rad/kare)
 BRACE_DIR_MIN_PX = 8.0              # omuz-kalca yatay farki (3 kare ileri) bundan kucukse yon belirsiz
 # Kalkma override'i: XCoM destek araliginin OVERRIDE_XCOM_MARGIN disinda ya da
@@ -716,6 +719,7 @@ class ActiveBipedSim:
         self._contact_prev = None
         self.arm_column = {}        # Adim 30: kol -> dinlenme boyu (yalniz itme), el yerdeyken
         self.last_contact_ttc = None
+        self.neck_soft = None
         self.brace_trigger = None   # 'ttc' | 'yield' | 'collapse' | 'override'
         self.arm_yield_log = []     # (kare, kol, cozulemeyen hiz px/kare)
         self.hill = HILL_ENABLED if hill is None else hill
@@ -1276,6 +1280,13 @@ class ActiveBipedSim:
         iterations *= getattr(self.recovery, 'constraint_iterations_multiplier', 1)
         dn = normal_projection     # bu kare zeminin noktaya verdigi toplam normal duzeltme
         tcorr = np.zeros(len(p))   # Coulomb: bu kare noktaya verilen toplam tegetsel duzeltme
+        neck_xpbd = None
+        if NECK_XPBD_ENABLED:
+            if self.neck_soft is None:
+                self.neck_soft = SoftHinge(NECK_XPBD_COMPLIANCE, NECK_XPBD_BETA)
+            self.neck_soft.begin_frame()
+            neck_xpbd = [idx["waist"] if self.spine is not None else hip, idx["shoulder"], idx["head"]]
+            prev_frame = q.copy()      # x_n: karenin basi (Verlet oncesi) konumlar
         for _ in range(iterations):
             arm_columns()
             below = mask & (p[:, 1] > floor)
@@ -1316,6 +1327,8 @@ class ActiveBipedSim:
                 knee_branch_limit()
             if self.spine is not None:
                 self.spine.constrain()
+            if neck_xpbd is not None:
+                self.neck_soft.project(p, prev_frame, m_, neck_xpbd)
             if self.arms is not None and self.gn_fallen_arms:
                 constrain_fallen_elbows(self.arms)
         for k_i, f_i in self.fallen_legs.values():
@@ -1828,6 +1841,8 @@ class ActiveBipedSim:
             self.recovery.telemetry_frame = self.frame
             self.recovery.sim_ref = self
             self.recovery.drive(self)
+            if getattr(self.recovery, "_targets", None):
+                self.recovery.apply_joint_motors(self)
         if self.upright_head and not self.collapsed:
             # A damped neck controller, released completely in the ragdoll.
             # Like the torso controller, its equal/opposite forces add no

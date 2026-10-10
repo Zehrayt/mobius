@@ -120,3 +120,42 @@ def hinge_drive(body, ids, stiffness, damping, rest=0.0, limit=.08,
     q[ids] -= alpha/max(effective, 1e-9)*inverse_mass[:, None]*gradient
     return alpha
 
+
+class SoftHinge:
+    """XPBD (Macklin ve dig. 2016) sonumlu acisal kisit, cozucu DONGUSUNUN ICINDE.
+
+    Uc nokta [kok, eklem, uc]; C = theta - rest. Her iterasyonda:
+        dlam = (-C - a*lam - g * gradC.(x - x_n)) / ((1 + g) * sum(w |gradC|^2) + a)
+    a = esneklik (compliance, dt = 1 kare), g = a * beta (sonum). Sonum terimi karenin
+    basindan (x_n = onceki kare konumlari) beri olan yer degisimine bakar: zemin
+    projeksiyonu gogsu dongu icinde durdurdugunda basin goreli donusu de ayni dongude
+    frenlenir. Adimlar arasi (Verlet hizina) uygulanan sonum buna yetisemiyordu.
+    Dogrusal momentum korunur (gradyanin kutle agirlikli toplami sifir)."""
+
+    def __init__(self, compliance, beta):
+        self.compliance, self.beta = compliance, beta
+        self.lam = 0.0
+
+    def begin_frame(self):
+        self.lam = 0.0
+
+    def project(self, p, prev, m, ids, rest=0.0):
+        a = p[ids[1]]-p[ids[0]]
+        b = p[ids[2]]-p[ids[1]]
+        a2, b2 = float(a@a), float(b@b)
+        if min(a2, b2) < 1e-9:
+            return
+        theta = float(np.arctan2(cross(a, b), a@b))
+        ga = np.array([-a[1], a[0]])/a2
+        gb = np.array([-b[1], b[0]])/b2
+        grad = np.array([ga, -ga-gb, gb])
+        w = 1.0/m[ids]
+        core = float(np.sum(w[:, None]*grad**2))
+        alpha = self.compliance
+        gamma = alpha*self.beta
+        dC = float(np.sum(grad*(p[ids]-prev[ids])))
+        C = theta-rest
+        dlam = (-C-alpha*self.lam-gamma*dC)/((1.0+gamma)*core+alpha)
+        p[ids] += w[:, None]*grad*dlam
+        self.lam += dlam
+
