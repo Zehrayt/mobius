@@ -71,6 +71,19 @@ class WalkRecovery(StandRecovery):
         force[1] -= weight*share
         demand = force.copy()
         force = np.clip(force, FORCE_MIN, FORCE_MAX)
+        if self.internal_torques:
+            # Eksen disi bilesen bir kuvvet ciftidir (dis tork). Ic tork olarak: kalca-ayak
+            # sanal bacagina cift +T, alt govdeye -T (kalca eklemi); eksenel kisim aynen.
+            length = max(float(np.linalg.norm(delta)), 1e-6)
+            axis = delta/length
+            axial = float(np.dot(force, axis))*axis
+            couple = float(delta[0]*force[1]-delta[1]*force[0])
+            force = axial
+            root = sim.idx.get('waist', sim.idx['shoulder'])
+            self._couple(b, foot, hip, couple)
+            self._couple(b, hip, root, -couple)
+            self.reaction_log.append((self.telemetry_frame, self.state, foot, hip, couple))
+            self.reaction_log.append((self.telemetry_frame, self.state, hip, root, -couple))
         # 2B cift: eksen disi bilesen kalca-ayak cizgisine dik bir kuvvet ciftidir
         self.force_log.append((self.telemetry_frame, self.state, foot, hip,
                                float(np.linalg.norm(force)), float(np.linalg.norm(demand)),

@@ -368,6 +368,7 @@ HILL_ENABLED = True                  # Adim 28: kuvvet-hiz iliskisi (physics/hil
 FALLEN_KNEE_MASS = 0.45              # uyluk payi (bacak 0.83 = 0.45 + 0.38)
 FALLEN_FOOT_MASS = 0.38
 FALLEN_FINAL_STATIC_LOCK = True
+FALLEN_KINETIC_MU = 0.6             # yerden kalkmada kinetik Coulomb (statik 0.8)
 FALLEN_STATIC_MU = 0.8               # Adim 30: yuke bagli statik surtunme (PBD normal duzeltmesine oranla)
 FALLEN_GROUND_MU = 0.6               # zemine degen noktada yatay hiz kare basina bu oranda sonumlenir
 FALLEN_TORSO_LIMIT_DEG = 179.0       # yigilmada govde-kalca acisi serbest (gevsek govde)
@@ -412,6 +413,9 @@ BRACE_TTC_FRAMES = 10.0             # kare (~330 ms): 4/6/8/10/12/14 taramasinda
 BRACE_TTC_IN_LEGACY = False         # iki yercekimli eski kosul Adim 30 kanaryalarini korur
 NECK_FALL_K = 0.0                   # dususte boyun acisal sertligi (tarama: README)
 NECK_FALL_C = 0.0                   # dususte boyun acisal sonumu
+NECK_FALL_END_C = 0.0               # ilerleyici sonum: sinira (FALLEN_NECK_LIMIT_DEG) yaklastikca eklenir
+NECK_FALL_END_START_DEG = 30.0      # ilerleyici sonumun basladigi boyun acisi
+NECK_FALL_ALPHA_MAX = 0.08          # kare basina en buyuk acisal hiz duzeltmesi (rad/kare)
 BRACE_DIR_MIN_PX = 8.0              # omuz-kalca yatay farki (3 kare ileri) bundan kucukse yon belirsiz
 # Kalkma override'i: XCoM destek araliginin OVERRIDE_XCOM_MARGIN disinda ya da
 # bas/gogus OVERRIDE_MIN_VY ustunde inerken TTC <= BRACE_TTC_FRAMES, OVERRIDE_FRAMES ust uste.
@@ -421,6 +425,7 @@ OVERRIDE_MIN_VY = 2.0               # px/kare
 OVERRIDE_MIN_GAP = 80.0             # px: bas/gogus zeminden bu kadar yuksekte (yerdeki fazlarda TTC hep kisa)
 OVERRIDE_FRAMES = 4
 RECOVERY_IDLE_STATES = ("waiting", "needs_roll", "failed")
+COULOMB_RECOVERY = False            # True: yerden kalkmada kare butceli saf Coulomb (README "Durust fizik modu")
 # Kol kolonu: eli yere degmis ve refleksi aktif kol, omuz-el dogrultusunda yalniz
 # itebilen bir destek; dirsek ekstansor kapasitesini (TAU_ELBOW_MAX_NM, eksantrikte
 # Hill 1.5x) asan carpma hizi kolu bukerek (dinlenme boyunu kisaltarak) yutulur.
@@ -727,6 +732,8 @@ class ActiveBipedSim:
         # Yerde kollar: Gul Nihal'in kutle agirlikli dirsek cozucusu (dongu icinde) impuls
         # refleksiyle ve yerden kalkma zinciriyle; zincir hangi refleksle olursa olsun bu
         # kol cozumuyle dogrulandi (yuruyus kol kisiti yerde kalkmayi bozuyordu, olculdu).
+        # yerden kalkma: saf Coulomb surtunmesi (yuke bagli statik + kinetik, yapistirici yok)
+        self.coulomb_friction = ground_recovery and COULOMB_RECOVERY
         self.gn_fallen_arms = self.gn_fall and (self.fall_bracing is not None or ground_recovery)
         self.articulated_spine = articulated_spine
         self.spine = None
@@ -1268,6 +1275,7 @@ class ActiveBipedSim:
             iterations = max(RELAX_ITERS_FALLEN, GN_RELAX_ITERS_FALLEN * (8 if self.spine is not None else 1))
         iterations *= getattr(self.recovery, 'constraint_iterations_multiplier', 1)
         dn = normal_projection     # bu kare zeminin noktaya verdigi toplam normal duzeltme
+        tcorr = np.zeros(len(p))   # Coulomb: bu kare noktaya verilen toplam tegetsel duzeltme
         for _ in range(iterations):
             arm_columns()
             below = mask & (p[:, 1] > floor)
@@ -1279,10 +1287,29 @@ class ActiveBipedSim:
                 # kare basindaki yerine kilitlenir -- cubuk duzeltmeleri de onu kaydiramaz.
                 # Adim 30: esik yuke bagli (Coulomb, PBD: |dx_t| <= mu_s * dx_n); sabit
                 # 0.6 px esikte kolun itisi oturan kalcayi her kare 2 px geri kaydiriyordu.
-                lim = (FALLEN_STATIC_STICK_PX if self.gn_fall
-                       else np.maximum(FALLEN_STATIC_STICK_PX, FALLEN_STATIC_MU * dn))
-                stick = contact & (np.abs(p[:, 0] - x0) < lim)
-                p[stick, 0] = x0[stick]
+                if self.coulomb_friction:
+                    # Saf Coulomb, KARE butcesiyle: bir temas noktasinin bu karedeki TOPLAM
+                    # tegetsel duzeltmesi <= mu * TOPLAM normal duzeltme. Iterasyon basina
+                    # kontrol (eski) kapasiteyi ~iterasyon sayisi kadar katliyordu: diz ustunde
+                    # KM destegin 19 px disinda iken govde ~2100 N'luk surtunme ciftiyle
+                    # tutuluyordu (Coulomb siniri ~270 N, olculdu).
+                    drift = np.where(contact, p[:, 0] - x0, 0.0)
+                    self.friction_budget_log = (dn, tcorr)
+                    used = np.abs(tcorr)
+                    static_left = np.maximum(FALLEN_STATIC_MU * dn - used, 0.0)
+                    kinetic_left = np.maximum(FALLEN_KINETIC_MU * dn - used, 0.0)
+                    budget = np.where(np.abs(drift) <= static_left, np.abs(drift), kinetic_left)
+                    corr = np.sign(drift) * np.minimum(np.abs(drift), budget)
+                    p[:, 0] -= corr
+                    tcorr += corr
+                    lim = None
+                elif self.gn_fall:
+                    lim = FALLEN_STATIC_STICK_PX
+                else:
+                    lim = np.maximum(FALLEN_STATIC_STICK_PX, FALLEN_STATIC_MU * dn)
+                if lim is not None:
+                    stick = contact & (np.abs(p[:, 0] - x0) < lim)
+                    p[stick, 0] = x0[stick]
             body._satisfy_sticks()
             knee_flex_limit()
             if self.balance_recovery:
@@ -1355,6 +1382,13 @@ class ActiveBipedSim:
                 (self.frame, int(point), float(normal_projection[point] * body.masses[point])))
         # temas eden noktalar: dikey hiz sifir (esnek olmayan), yatay hiz surtunmeyle soner
         q[contact, 1] = p[contact, 1]
+        if self.coulomb_friction:
+            # surtunme yukaridaki konum duzeltmesinde (kare butceli); yatay hiz Verlet'ten
+            if self.arms is not None and self.bracing and self.brace_level > 0.01:
+                for _e_i, h_i in self.arms.idx.values():
+                    if contact[h_i]:
+                        q[h_i, 0] = p[h_i, 0]      # aktif kavrama yalniz refleks surerken
+            return
         q[contact, 0] = p[contact, 0] - (p[contact, 0] - q[contact, 0]) * (1.0 - FALLEN_GROUND_MU)
         if self.arms is not None and self.bracing:
             # Adim 30: refleksle uzanan avuc zemine yapisir (avuc ici-zemin, aktif kavrama):
@@ -1783,13 +1817,16 @@ class ActiveBipedSim:
         if self.spine is not None:
             self.spine.drive()
         if (self.collapsed and not self.gn_fall and self.gravity_policy.mode == "unified"
-                and (NECK_FALL_K > 0.0 or NECK_FALL_C > 0.0)):
+                and (NECK_FALL_K > 0.0 or NECK_FALL_C > 0.0 or NECK_FALL_END_C > 0.0)):
             # Boyun kaslari dususte: bas ust govdeye (bel-omuz) gore yay/sonumle tutulur.
             # Omurgali govdede gogus yere degince bas eylemsizlikle kamci gibi savruluyordu.
             root = idx["waist"] if self.spine is not None else hip
-            hinge_drive(body, [root, idx["shoulder"], idx["head"]], NECK_FALL_K, NECK_FALL_C)
+            hinge_drive(body, [root, idx["shoulder"], idx["head"]], NECK_FALL_K, NECK_FALL_C,
+                        end_damping=NECK_FALL_END_C, end_start=np.radians(NECK_FALL_END_START_DEG),
+                        end_limit=np.radians(FALLEN_NECK_LIMIT_DEG), limit=NECK_FALL_ALPHA_MAX)
         if self.recovery is not None:
             self.recovery.telemetry_frame = self.frame
+            self.recovery.sim_ref = self
             self.recovery.drive(self)
         if self.upright_head and not self.collapsed:
             # A damped neck controller, released completely in the ragdoll.

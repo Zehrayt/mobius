@@ -13,6 +13,16 @@ QUIET_SPEED = .15
 LEG_EXTENSION = 115.
 LEG_FORCE_CAP = 2.
 ACTIVE_STATES = ('foot_placing', 'transferring', 'half_kneeling')
+# Ic tork + Coulomb surtunmesiyle ayak yerlestirme (README "Kalkis: ic tork"): eski
+# hedefler on dizi yukun altinda zeminde 130 px, ayagi 135 px surukluyordu; kalca
+# (82 px) uyluk boyundan (92) alcak oldugu icin diz kalcanin altindan ancak yerin
+# icinden gecebilirdi. Alt fazlar: (A) uyluklar dik -> kalca dizlerin ustune cikar,
+# (B) on kalca bukulur, diz bukulur -> diz ve ayak HAVADA one gelir, (C) ayak basilir.
+# (bitis karesi, {parca: derece}); aci: parca vektorunun dusey-yukaridan sapmasi.
+PLACE_KEYFRAMES = ((120, {'thigh_f': 0., 'thigh_r': 0.}),
+                   (300, {'thigh_f': -75., 'shank_f': -60.}),
+                   (480, {'shank_f': -145.}))
+PLACE_FRAMES_INTERNAL = PLACE_KEYFRAMES[-1][0]
 
 
 class FootTransfer(GroundRecovery):
@@ -44,9 +54,40 @@ class FootTransfer(GroundRecovery):
         pairs.extend((hand, sh, -10., 300.) for _, hand in sim.arms.idx.values())
         return pairs
 
+    def named_pairs(self, sim):
+        hip, sh, head = [sim.idx[k] for k in ('hip', 'shoulder', 'head')]
+        out = [('trunk', (hip, sh), 480.), ('neck', (sh, head), 100.)]
+        for side, (knee, foot) in sim.fallen_legs.items():
+            f = side == self.front_side
+            out += [('thigh_f' if f else 'thigh_r', (knee, hip), 480.),
+                    ('shank_f' if f else 'shank_r', (knee, foot), 120.)]
+        out += [('arm', (hand, sh), 300.) for _, hand in sim.arms.idx.values()]
+        return out
+
+    def _drive_placement_keyframes(self, sim):
+        elapsed = sim.frame-self.phase_frame
+        pairs = self.named_pairs(sim)
+        prev = {n: self.initial_angles[ab] for n, ab, _ in pairs}
+        prev_t, target = 0, None
+        for t_end, goal in PLACE_KEYFRAMES:
+            cur = {**prev, **{k: np.radians(v) for k, v in goal.items()}}
+            if elapsed <= t_end:
+                u = float(np.clip((elapsed-prev_t)/max(t_end-prev_t, 1), 0, 1))
+                u = u*u*(3-2*u)
+                target = {n: prev[n]+u*wrap(cur[n]-prev[n]) for n in prev}
+                break
+            prev_t, prev = t_end, cur
+        target = prev if target is None else target
+        for name, (a, b), cap in pairs:
+            self._motor(sim.body, a, b, target[name], cap, 1.)
+        for _, hand in sim.arms.idx.values():
+            self._extend(sim.body, hand, sim.idx['shoulder'], 60., 16., 1.)
+
     def drive(self, sim):
         if self.state not in ACTIVE_STATES:
             return super().drive(sim)
+        if self.state == 'foot_placing' and self.internal_torques:
+            return self._drive_placement_keyframes(sim)
         elapsed = sim.frame-self.phase_frame
         duration = PLACE_FRAMES if self.state == 'foot_placing' else TRANSFER_FRAMES
         t = float(np.clip(elapsed/duration, 0, 1))
@@ -83,7 +124,7 @@ class FootTransfer(GroundRecovery):
                         abs(p[foot, 0]-p[hip, 0]) < 50 and abs(self.com_to_foot) < 20)
             quiet = geometry and self.speed < QUIET_SPEED
             if self.state == 'foot_placing':
-                quiet = quiet and elapsed >= PLACE_FRAMES
+                quiet = quiet and elapsed >= (PLACE_FRAMES_INTERNAL if self.internal_torques else PLACE_FRAMES)
             else:
                 quiet = (quiet and self.foot_share >= .25 and
                          self.foot_share >= self.placed_share+.08 and elapsed >= TRANSFER_FRAMES)

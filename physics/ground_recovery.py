@@ -6,6 +6,20 @@ contacts and the existing constraints supply support. No pose teleport/pins.
 """
 import numpy as np
 
+# Ic tork (eklem torku): her motor kendi parcasina +T, eklemin obur tarafindaki
+# parcaya -T verir; net dis tork sifir (Newton 3, acisal momentum). False: eski
+# dunyaya-referansli motorlar (Gul Nihal'in dalindaki davranis). VARSAYILAN False:
+# ic tork + Coulomb ile kalkis zinciri henuz ayaga kalkamiyor (README "Durust fizik
+# modu"); denge kontrolcusu bitene kadar eski davranis varsayilan, durust mod bayrakla.
+INTERNAL_TORQUES = False
+# Ic tork modunda diz motoru (diz->ayak) tavani: Adim 27'nin diz ekstansoru 200 Nm
+# (1 birim = 0.2909 Nm). Eski 120 birim (35 Nm) dis torkla calisiyordu; ic torkla
+# on bacak agirligi tasiyamiyor, yuk ayaga gecmiyordu (olculdu: istenen 92 Nm).
+TORQUE_UNIT_NM = 0.2909
+KNEE_TORQUE_MAX_NM = 200.
+# Bacak agirlik tasimaya ayak yerlestirmeden sonra baslar; yerdeki/el-diz fazlarinda
+# eski tavan (yuksek tavanla el-diz destegine gecis bozuluyordu, olculdu).
+LOW_SUPPORT_STATES = ('waiting', 'repositioning', 'rising', 'supported', 'foot_placing')
 CALM_SPEED = .15
 CALM_FRAMES = 30
 MIN_FALL_AGE = 60
@@ -46,8 +60,15 @@ class GroundRecovery:
         self.telemetry_frame=None
         self.motor_log=[]
         self.force_log=[]
+        self.reaction_log=[]     # (kare, durum, c, d, -T): ic tork tepkileri
+        self.sim_ref=None        # step14 her kare drive() oncesi atar (eklem esleme icin)
+        self.internal_torques=INTERNAL_TORQUES
 
     def _motor(self,body,a,b,target,cap,gain):
+        if (self.internal_torques and self.sim_ref is not None and self.sim_ref.fallen_legs
+                and self.state not in LOW_SUPPORT_STATES):
+            if any((a,b)==(k,f) for k,f in self.sim_ref.fallen_legs.values()):
+                cap=max(cap,KNEE_TORQUE_MAX_NM/TORQUE_UNIT_NM)
         p,q,m=body.points,body.prev_points,body.masses
         d=p[b]-p[a];length=max(float(np.linalg.norm(d)),1e-6)
         direction=d/length; tangent=np.array([-direction[1],direction[0]])
@@ -60,6 +81,42 @@ class GroundRecovery:
         impulse=tangent*torque/length
         q[b]-=impulse/m[b];q[a]+=impulse/m[a]
         self.max_torque_ratio=max(self.max_torque_ratio,abs(torque)/cap)
+        if self.internal_torques and self.sim_ref is not None:
+            for (c,d),share in self.reaction_segments(self.sim_ref,a,b):
+                self._couple(body,c,d,-torque*share)
+                self.reaction_log.append((self.telemetry_frame,self.state,c,d,-torque*share))
+
+    @staticmethod
+    def _couple(body,c,d,torque):
+        """Parcaya (c,d) saf kuvvet cifti: esit/zit dik itkiler, dogrusal momentum korunur."""
+        p,q,m=body.points,body.prev_points,body.masses
+        delta=p[d]-p[c];length=max(float(np.linalg.norm(delta)),1e-6)
+        direction=delta/length;tangent=np.array([-direction[1],direction[0]])
+        impulse=tangent*torque/length
+        q[d]-=impulse/m[d];q[c]+=impulse/m[c]
+
+    @staticmethod
+    def reaction_segments(sim,a,b):
+        """Motor (a,b) hangi eklemde, tepkiyi hangi parca(lar) alir -> [((c,d),pay)].
+        Govde ve uyluk motorlari kalca eklemi, baldir diz eklemi, bas boyun, kol omuz.
+        Ayak tek nokta: ayak bilegi torku yok (zemine moment aktaracak parca yok)."""
+        idx=sim.idx;hip,sh,head=idx['hip'],idx['shoulder'],idx['head']
+        root=idx.get('waist',sh)                       # alt govde: kalca->bel (omurga yoksa kalca->omuz)
+        upper=(idx['waist'],sh) if 'waist' in idx else (hip,sh)
+        legs=sim.fallen_legs or {}
+        thighs=[(k,hip) for k,_ in legs.values()]
+        if (a,b)==(hip,sh):
+            return [(t,1/len(thighs)) for t in thighs] if thighs else []
+        if (a,b)==(sh,head):
+            return [(upper,1.)]
+        for k,f in legs.values():
+            if (a,b)==(k,hip):
+                return [((hip,root),1.)]
+            if (a,b)==(k,f):
+                return [((k,hip),1.)]
+        if sim.arms is not None and b==sh and a in [h for _,h in sim.arms.idx.values()]:
+            return [(upper,1.)]
+        return []
 
     def _extend(self,body,a,b,target,cap,gain):
         p,q,m=body.points,body.prev_points,body.masses

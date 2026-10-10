@@ -93,6 +93,9 @@ def run(push: float, frames: int = 3700, **overrides) -> dict:
             by_frame.setdefault(f, {"state": state, "sum": 0.0, "abs": 0.0})
             by_frame[f]["sum"] += couple
             by_frame[f]["abs"] += abs(couple)
+    for f, state, c, d, tau in rec.reaction_log:      # ic tork tepkileri (INTERNAL_TORQUES)
+        by_frame.setdefault(f, {"state": state, "sum": 0.0, "abs": 0.0})
+        by_frame[f]["sum"] += tau
     states = []
     for r in per_frame:
         if r["state"] not in states:

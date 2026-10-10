@@ -4868,20 +4868,23 @@ tutamıyordu. Yön kapısı (`BRACE_DIR_MIN_PX` = 8 px): omuz–kalça farkı (3
 ileri) bundan küçükken hedef kilitlenmez, kollar omzun altına "hazır" uzanır.
 TTC tetiği ve yön kapısı yalnız tek yerçekiminde (eski koşul kanaryaları aynen).
 
-### Boyun sönümü (denendi, kapalı)
+### Boyun: kamçı ölçümü ve sönüm (denendi, kapalı)
 
-Düşüşte bel–omuz–baş menteşesine açısal yay/sönüm (`physics/spine.hinge_drive`,
-`NECK_FALL_K/C`). Refleksli sonuçları kötüleştirdi (TTC 10 + kapı üstüne):
+Kamçı ölçüldü (36 koşu, göğüs/omuz zemine ilk değdiği kare; `whip` ölçümü):
 
-| Boyun | Baş medyan / ort. | Omuz medyan |
-|---|---|---:|
-| yok (varsayılan) | **4.3 / 5.8** | **5.6** |
-| C = 0.3 | 5.4 / 6.2 | 6.7 |
-| K = 0.01, C = 0.3 | 6.0 / 7.1 | 7.1 |
-| K = 0.02, C = 0.6 | 5.5 / 7.0 | 7.2 |
+| | Temasta baş–gövde açısal hızı | Sonraki karelerde tepe | Boyun açısı (medyan) |
+|---|---|---|---|
+| Pasif | 349°/s (gövde 208°/s) | **854°/s** | 60.2° — sınıra çarpıyor |
+| Refleksli | 160°/s (gövde 41°/s) | 259°/s | 41° |
 
-Pasif düşüşte baş medyanı 9.2 → 8.8 hafif iniyor; başı gövdeye sıkı bağlamak
-onu gövdeyle birlikte daha sert indiriyor. Bu motorda baskın etki kamçı değil.
+Pasif düşüşte kamçı gerçek. Bel–omuz–baş menteşesine sönüm (`physics/spine.hinge_drive`;
+`NECK_FALL_K/C`, sınıra yaklaştıkça artan `NECK_FALL_END_C`, kare başı düzeltme sınırı
+`NECK_FALL_ALPHA_MAX`) denendi: hafif (C 0.03/0.1), ilerleyici (0.3/0.6) ve sınırı
+0.6 rad/kareye gevşetilmiş haliyle pasif tepe 842–900°/s'de, boyun 60°'de kaldı;
+refleksli baş medyanı 4.3 → 4.3–5.4 (iyileşmedi). Neden: tepe, zemin çözücüsünün
+içinde göğüs tek karede durdurulurken oluşuyor; adımlar arası (Verlet hızına
+uygulanan) hiçbir sönüm oraya yetişmiyor. Doğru çözüm boynu çözücü döngüsünde
+sönümlü esnek kısıt (XPBD) yapmak — açık iş. Varsayılan kapalı.
 
 ### Kalkma override'ı (exception yok)
 
@@ -4921,8 +4924,44 @@ Rapor: `docs/validation/recovery_telemetry_report.json` (±150 px, tam zincir).
   Temas kayması 0 (statik sürtünme kilidi), çubuk boyu hatası ≤ 0.39 px, KM
   ivmesi kalkışta ≤ 9.3 m/s² (yürüyüş inişinde 3.7). Çekişme göstergesi motor
   iptali: torkların yerde %20–60'ı, ayakta %87'si birbirini götürüyor.
-- Açık iş: motorları eklem torku çiftlerine (eşit/zıt, iki komşu parça) çevirip
-  net dış torku sıfırlamak; destek momentini zemin temaslarına bırakmak.
+- Yukarıdaki sayılar varsayılan (dış torklu) motorlar içindir. İç tork modunda
+  (`INTERNAL_TORQUES`) net dış tork 0 — bkz. "Dürüst fizik modu"; tepki torkları
+  `recovery.reaction_log`'da, telemetri onları da toplar.
+
+### Dürüst fizik modu (bayrakla; kalkış henüz çalışmıyor)
+
+`physics.ground_recovery.INTERNAL_TORQUES = True` ve
+`demo.step14_active_biped.COULOMB_RECOVERY = True` (varsayılan ikisi de `False`).
+
+- **İç eklem torkları:** her kalkma motoru kendi parçasına +T, eklemin öbür
+  tarafındaki parçaya −T verir (`reaction_segments`): gövde ve uyluk motorları kalça,
+  baldır diz, baş boyun, kol omuz eklemi; yürüme kuvvetinin eksen dışı bileşeni kalça
+  torkuna çevrilir. Net dış tork her karede tam 0 (test). Ayaklar tek nokta olduğu için
+  ayak bileği torku yok. Diz motoru bu modda (ayak yerleştirmeden sonra) Adım 27'nin
+  200 Nm diz ekstansörü tavanını kullanır (eski 35 Nm ile ön bacak ağırlık taşıyamıyordu).
+- **Kare bütçeli Coulomb:** bir temas noktasının bir karedeki toplam teğetsel düzeltmesi
+  ≤ μₛ·(toplam normal düzeltme); aşınca kinetik (μₖ = 0.6). Eski kilit (0.6 px'ten yavaş
+  kayan her noktayı yükten bağımsız sabitleme) ve iterasyon başına kontrol, sürtünme
+  kapasitesini ~iterasyon sayısı (64) kadar katlıyordu. Refleksin avuç kavraması yalnız
+  refleks sürerken.
+- **Ayak yerleştirme yeniden yazıldı** (iç tork modunda, `PLACE_KEYFRAMES`): kalça 82 px
+  iken (uyluk 92 px) diz kalçanın altından ancak yerin içinden geçebiliyordu; eski hedefler
+  ön dizi yük altında zeminde 130 px, ayağı 135 px sürüklüyordu. Yeni: (A) uyluklar dik,
+  kalça 104 px; (B) diz ve ayak havada öne (ayak ≥ 30 px yukarıda, test); (C) basma.
+
+Ne ortaya çıktı (hepsi ±150 px itki, tam zincir):
+
+| Mod | Nerede duruyor | Neden |
+|---|---|---|
+| Dış tork + eski kilit (varsayılan) | ayakta, yürüyor | gökyüzü kancası: yerde ort. 96–174 Nm dış tork |
+| İç tork + eski kilit | gövdeyi doğrultma | kalça ekstansörü 140 Nm tavanda, istenen 348–502 Nm |
+| + diz 200 Nm, kalça 210 Nm, el itişi | gövde 163° → 25° dikleşiyor ama | KM destek dışında 19 px; ~2100 N'luk sürtünme çiftiyle tutuluyor (Coulomb sınırı ~270 N) |
+| İç tork + kare bütçeli Coulomb | ayak yerleştirme (+150) / gövde doğrultma (−150) | yükü az eller 70–85 px kayıyor; senaryo dengeyi sağlamıyor |
+
+Sonuç: Gül Nihal'in kalkışı dünyaya göre sabit açılara giden motorlarla yazılmış bir
+senaryo; dış tork ve yapışkan/sızdıran temas kaldırılınca dengeyi kendisi kuramıyor.
+Sıradaki iş: temas kuvvetlerini ve KM'yi her karede gözeten bir denge kontrolcüsü
+(README'de ayrı bölüm açılacak).
 
 ### Diğer düzeltmeler (birleşim incelemesi)
 - Omurga açıkken boyun sınırı bel–baş arasına uygulanır (önce uzunluk bel–omuz
@@ -4931,7 +4970,7 @@ Rapor: `docs/validation/recovery_telemetry_report.json` (±150 px, tam zincir).
 - Bilinen sınır (birleşimden önce de vardı): tek yerçekiminde 1 m/s geri itki
   bile çöküşle bitiyor; iki yerçekimli eski ayarda bitmiyordu.
 
-Testler: 178/178 (tam paket). `tests/test_step30_impulse_bracing.py`
+Testler: 182/182 (tam paket). `tests/test_step30_impulse_bracing.py`
 Gül Nihal'in Adım 30 testleridir.
 
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar

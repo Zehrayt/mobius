@@ -93,7 +93,8 @@ class FallenSpine:
         self.body.points[self.ids] += correction*inverse_mass[:,None]*gradient
 
 
-def hinge_drive(body, ids, stiffness, damping, rest=0.0, limit=.08):
+def hinge_drive(body, ids, stiffness, damping, rest=0.0, limit=.08,
+                end_damping=0.0, end_start=None, end_limit=None):
     """Uc noktali mentese (ids = [kok, eklem, uc]) icin acisal yay/sonum.
     FallenSpine.drive ile ayni bicim: gradyan boyunca esit/zit hiz itkileri,
     dogrusal momentum korunur. Boyun icin: [bel ya da kalca, omuz, bas]."""
@@ -110,7 +111,12 @@ def hinge_drive(body, ids, stiffness, damping, rest=0.0, limit=.08):
     omega = float(np.sum(gradient*(p-q)[ids]))
     inverse_mass = 1/m[ids]
     effective = float(np.sum(inverse_mass[:, None]*gradient**2))
-    alpha = float(np.clip(-stiffness*(theta-rest)-damping*omega, -limit, limit))
+    c = damping
+    if end_damping > 0.0 and end_start is not None and end_limit is not None:
+        # ilerleyici sonum: hareket siniri yaklastikca artar (sinirin ortasinda serbest)
+        u = (abs(theta-rest)-end_start)/max(end_limit-end_start, 1e-9)
+        c += end_damping*float(np.clip(u, 0.0, 1.0))**2
+    alpha = float(np.clip(-stiffness*(theta-rest)-c*omega, -limit, limit))
     q[ids] -= alpha/max(effective, 1e-9)*inverse_mass[:, None]*gradient
     return alpha
 
