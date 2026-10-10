@@ -415,9 +415,15 @@ NECK_FALL_K = 0.0                   # dususte boyun acisal sertligi (tarama: REA
 NECK_FALL_C = 0.0                   # dususte boyun acisal sonumu
 NECK_FALL_END_C = 0.0               # ilerleyici sonum: sinira (FALLEN_NECK_LIMIT_DEG) yaklastikca eklenir
 NECK_FALL_END_START_DEG = 30.0      # ilerleyici sonumun basladigi boyun acisi
-NECK_XPBD_ENABLED = False           # dususte boyun: cozucu ici sonumlu esnek aci kisiti (README)
-NECK_XPBD_COMPLIANCE = 0.5          # rad / genellestirilmis kuvvet (dt = 1 kare)
-NECK_XPBD_BETA = 4.0                # sonum (XPBD gamma = compliance * beta)
+# Dususte boyun: cozucu ici sonumlu esnek aci kisiti (README "Boyun").
+# "passive" (varsayilan): yalniz koruyucu refleks kapaliyken (bracing=False) --
+# pasif dususte kamci 854 -> 558 der/s, bas darbesi 9.2 -> 7.0 px/kare; refleks
+# acikken kollar soku emer, sert boyun basi govdeyle indirip darbeyi 4.3 -> 5.1
+# yapiyordu. "always" | "off". NECK_XPBD_ENABLED = True her durumda zorlar.
+NECK_XPBD_MODE = "passive"
+NECK_XPBD_ENABLED = False
+NECK_XPBD_COMPLIANCE = 0.01         # rad / genellestirilmis kuvvet (dt = 1 kare)
+NECK_XPBD_BETA = 16.0               # sonum (XPBD gamma = compliance * beta)
 NECK_FALL_ALPHA_MAX = 0.08          # kare basina en buyuk acisal hiz duzeltmesi (rad/kare)
 BRACE_DIR_MIN_PX = 8.0              # omuz-kalca yatay farki (3 kare ileri) bundan kucukse yon belirsiz
 # Kalkma override'i: XCoM destek araliginin OVERRIDE_XCOM_MARGIN disinda ya da
@@ -923,6 +929,12 @@ class ActiveBipedSim:
         self.last_contact_ttc = ttc
         return ttc is not None and ttc <= BRACE_TTC_FRAMES
 
+    def _neck_xpbd_active(self) -> bool:
+        if NECK_XPBD_ENABLED or NECK_XPBD_MODE == "always":
+            return True
+        return (NECK_XPBD_MODE == "passive" and self.bracing_mode == "off"
+                and self.gravity_policy.mode == "unified")
+
     def push(self, kick_px: float, point: str = "hip") -> None:
         """Dis darbe: noktaya yatay hiz (px/kare) ekler -- buyuk itkiyle ayni olcek
         (taban kalca kutlesine gore momentum)."""
@@ -1281,7 +1293,7 @@ class ActiveBipedSim:
         dn = normal_projection     # bu kare zeminin noktaya verdigi toplam normal duzeltme
         tcorr = np.zeros(len(p))   # Coulomb: bu kare noktaya verilen toplam tegetsel duzeltme
         neck_xpbd = None
-        if NECK_XPBD_ENABLED:
+        if self._neck_xpbd_active():
             if self.neck_soft is None:
                 self.neck_soft = SoftHinge(NECK_XPBD_COMPLIANCE, NECK_XPBD_BETA)
             self.neck_soft.begin_frame()

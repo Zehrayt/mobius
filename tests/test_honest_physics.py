@@ -87,6 +87,13 @@ class CoulombBudgetTest(unittest.TestCase):
 
 
 class NeckXPBDTest(unittest.TestCase):
+    def test_default_is_passive_only(self):
+        self.assertEqual(s14.NECK_XPBD_MODE, "passive")
+        self.assertTrue(s14.ActiveBipedSim(bracing=False)._neck_xpbd_active())
+        self.assertFalse(s14.ActiveBipedSim()._neck_xpbd_active())          # refleks acik
+        self.assertFalse(s14.ActiveBipedSim(bracing=False, gravity_mode="legacy",
+                                            articulated_spine=False)._neck_xpbd_active())
+
     def test_soft_hinge_conserves_linear_momentum(self):
         from physics.spine import SoftHinge
         rng = np.random.default_rng(3)
@@ -114,14 +121,14 @@ class NeckXPBDTest(unittest.TestCase):
                     worst = max(worst, abs(np.degrees(np.arctan2(a[0] * b[1] - a[1] * b[0], a @ b))))
             return worst
 
-        saved = s14.NECK_XPBD_ENABLED, s14.NECK_XPBD_COMPLIANCE, s14.NECK_XPBD_BETA
+        saved = s14.NECK_XPBD_MODE
         try:
             res = {}
             for enabled in (False, True):
-                s14.NECK_XPBD_ENABLED, s14.NECK_XPBD_COMPLIANCE, s14.NECK_XPBD_BETA = enabled, 0.01, 16.0
+                s14.NECK_XPBD_MODE = "passive" if enabled else "off"
                 res[enabled] = [max_neck(enabled, p, ph) for p, ph in scenes]
         finally:
-            s14.NECK_XPBD_ENABLED, s14.NECK_XPBD_COMPLIANCE, s14.NECK_XPBD_BETA = saved
+            s14.NECK_XPBD_MODE = saved
         # olculen: XPBD'siz medyan 60.1 der, 8/8 sahne sinirda; XPBD (0.01, 16) ile 50.1, 3/8
         self.assertEqual(sum(v > 59.0 for v in res[False]), len(scenes))
         self.assertLess(np.median(res[True]), np.median(res[False]) - 5.0)

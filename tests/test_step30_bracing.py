@@ -129,14 +129,22 @@ class UnifiedDefaultBracingTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.runs = {}
-        for push, t in SCENES:
-            for b in (False, True):
-                sim = s14.ActiveBipedSim(big_push_kick_px=push, big_push_t=t, bracing=b)
-                pts = []
-                for _ in range(560):
-                    sim.step()
-                    pts.append(sim.body.points.copy())
-                cls.runs[(push, b)] = (sim, pts)
+        saved = s14.NECK_XPBD_MODE
+        # karsilastirma Adim 29'un korumasiz pasif ragdoll'una (boyun XPBD'siz). Not: bu
+        # 4 sahnede pasif + XPBD bas darbesi ort. 7.7, refleks 8.7 px/kare; 36 kosuluk
+        # taramada refleks 5.8, pasif + XPBD 8.8 (README "Boyun").
+        s14.NECK_XPBD_MODE = "off"
+        try:
+            for push, t in SCENES:
+                for b in (False, True):
+                    sim = s14.ActiveBipedSim(big_push_kick_px=push, big_push_t=t, bracing=b)
+                    pts = []
+                    for _ in range(560):
+                        sim.step()
+                        pts.append(sim.body.points.copy())
+                    cls.runs[(push, b)] = (sim, pts)
+        finally:
+            s14.NECK_XPBD_MODE = saved
 
     def test_default_is_the_column_reflex_with_spine(self):
         sim = self.runs[(SCENES[0][0], True)][0]

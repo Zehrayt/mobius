@@ -4868,7 +4868,7 @@ tutamıyordu. Yön kapısı (`BRACE_DIR_MIN_PX` = 8 px): omuz–kalça farkı (3
 ileri) bundan küçükken hedef kilitlenmez, kollar omzun altına "hazır" uzanır.
 TTC tetiği ve yön kapısı yalnız tek yerçekiminde (eski koşul kanaryaları aynen).
 
-### Boyun: kamçı ölçümü ve çözücü içi sönüm (XPBD, bayrakla)
+### Boyun: kamçı ölçümü ve çözücü içi sönüm (XPBD; pasif düşüşte varsayılan)
 
 Kamçı ölçüldü (36 koşu, göğüs/omuz zemine ilk değdiği kare). Pasif düşüşte baş–gövde
 göreli hızı temasta 349°/s, sonraki karelerde 854°/s'ye çıkıyor; boyun 60°'lik sert
@@ -4883,7 +4883,7 @@ frenlenir. Doğrusal momentum korunur (test).
 
 | Ayar (36 koşu) | Pasif baş darbesi (medyan) | Pasif kamçı tepe | Pasif boyun açısı | Refleksli baş darbesi | Refleksli kamçı tepe |
 |---|---:|---:|---:|---:|---:|
-| XPBD yok (varsayılan) | 9.2 | 854°/s | 60.2° (sınırda) | **4.3** | **259°/s** |
+| XPBD yok | 9.2 | 854°/s | 60.2° (sınırda) | **4.3** | **259°/s** |
 | α 0.5 (β 1/4/16) | 8.5–9.6 | 832–1072°/s | 60.2° | 3.7–6.0 | 271–282°/s |
 | α 0.05 (β 4/16) | 6.2–7.7 | 1049–1146°/s | 60.2–60.4° | 5.1–6.8 | 316–330°/s |
 | **α 0.01, β 16** | **7.0** | 558°/s | 47.5° | 5.1 | 386°/s |
@@ -4893,8 +4893,15 @@ frenlenir. Doğrusal momentum korunur (test).
 Yumuşak α'da (0.5) kısıt paydaya göre (~0.01) çok esnek, iterasyon başına neredeyse
 düzeltme yapmıyor. α 0.01–0.005 kamçıyı %35–58 kırıyor ve boynu sınırdan uzak tutuyor;
 pasif düşüşte baş darbesini de azaltıyor (α 0.01). Refleks açıkken baş, sertleşen boyunla
-gövdeyle birlikte daha sert iniyor. Tek ayar her durumda kazandırmadığı için varsayılan
-kapalı; açık işler: refleks moduna göre α seçimi.
+gövdeyle birlikte daha sert iniyor.
+
+**Varsayılan (`NECK_XPBD_MODE = "passive"`, α 0.01, β 16):** yalnız koruyucu refleks
+kapalıyken (`bracing=False`, tek yerçekimi). Refleks açıkken kollar şoku emer; boynu
+sertleştirmek başı gövdeyle birlikte indirip darbeyi artırıyordu. `"always"` / `"off"`
+seçilebilir; eski koşul (iki yerçekimi) kanaryaları etkilenmez. Not: Adım 30'un 4 test
+sahnesinde pasif + XPBD baş darbesi ortalaması 7.7, refleks 8.7 px/kare; 36 koşuluk
+taramada refleks 5.8, pasif + XPBD 8.8 — refleksin üstünlüğü geniş taramada sürüyor.
+`test_step30_bracing` refleksi korumasız pasif ragdoll'la (XPBD kapalı) karşılaştırır.
 
 ### Kalkma override'ı (exception yok)
 
@@ -5000,7 +5007,7 @@ Sıradaki iş: temas kuvvetlerini ve KM'yi her karede gözeten bir denge kontrol
 - Bilinen sınır (birleşimden önce de vardı): tek yerçekiminde 1 m/s geri itki
   bile çöküşle bitiyor; iki yerçekimli eski ayarda bitmiyordu.
 
-Testler: 184/184 (tam paket). `tests/test_step30_impulse_bracing.py`
+Testler: 185/185 (tam paket). `tests/test_step30_impulse_bracing.py`
 Gül Nihal'in Adım 30 testleridir.
 
 ## Üçüncü Taraf Kod Kullanımı ve Lisanslar
